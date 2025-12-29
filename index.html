@@ -1,49 +1,313 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>高雄</title>
+        <title>高雄空氣品質監測</title>
         <style>
-            .kok
-            {
-                border-width: 5px;
-                border-color: darkseagreen;
-                border-style: groove;
-                border-radius: 10%;
-                color:cadetblue
-                
+            body {
+                font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+                margin: 0;
+                color: #1f2933;
+                background: #f7fafc;
             }
-            .non
-            {
-                border-width: 5px;
-                border-color:chartreuse;
-                border-style: groove;
-                border-radius: 10%;
-                color:cornflowerblue  
+
+            header {
+                background: linear-gradient(135deg, #c9e4ff, #d8f5e7);
+                padding: 24px 16px;
+                text-align: center;
+                border-bottom: 1px solid #b4d4f0;
+            }
+
+            h1 {
+                margin: 0 0 8px;
+                color: #0f6cbd;
+            }
+
+            h2 {
+                color: #155724;
+                margin-top: 0;
+            }
+
+            main {
+                max-width: 960px;
+                margin: 0 auto;
+                padding: 24px 16px 40px;
+            }
+
+            section {
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 10px 24px rgba(15, 108, 189, 0.08);
+                padding: 20px;
+                margin-bottom: 16px;
+                border: 1px solid #e1ecf4;
+            }
+
+            .cta {
+                display: inline-block;
+                padding: 12px 18px;
+                background: #0f6cbd;
+                color: #fff;
+                text-decoration: none;
+                border-radius: 10px;
+                font-weight: 700;
+                transition: transform 0.1s ease, box-shadow 0.2s ease;
+            }
+
+            .cta:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 18px rgba(15, 108, 189, 0.2);
+            }
+
+            form {
+                margin-top: 10px;
+            }
+
+            .search-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+                margin-top: 8px;
+            }
+
+            .search-input {
+                flex: 1;
+                min-width: 240px;
+                padding: 10px 12px;
+                border: 1px solid #c9d8e6;
+                border-radius: 10px;
+                font-size: 15px;
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+            }
+
+            .search-button {
+                padding: 10px 16px;
+                background: #0f6cbd;
+                color: #fff;
+                border: none;
+                border-radius: 10px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: transform 0.1s ease, box-shadow 0.2s ease;
+            }
+
+            .search-button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 8px 14px rgba(15, 108, 189, 0.18);
+            }
+
+            .search-hint {
+                margin-top: 6px;
+                color: #4b5563;
+                font-size: 14px;
+            }
+
+            ul {
+                padding-left: 22px;
+                margin: 10px 0;
+            }
+
+            .card-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 14px;
+                margin-top: 10px;
+            }
+
+            .card {
+                border: 1px solid #e1ecf4;
+                border-radius: 12px;
+                padding: 16px;
+                background: #fefefe;
+                box-shadow: 0 6px 12px rgba(15, 108, 189, 0.06);
+            }
+
+            .card h3 {
+                margin-top: 0;
+                color: #0f6cbd;
+            }
+
+            .badge {
+                display: inline-block;
+                background: #fef3c7;
+                color: #92400e;
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 12px;
+                margin-right: 8px;
+            }
+
+            ol {
+                padding-left: 22px;
+                margin: 10px 0;
+            }
+
+            .tag {
+                display: inline-block;
+                background: #e9f4ff;
+                color: #0f6cbd;
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 12px;
+                margin-right: 6px;
+                margin-bottom: 6px;
+            }
+
+            .source-link {
+                color: #0f6cbd;
+                text-decoration: none;
+                font-weight: 700;
+            }
+
+            .source-link:hover {
+                text-decoration: underline;
+            }
+
+            .highlight {
+                color: #c0392b;
+                font-weight: 700;
             }
         </style>
     </head>
-        <body>
-            <h1><span style="background-color: blanchedalmond;font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">高雄</span></h1>
-            <i><h2><span class="non">特色</span></h2></i>
-            <ol type="circle">
-                <li><u><span class="kok">美食</span><br></u></li>
-                <li ><del><span class="kok">愛情摩天輪</span></del></li>          
-            </ol>
-            <img src="https://images.chinatimes.com/newsphoto/2020-04-30/656/20200430001122.jpg" width="500">
-            <hr>
-            <i><h2><span class="non">空氣</span></h2></i>
-            <ul type="circle">
-            <u><div style="color:crimson;font-size: 25px;">髒到爆</div></u>
-            </ul>
-            <hr>
-            <p>
-               <a href="https://www.welcometw.com/%E9%AB%98%E9%9B%84%E6%99%AF%E9%BB%9E%E6%8E%A8%E8%96%A6-%EF%BD%9C%E9%AB%98%E9%9B%84%E6%9C%80%E7%BE%8E%E6%9C%80%E5%A4%AFig%E6%89%93%E5%8D%A1%E6%99%AF%E9%BB%9E%EF%BC%8C%E5%B8%82%E5%8D%80%E3%80%81/">
-                    聽說是高雄
-               </a>  
-            </p>
-               
-        </body>
+    <body>
+        <header>
+            <div class="tag">官方資料串接</div>
+            <div class="tag">高雄專區</div>
+            <h1>高雄空氣品質監測</h1>
+            <p>連結環境部政府開放資料，查詢即時 AQI 與監測站資訊。</p>
+            <a class="cta" href="https://data.epa.gov.tw/dataset/aqx_p_432" target="_blank" rel="noopener noreferrer">
+                前往環境部空氣品質監測資料
+            </a>
+        </header>
+
+        <main>
+            <section>
+                <h2>應用特色</h2>
+                <ul>
+                    <li>直接導向 <a class="source-link" href="https://data.epa.gov.tw/dataset/aqx_p_432" target="_blank" rel="noopener noreferrer">環境部「空氣品質監測站基本資料」</a>，取得官方站點清單。</li>
+                    <li>支援關鍵欄位：站點名稱、AQI、PM2.5、PM10、發布時間。</li>
+                    <li>使用者可下載 JSON 或 CSV，並整合至自有儀表板或通知服務。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>搜尋網路相關資料</h2>
+                <p>輸入關鍵字，快速搜尋與「高雄 空氣品質」相關的官方與網路資訊。</p>
+                <form id="web-search-form">
+                    <label for="keyword">想搜尋的內容</label>
+                    <div class="search-row">
+                        <input class="search-input" type="text" id="keyword" name="keyword" placeholder="例如：PM2.5、楠梓、AQI API" required>
+                        <button class="search-button" type="submit">搜尋網路</button>
+                    </div>
+                    <p class="search-hint">搜尋將在新分頁開啟，帶入「高雄 空氣品質 + 關鍵字」查詢。</p>
+                </form>
+            </section>
+
+            <section>
+                <h2>高雄常見關注</h2>
+                <ul>
+                    <li><span class="highlight">細懸浮微粒（PM2.5）</span>：冬季與東北季風時需特別留意。</li>
+                    <li>靠港工業區鄰近站點：鼓山、楠梓、大寮等 AQI 變化較敏感。</li>
+                    <li>建議依官方發布時間更新資料，避免舊值造成誤判。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>建置方向：純軟體與軟硬體整合</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="badge">方向一</div>
+                        <h3>純軟體數據整合</h3>
+                        <ul>
+                            <li>資料源：環境部開放資料「空氣品質指標（AQI）」 API，含站點、AQI、PM2.5、PM10、O3、風向/風速。</li>
+                            <li>後端：Python（FastAPI / Flask），可設排程每小時抓取高雄測站資料。</li>
+                            <li>資料庫：PostgreSQL 或 SQLite，用於儲存歷史資料，支援 24 小時/一週趨勢圖。</li>
+                            <li>前端：React / Vue + Leaflet 地圖 + Chart.js / ECharts 視覺化。</li>
+                            <li>加值功能：分區警示（例：楠梓 PM2.5 > 35 推播）、風向疊圖、儀表板嵌入。</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="badge">方向二</div>
+                        <h3>軟硬體整合（IoT）</h3>
+                        <ul>
+                            <li>主控：ESP32 / Raspberry Pi 搭配 PMS5003、PMS7003 粉塵感測器。</li>
+                            <li>通訊：MQTT 將感測數據回傳伺服器，補足社區或校園監測。</li>
+                            <li>資料庫：InfluxDB（時間序列最佳化）搭配 Grafana 儀表板快速出圖。</li>
+                            <li>用途：自建站點、對比官方測站、量測校園或住家陽台空氣。</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>實作路線圖（MVP 建議）</h2>
+                <ol>
+                    <li>申請環境部 API 金鑰：<a class="source-link" href="https://data.moenv.gov.tw/" target="_blank" rel="noopener noreferrer">data.moenv.gov.tw</a></li>
+                    <li>撰寫 Python 範例：抓取高雄市各測站的即時 PM2.5 / AQI。</li>
+                    <li>地圖呈現：Leaflet 標記測站座標，依污染程度套用綠/黃/橘/紅。</li>
+                    <li>自動化：以 cron / 排程每小時更新資料並快取，避免過期數值。</li>
+                </ol>
+                <p class="search-hint">進階：加入推播訂閱（Web Push / Line Notify），或在圖表中加入風向箭頭、工業區位置對照。</p>
+            </section>
+
+            <section>
+                <h2>熱門監測站快速連結</h2>
+                <ul>
+                    <li><a class="source-link" href="https://airtw.epa.gov.tw/CHT/EnvMonitoring/MonitorData.aspx?TabId=474" target="_blank" rel="noopener noreferrer">高雄全市即時數值</a></li>
+                    <li><a class="source-link" href="https://data.epa.gov.tw/dataset/aqx_p_432/resource/3ac0c1dd-2182-4737-ab5a-66093b006221" target="_blank" rel="noopener noreferrer">各站 CSV 下載</a></li>
+                    <li><a class="source-link" href="https://data.epa.gov.tw/dataset/aqx_p_434" target="_blank" rel="noopener noreferrer">空氣品質 AQI 小時值（API）</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>如何使用資料</h2>
+                <ul>
+                    <li>透過 API 串接：定期呼叫官方 API 更新站點與 AQI。</li>
+                    <li>以 CSV 批次匯入：下載最新檔案後導入 BI 工具或試算表。</li>
+                    <li>視覺化展示：可在圖表中並列 AQI、PM2.5 趨勢並加入警戒線。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>數據來源可信度</h2>
+                <ul>
+                    <li>資料由環境部環境管理署發布，遵循官方維運頻率。</li>
+                    <li>開放授權，適合研究、報導及社群專案再利用。</li>
+                    <li>若遇資料暫停更新，請以官方公告時間為準。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>高雄在地化加分題</h2>
+                <ul>
+                    <li>工業區連動：標記林園、大社、楠梓等工業區與下風處居住區，觀察風向與污染關聯。</li>
+                    <li>交通尖峰：特別監看 08:00、18:00 機車尖峰時段的 PM2.5/AQI 變化。</li>
+                    <li>社區參與：鼓勵自建感測站與官方站點對照，建立在地社群版的「共同監測」地圖。</li>
+                </ul>
+            </section>
+        </main>
+
+        <script>
+            const form = document.getElementById("web-search-form");
+            const keywordInput = document.getElementById("keyword");
+
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                const keyword = keywordInput.value.trim();
+                if (!keyword) return;
+                const query = encodeURIComponent(`高雄 空氣品質 ${keyword}`);
+
+                const googleUrl = `https://www.google.com/search?q=${query}`;
+                const openDataUrl = `https://data.gov.tw/datasets/search?qs=${query}`;
+                const airQualityPortal = `https://airtw.epa.gov.tw/CHT/EnvMonitoring/MonitorData.aspx?TabId=474`;
+
+                window.open(googleUrl, "_blank", "noopener,noreferrer");
+                window.open(openDataUrl, "_blank", "noopener,noreferrer");
+                window.open(airQualityPortal, "_blank", "noopener,noreferrer");
+            });
+        </script>
+    </body>
 </html>
