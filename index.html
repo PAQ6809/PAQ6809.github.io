@@ -178,8 +178,8 @@
             <div class="tag">高雄專區</div>
             <h1>高雄空氣品質監測</h1>
             <p>連結環境部政府開放資料，查詢即時 AQI 與監測站資訊。</p>
-            <a class="cta" href="https://data.epa.gov.tw/dataset/aqx_p_432" target="_blank" rel="noopener noreferrer">
-                前往環境部空氣品質監測資料
+            <a class="cta" href="https://data.moenv.gov.tw/dataset/detail/aqx_p_432" target="_blank" rel="noopener noreferrer">
+                前往環境部空氣品質指標（AQI）資料
             </a>
         </header>
 
@@ -187,8 +187,9 @@
             <section>
                 <h2>應用特色</h2>
                 <ul>
-                    <li>直接導向 <a class="source-link" href="https://data.epa.gov.tw/dataset/aqx_p_432" target="_blank" rel="noopener noreferrer">環境部「空氣品質監測站基本資料」</a>，取得官方站點清單。</li>
-                    <li>支援關鍵欄位：站點名稱、AQI、PM2.5、PM10、發布時間。</li>
+                    <li>直接串接 <a class="source-link" href="https://data.moenv.gov.tw/dataset/detail/aqx_p_432" target="_blank" rel="noopener noreferrer">環境部「空氣品質指標（AQI）」小時資料</a>，取得各測站即時 AQI / PM2.5 等欄位。</li>
+                    <li>站點座標/地址請用 <a class="source-link" href="https://data.moenv.gov.tw/dataset/detail/aqx_p_07" target="_blank" rel="noopener noreferrer">「空氣品質監測站基本資料（AQX_P_07）」</a>。</li>
+                    <li>支援關鍵欄位：站點名稱、AQI、PM2.5、PM10、發布時間（依資料集提供欄位為準）。</li>
                     <li>使用者可下載 JSON 或 CSV，並整合至自有儀表板或通知服務。</li>
                 </ul>
             </section>
@@ -256,9 +257,9 @@
             <section>
                 <h2>熱門監測站快速連結</h2>
                 <ul>
-                    <li><a class="source-link" href="https://airtw.epa.gov.tw/CHT/EnvMonitoring/MonitorData.aspx?TabId=474" target="_blank" rel="noopener noreferrer">高雄全市即時數值</a></li>
-                    <li><a class="source-link" href="https://data.epa.gov.tw/dataset/aqx_p_432/resource/3ac0c1dd-2182-4737-ab5a-66093b006221" target="_blank" rel="noopener noreferrer">各站 CSV 下載</a></li>
-                    <li><a class="source-link" href="https://data.epa.gov.tw/dataset/aqx_p_434" target="_blank" rel="noopener noreferrer">空氣品質 AQI 小時值（API）</a></li>
+                    <li><a class="source-link" href="https://airtw.moenv.gov.tw/cht/default.aspx" target="_blank" rel="noopener noreferrer">空氣品質監測網（環境部）</a></li>
+                    <li><a class="source-link" href="https://data.moenv.gov.tw/dataset/detail/aqx_p_432" target="_blank" rel="noopener noreferrer">各站 AQI / PM2.5 每小時資料（AQX_P_432）</a></li>
+                    <li><a class="source-link" href="https://data.moenv.gov.tw/dataset/detail/aqx_p_434" target="_blank" rel="noopener noreferrer">日空氣品質指標（AQI）（AQX_P_434）</a></li>
                 </ul>
             </section>
 
@@ -302,7 +303,7 @@
 
                 const googleUrl = `https://www.google.com/search?q=${query}`;
                 const openDataUrl = `https://data.gov.tw/datasets/search?qs=${query}`;
-                const airQualityPortal = `https://airtw.epa.gov.tw/CHT/EnvMonitoring/MonitorData.aspx?TabId=474`;
+                const airQualityPortal = `https://airtw.moenv.gov.tw/cht/default.aspx`;
 
                 window.open(googleUrl, "_blank", "noopener,noreferrer");
                 window.open(openDataUrl, "_blank", "noopener,noreferrer");
