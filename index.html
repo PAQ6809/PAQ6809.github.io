@@ -1,49 +1,582 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
     <head>
         <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>高雄</title>
+        <title>高雄空氣品質監測</title>
         <style>
-            .kok
-            {
-                border-width: 5px;
-                border-color: darkseagreen;
-                border-style: groove;
-                border-radius: 10%;
-                color:cadetblue
-                
+            :root {
+                --bg: #f4f7fb;
+                --surface: #ffffff;
+                --line: #d9e3ef;
+                --text: #1f2937;
+                --muted: #5f6f86;
+                --blue: #1261a6;
+                --green: #16885a;
+                --yellow: #9a6b00;
+                --orange: #c95711;
+                --red: #c73535;
+                --purple: #7c3aed;
             }
-            .non
-            {
-                border-width: 5px;
-                border-color:chartreuse;
-                border-style: groove;
-                border-radius: 10%;
-                color:cornflowerblue  
+
+            * { box-sizing: border-box; }
+
+            body {
+                margin: 0;
+                font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+                color: var(--text);
+                background: var(--bg);
+                line-height: 1.6;
+            }
+
+            header {
+                border-bottom: 1px solid var(--line);
+                background: var(--surface);
+            }
+
+            .topbar {
+                max-width: 1160px;
+                margin: 0 auto;
+                padding: 18px 20px;
+                display: flex;
+                justify-content: space-between;
+                gap: 18px;
+                align-items: center;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+                color: var(--blue);
+                letter-spacing: 0;
+            }
+
+            .subtitle {
+                margin: 4px 0 0;
+                color: var(--muted);
+            }
+
+            main {
+                max-width: 1160px;
+                margin: 0 auto;
+                padding: 22px 20px 44px;
+            }
+
+            .toolbar {
+                display: grid;
+                grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto auto auto;
+                gap: 10px;
+                align-items: end;
+                padding: 16px;
+                border: 1px solid var(--line);
+                background: var(--surface);
+                border-radius: 8px;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 700;
+                color: #344255;
+            }
+
+            input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #b8c7d9;
+                border-radius: 6px;
+                font: inherit;
+                background: #fff;
+            }
+
+            button, .button-link {
+                min-height: 44px;
+                padding: 10px 14px;
+                border: 1px solid var(--blue);
+                border-radius: 6px;
+                background: var(--blue);
+                color: #fff;
+                font: inherit;
+                font-weight: 800;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                white-space: nowrap;
+            }
+
+            button.secondary, .button-link.secondary {
+                background: #fff;
+                color: var(--blue);
+            }
+
+            button.warning {
+                border-color: #9a6b00;
+                background: #fff8df;
+                color: #7a5200;
+            }
+
+            .notice {
+                margin: 12px 0 0;
+                padding: 10px 12px;
+                border-left: 4px solid var(--blue);
+                background: #eaf4ff;
+                color: #274466;
+                border-radius: 4px;
+            }
+
+            .summary {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 12px;
+                margin: 18px 0;
+            }
+
+            .metric {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 14px;
+            }
+
+            .metric span {
+                display: block;
+                color: var(--muted);
+                font-size: 0.92rem;
+            }
+
+            .metric strong {
+                display: block;
+                margin-top: 4px;
+                font-size: 1.7rem;
+                color: var(--text);
+            }
+
+            .dashboard {
+                display: grid;
+                grid-template-columns: 1.15fr 0.85fr;
+                gap: 18px;
+                align-items: start;
+            }
+
+            .station-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+                gap: 12px;
+            }
+
+            .station-card {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 14px;
+            }
+
+            .station-head {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                align-items: start;
+            }
+
+            .station-name {
+                margin: 0;
+                font-size: 1.1rem;
+            }
+
+            .aqi {
+                font-size: 2rem;
+                font-weight: 900;
+                line-height: 1;
+            }
+
+            .badge {
+                display: inline-block;
+                margin-top: 8px;
+                padding: 3px 8px;
+                border-radius: 999px;
+                font-size: 0.82rem;
+                font-weight: 800;
+            }
+
+            .good { color: var(--green); }
+            .moderate { color: var(--yellow); }
+            .unhealthy-sensitive { color: var(--orange); }
+            .unhealthy { color: var(--red); }
+            .very-unhealthy { color: var(--purple); }
+
+            .badge.good { background: #e5f7ee; }
+            .badge.moderate { background: #fff6d8; }
+            .badge.unhealthy-sensitive { background: #fff0df; }
+            .badge.unhealthy { background: #ffe7e7; }
+            .badge.very-unhealthy { background: #efe6ff; }
+
+            .details {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-top: 12px;
+                color: var(--muted);
+                font-size: 0.94rem;
+            }
+
+            .tool-panel {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 16px;
+            }
+
+            .tool-panel h2, .data-table h2 {
+                margin: 0 0 10px;
+                color: var(--blue);
+                font-size: 1.2rem;
+            }
+
+            .quick-links {
+                display: grid;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            .data-table {
+                margin-top: 18px;
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 16px;
+                overflow-x: auto;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 760px;
+            }
+
+            th, td {
+                text-align: left;
+                padding: 10px 8px;
+                border-bottom: 1px solid #edf1f6;
+            }
+
+            th {
+                color: #344255;
+                font-size: 0.9rem;
+            }
+
+            .empty {
+                padding: 24px;
+                text-align: center;
+                color: var(--muted);
+            }
+
+            footer {
+                max-width: 1160px;
+                margin: 0 auto;
+                padding: 0 20px 28px;
+                color: var(--muted);
+                font-size: 0.92rem;
+            }
+
+            @media (max-width: 900px) {
+                .topbar, .dashboard {
+                    display: block;
+                }
+
+                .toolbar, .summary {
+                    grid-template-columns: 1fr;
+                }
+
+                .button-link {
+                    margin-top: 10px;
+                }
+
+                .tool-panel {
+                    margin-top: 18px;
+                }
             }
         </style>
     </head>
-        <body>
-            <h1><span style="background-color: blanchedalmond;font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">高雄</span></h1>
-            <i><h2><span class="non">特色</span></h2></i>
-            <ol type="circle">
-                <li><u><span class="kok">美食</span><br></u></li>
-                <li ><del><span class="kok">愛情摩天輪</span></del></li>          
-            </ol>
-            <img src="https://images.chinatimes.com/newsphoto/2020-04-30/656/20200430001122.jpg" width="500">
-            <hr>
-            <i><h2><span class="non">空氣</span></h2></i>
-            <ul type="circle">
-            <u><div style="color:crimson;font-size: 25px;">髒到爆</div></u>
-            </ul>
-            <hr>
-            <p>
-               <a href="https://www.welcometw.com/%E9%AB%98%E9%9B%84%E6%99%AF%E9%BB%9E%E6%8E%A8%E8%96%A6-%EF%BD%9C%E9%AB%98%E9%9B%84%E6%9C%80%E7%BE%8E%E6%9C%80%E5%A4%AFig%E6%89%93%E5%8D%A1%E6%99%AF%E9%BB%9E%EF%BC%8C%E5%B8%82%E5%8D%80%E3%80%81/">
-                    聽說是高雄
-               </a>  
-            </p>
-               
-        </body>
+    <body>
+        <header>
+            <div class="topbar">
+                <div>
+                    <h1>高雄空氣品質監測</h1>
+                    <p class="subtitle">以環境部 AQX_P_432 資料集為主，提供高雄測站查詢、摘要與表格檢視。</p>
+                </div>
+                <a class="button-link secondary" href="https://data.moenv.gov.tw/dataset/detail/AQX_P_432" target="_blank" rel="noopener noreferrer">官方資料集</a>
+            </div>
+        </header>
+
+        <main>
+            <form class="toolbar" id="aqi-form">
+                <div>
+                    <label for="api-key">環境部 API Key</label>
+                    <input id="api-key" name="api-key" type="password" autocomplete="off" placeholder="貼上 API Key，可留空使用示範資料">
+                </div>
+                <div>
+                    <label for="station-filter">篩選測站</label>
+                    <input id="station-filter" name="station-filter" type="search" placeholder="例如：楠梓、大寮、小港">
+                </div>
+                <button type="submit">取得即時資料</button>
+                <button class="secondary" type="button" id="load-sample">示範資料</button>
+                <button class="warning" type="button" id="clear-key">清除金鑰</button>
+            </form>
+            <p class="notice" id="notice">尚未載入資料。若沒有 API Key，可先按「示範資料」體驗完整介面。</p>
+
+            <section class="summary" aria-label="AQI 摘要">
+                <div class="metric">
+                    <span>高雄測站數</span>
+                    <strong id="station-count">0</strong>
+                </div>
+                <div class="metric">
+                    <span>平均 AQI</span>
+                    <strong id="avg-aqi">--</strong>
+                </div>
+                <div class="metric">
+                    <span>最高風險站</span>
+                    <strong id="worst-site">--</strong>
+                </div>
+                <div class="metric">
+                    <span>資料時間</span>
+                    <strong id="publish-time" style="font-size:1.15rem;">--</strong>
+                </div>
+            </section>
+
+            <div class="dashboard">
+                <section>
+                    <div class="station-grid" id="station-grid"></div>
+                    <div class="empty" id="empty-state">載入資料後會顯示測站卡片。</div>
+                </section>
+
+                <aside class="tool-panel">
+                    <h2>資料與功能</h2>
+                    <p>API URL 依官方文件使用：<code>https://data.moenv.gov.tw/api/v2/aqx_p_432</code>。API Key 只存在你的瀏覽器 localStorage。</p>
+                    <div class="quick-links">
+                        <button type="button" class="secondary" id="search-web">搜尋目前關鍵字</button>
+                        <a class="button-link secondary" href="https://airtw.moenv.gov.tw/cht/default.aspx" target="_blank" rel="noopener noreferrer">空氣品質監測網</a>
+                        <a class="button-link secondary" href="https://data.moenv.gov.tw/paradigm" target="_blank" rel="noopener noreferrer">API 使用說明</a>
+                    </div>
+                    <h2 style="margin-top:20px;">MVP 後續</h2>
+                    <ul>
+                        <li>接後端排程快取資料，避免前端暴露團隊 API Key。</li>
+                        <li>加入 Web Push 或 LINE Messaging API 推播，不再使用已終止的 LINE Notify。</li>
+                        <li>用 Leaflet 加上測站座標與風向圖層。</li>
+                    </ul>
+                </aside>
+            </div>
+
+            <section class="data-table">
+                <h2>測站明細</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>測站</th>
+                            <th>AQI</th>
+                            <th>狀態</th>
+                            <th>PM2.5</th>
+                            <th>PM10</th>
+                            <th>風速</th>
+                            <th>風向</th>
+                            <th>座標</th>
+                        </tr>
+                    </thead>
+                    <tbody id="station-table"></tbody>
+                </table>
+            </section>
+        </main>
+
+        <footer>
+            資料來源：環境部環境資料開放平臺 AQX_P_432。示範資料僅供介面測試，正式判讀請以即時 API 或官方監測網為準。
+        </footer>
+
+        <script>
+            const API_ENDPOINT = "https://data.moenv.gov.tw/api/v2/aqx_p_432";
+            const API_KEY_STORAGE = "kaohsiung-aqi-api-key";
+
+            const sampleRecords = [
+                { sitename: "楠梓", county: "高雄市", aqi: 63, status: "普通", pollutant: "PM2.5", "pm2.5": 21, pm10: 48, wind_speed: 2.4, wind_direc: 280, publishtime: "示範資料", longitude: 120.328, latitude: 22.733 },
+                { sitename: "左營", county: "高雄市", aqi: 54, status: "普通", pollutant: "O3", "pm2.5": 17, pm10: 42, wind_speed: 2.1, wind_direc: 260, publishtime: "示範資料", longitude: 120.292, latitude: 22.674 },
+                { sitename: "前金", county: "高雄市", aqi: 47, status: "良好", pollutant: "", "pm2.5": 12, pm10: 33, wind_speed: 1.7, wind_direc: 245, publishtime: "示範資料", longitude: 120.288, latitude: 22.632 },
+                { sitename: "小港", county: "高雄市", aqi: 88, status: "普通", pollutant: "PM2.5", "pm2.5": 28, pm10: 61, wind_speed: 2.9, wind_direc: 305, publishtime: "示範資料", longitude: 120.337, latitude: 22.565 },
+                { sitename: "大寮", county: "高雄市", aqi: 109, status: "對敏感族群不健康", pollutant: "PM2.5", "pm2.5": 38, pm10: 78, wind_speed: 1.8, wind_direc: 315, publishtime: "示範資料", longitude: 120.425, latitude: 22.565 },
+                { sitename: "林園", county: "高雄市", aqi: 72, status: "普通", pollutant: "O3", "pm2.5": 19, pm10: 55, wind_speed: 3.1, wind_direc: 300, publishtime: "示範資料", longitude: 120.411, latitude: 22.479 }
+            ];
+
+            let allStations = [];
+
+            const apiKeyInput = document.getElementById("api-key");
+            const filterInput = document.getElementById("station-filter");
+            const notice = document.getElementById("notice");
+            const grid = document.getElementById("station-grid");
+            const table = document.getElementById("station-table");
+            const emptyState = document.getElementById("empty-state");
+
+            apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || "";
+
+            function value(record, keys) {
+                for (const key of keys) {
+                    if (record[key] !== undefined && record[key] !== null && record[key] !== "") return record[key];
+                }
+                return "";
+            }
+
+            function numberValue(record, keys) {
+                const raw = value(record, keys);
+                const parsed = Number(raw);
+                return Number.isFinite(parsed) ? parsed : null;
+            }
+
+            function normalize(record) {
+                return {
+                    site: value(record, ["sitename", "SiteName", "siteName"]),
+                    county: value(record, ["county", "County"]),
+                    aqi: numberValue(record, ["aqi", "AQI"]),
+                    status: value(record, ["status", "Status"]) || "未提供",
+                    pollutant: value(record, ["pollutant", "Pollutant"]),
+                    pm25: numberValue(record, ["pm2.5", "PM2.5", "pm25", "PM25"]),
+                    pm10: numberValue(record, ["pm10", "PM10"]),
+                    windSpeed: numberValue(record, ["wind_speed", "WIND_SPEED"]),
+                    windDirection: numberValue(record, ["wind_direc", "WIND_DIREC"]),
+                    publishTime: value(record, ["publishtime", "PublishTime", "publishTime"]),
+                    longitude: numberValue(record, ["longitude", "Longitude"]),
+                    latitude: numberValue(record, ["latitude", "Latitude"])
+                };
+            }
+
+            function category(aqi) {
+                if (aqi === null) return { label: "無資料", className: "moderate" };
+                if (aqi <= 50) return { label: "良好", className: "good" };
+                if (aqi <= 100) return { label: "普通", className: "moderate" };
+                if (aqi <= 150) return { label: "敏感族群注意", className: "unhealthy-sensitive" };
+                if (aqi <= 200) return { label: "不健康", className: "unhealthy" };
+                return { label: "非常不健康", className: "very-unhealthy" };
+            }
+
+            function safe(text) {
+                const span = document.createElement("span");
+                span.textContent = String(text ?? "");
+                return span.innerHTML;
+            }
+
+            function filteredStations() {
+                const keyword = filterInput.value.trim();
+                if (!keyword) return allStations;
+                return allStations.filter((station) => station.site.includes(keyword));
+            }
+
+            function render() {
+                const stations = filteredStations();
+                grid.innerHTML = "";
+                table.innerHTML = "";
+                emptyState.style.display = stations.length ? "none" : "block";
+
+                stations.forEach((station) => {
+                    const cat = category(station.aqi);
+                    const card = document.createElement("article");
+                    card.className = "station-card";
+                    card.innerHTML = `
+                        <div class="station-head">
+                            <div>
+                                <h3 class="station-name">${safe(station.site)}</h3>
+                                <span class="badge ${cat.className}">${safe(station.status || cat.label)}</span>
+                            </div>
+                            <div class="aqi ${cat.className}">${station.aqi ?? "--"}</div>
+                        </div>
+                        <div class="details">
+                            <span>PM2.5：${station.pm25 ?? "--"}</span>
+                            <span>PM10：${station.pm10 ?? "--"}</span>
+                            <span>指標物：${safe(station.pollutant || "無")}</span>
+                            <span>風速：${station.windSpeed ?? "--"} m/s</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${safe(station.site)}</td>
+                        <td class="${cat.className}"><strong>${station.aqi ?? "--"}</strong></td>
+                        <td>${safe(station.status || cat.label)}</td>
+                        <td>${station.pm25 ?? "--"}</td>
+                        <td>${station.pm10 ?? "--"}</td>
+                        <td>${station.windSpeed ?? "--"} m/s</td>
+                        <td>${station.windDirection ?? "--"}°</td>
+                        <td>${station.latitude && station.longitude ? `${station.latitude.toFixed(3)}, ${station.longitude.toFixed(3)}` : "--"}</td>
+                    `;
+                    table.appendChild(row);
+                });
+
+                const validAqi = allStations.map((station) => station.aqi).filter((aqi) => aqi !== null);
+                const average = validAqi.length ? Math.round(validAqi.reduce((sum, aqi) => sum + aqi, 0) / validAqi.length) : "--";
+                const worst = allStations.reduce((current, station) => {
+                    if (!current || (station.aqi ?? -1) > (current.aqi ?? -1)) return station;
+                    return current;
+                }, null);
+                const newest = allStations.find((station) => station.publishTime)?.publishTime || "--";
+
+                document.getElementById("station-count").textContent = allStations.length;
+                document.getElementById("avg-aqi").textContent = average;
+                document.getElementById("worst-site").textContent = worst ? worst.site : "--";
+                document.getElementById("publish-time").textContent = newest;
+            }
+
+            function setStations(records, message) {
+                allStations = records
+                    .map(normalize)
+                    .filter((station) => station.county.includes("高雄") && station.site)
+                    .sort((a, b) => (b.aqi ?? -1) - (a.aqi ?? -1));
+                notice.textContent = message;
+                render();
+            }
+
+            async function loadLiveData() {
+                const apiKey = apiKeyInput.value.trim();
+                if (!apiKey) {
+                    setStations(sampleRecords, "未輸入 API Key，目前載入示範資料。");
+                    return;
+                }
+                localStorage.setItem(API_KEY_STORAGE, apiKey);
+                notice.textContent = "正在向環境部 API 取得資料...";
+                const url = `${API_ENDPOINT}?format=json&offset=0&limit=1000&api_key=${encodeURIComponent(apiKey)}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API 回應 ${response.status}`);
+                const payload = await response.json();
+                const records = payload.records || payload.result?.records || [];
+                if (!records.length) throw new Error("API 沒有回傳 records");
+                setStations(records, `已載入 ${records.length} 筆官方資料，並篩選出高雄市測站。`);
+            }
+
+            document.getElementById("aqi-form").addEventListener("submit", async (event) => {
+                event.preventDefault();
+                try {
+                    await loadLiveData();
+                } catch (error) {
+                    console.error(error);
+                    setStations(sampleRecords, `即時資料載入失敗：${error.message}。已改用示範資料。`);
+                }
+            });
+
+            document.getElementById("load-sample").addEventListener("click", () => {
+                setStations(sampleRecords, "已載入示範資料，可用測站篩選與表格檢視功能。");
+            });
+
+            document.getElementById("clear-key").addEventListener("click", () => {
+                localStorage.removeItem(API_KEY_STORAGE);
+                apiKeyInput.value = "";
+                notice.textContent = "已清除本機儲存的 API Key。";
+            });
+
+            filterInput.addEventListener("input", render);
+
+            document.getElementById("search-web").addEventListener("click", () => {
+                const keyword = filterInput.value.trim() || "高雄 AQI PM2.5";
+                const query = encodeURIComponent(`高雄 空氣品質 ${keyword}`);
+                window.open(`https://www.google.com/search?q=${query}`, "_blank", "noopener,noreferrer");
+            });
+
+            setStations(sampleRecords, "已載入示範資料。輸入 API Key 後可改抓環境部即時資料。");
+        </script>
+    </body>
 </html>
