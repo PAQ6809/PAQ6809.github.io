@@ -1,38 +1,39 @@
 const fileInput = document.querySelector("#media-file");
-const linkCard = document.querySelector(".link-card");
+const uploadCard = document.querySelector(".upload-card");
+const fallbackDetails = document.querySelector("#fallback-tools");
 
-if (fileInput && linkCard && navigator.mediaDevices) {
+if (fileInput && uploadCard && navigator.mediaDevices) {
   const panel = document.createElement("section");
   panel.className = "capture-panel";
   panel.innerHTML = `
     <div class="capture-heading">
       <div>
         <strong>沒有影片檔？</strong>
-        <span>可用瀏覽器錄製分頁音訊，再交給本機 AI 辨識。</span>
+        <span>桌機可錄製分頁音訊，手機可使用麥克風錄音。</span>
       </div>
       <span class="capture-free">免費備援</span>
     </div>
     <div class="capture-actions">
-      <button id="capture-tab-audio" class="button ghost" type="button">擷取桌機分頁</button>
+      <button id="capture-tab-audio" class="button ghost" type="button">錄製桌機分頁</button>
       <button id="capture-microphone" class="button ghost" type="button">麥克風錄音</button>
       <button id="stop-capture" class="button secondary" type="button" hidden>停止錄製</button>
     </div>
-    <p id="capture-status" class="capture-status">桌機 Chrome／Edge：先開啟 Reel，再選擇該分頁並勾選「分享分頁音訊」。</p>
+    <p id="capture-status" class="capture-status">桌機 Chrome／Edge：選擇播放影片的分頁，並勾選「分享分頁音訊」。</p>
   `;
-  linkCard.appendChild(panel);
+  uploadCard.appendChild(panel);
 
   const style = document.createElement("style");
   style.textContent = `
-    .capture-panel{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+    .capture-panel{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
     .capture-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
     .capture-heading strong,.capture-heading span{display:block}
     .capture-heading>div>span{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.5}
-    .capture-free{padding:5px 8px;border-radius:999px;color:#067647;background:#ecfdf3;font-size:10px;font-weight:800;white-space:nowrap}
+    .capture-free{padding:5px 8px;border-radius:999px;color:var(--success);background:var(--success-soft);font-size:10px;font-weight:800;white-space:nowrap}
     .capture-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-    .capture-actions .button{flex:1;min-width:120px}
+    .capture-actions .button{flex:1;min-width:132px}
     .capture-status{margin:10px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
-    .capture-status.recording{color:#b42318;font-weight:700}
-    @media (prefers-color-scheme:dark){.capture-free{background:rgba(6,118,71,.18)}}
+    .capture-status.recording{color:var(--danger);font-weight:750}
+    @media(max-width:520px){.capture-actions{display:grid;grid-template-columns:1fr}.capture-actions .button{width:100%;min-width:0}}
   `;
   document.head.appendChild(style);
 
@@ -75,7 +76,7 @@ if (fileInput && linkCard && navigator.mediaDevices) {
     const seconds = Math.floor((Date.now() - startedAt) / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainder = seconds % 60;
-    status.textContent = `錄製中 ${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")} · 播放完 Reel 後按「停止錄製」`;
+    status.textContent = `錄製中 ${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")} · 播放完影片後按「停止錄製」`;
   }
 
   function stopTracks() {
@@ -90,15 +91,16 @@ if (fileInput && linkCard && navigator.mediaDevices) {
     }
     const file = new File(
       [blob],
-      `instagram-${recordingKind}-${new Date().toISOString().replace(/[:.]/g, "-")}.${extensionFor(mimeType)}`,
+      `reelscribe-${recordingKind}-${new Date().toISOString().replace(/[:.]/g, "-")}.${extensionFor(mimeType)}`,
       { type: mimeType || blob.type || "video/webm" },
     );
     const transfer = new DataTransfer();
     transfer.items.add(file);
     fileInput.files = transfer.files;
     fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-    status.textContent = "錄製完成，檔案已自動放入步驟 2。";
-    document.querySelector(".upload-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (fallbackDetails) fallbackDetails.open = true;
+    status.textContent = "錄製完成，內容已放入本機辨識工具。";
+    uploadCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function startRecording(kind) {
@@ -107,6 +109,7 @@ if (fileInput && linkCard && navigator.mediaDevices) {
       return;
     }
     try {
+      if (fallbackDetails) fallbackDetails.open = true;
       recordingKind = kind;
       chunks = [];
       const mimeType = supportedMime(kind);
@@ -158,7 +161,7 @@ if (fileInput && linkCard && navigator.mediaDevices) {
       stopTracks();
       clearInterval(timer);
       recorder = null;
-      setRecordingUi(false, error?.message || "無法開始錄製。請確認瀏覽器權限。 ");
+      setRecordingUi(false, error?.message || "無法開始錄製。請確認瀏覽器權限。");
     }
   }
 
