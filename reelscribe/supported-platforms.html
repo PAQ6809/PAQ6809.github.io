@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#ffffff" />
   <meta name="referrer" content="no-referrer" />
   <meta name="robots" content="index,follow,max-snippet:-1" />
-  <meta name="description" content="ReelScribe 支援平台與影音格式說明：YouTube、Instagram、TikTok、Facebook、X、Vimeo、Bilibili、PeerTube 與常見影片、音訊、字幕格式。" />
+  <meta name="description" content="ReelScribe 支援平台與影音格式：公開 Instagram Reel／影片貼文直接解析、YouTube、TikTok、Facebook、X、Vimeo、Bilibili、PeerTube 與常見影音格式。" />
   <link rel="canonical" href="https://paq6809.github.io/reelscribe/supported-platforms.html" />
   <title>ReelScribe 支援平台與影音格式</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
@@ -19,7 +19,7 @@
   <main class="support-page">
     <a class="back-link" href="./">← 回到 ReelScribe</a>
     <h1>支援平台與影音格式</h1>
-    <p>ReelScribe 接受所有公開 HTTPS 影片頁面。能否只靠連結直接取得字幕，取決於平台是否公開字幕或文字軌；沒有公開字幕時，可改用瀏覽器本機 Whisper。</p>
+    <p>ReelScribe 接受所有公開 HTTPS 影片頁面。公開 Instagram Reel、影片貼文與 IGTV 會先走專用雙層解析；其他平台能否只靠連結取得字幕，仍取決於公開文字軌或匿名媒體存取。</p>
 
     <section class="support-card">
       <h2>公開連結範圍</h2>
@@ -30,39 +30,39 @@
 
     <section class="support-grid">
       <article>
-        <h3>可直接取得字幕</h3>
-        <p>平台已公開 VTT、SRT、TTML、XML、JSON 或相容文字軌時，網站會優先讀取，不下載原始影片。</p>
+        <h3>Instagram 公開影片</h3>
+        <p>公開 Reel、影片貼文與 IGTV 會先嘗試輕量公開解析，再使用固定版本 yt-dlp 相容解析。成功後只產生短效簽章串流，影片不在後端落地保存，並交由目前裝置的 Whisper 產生字幕。</p>
       </article>
       <article>
-        <h3>僅能取得中繼資料</h3>
-        <p>Instagram、TikTok、Facebook 等平台若沒有公開字幕介面，網站只能辨識來源與標題，無法把貼文說明冒充成影片語音字幕。</p>
+        <h3>平台公開字幕</h3>
+        <p>平台已公開 VTT、SRT、TTML、XML、JSON 或相容文字軌時，網站優先讀取文字，不必處理原始影音。</p>
       </article>
       <article>
-        <h3>本機 AI 備援</h3>
-        <p>使用者可選擇合法取得的影音檔、桌機分頁音訊或麥克風，交由裝置上的 Whisper 處理。</p>
+        <h3>其他社群平台</h3>
+        <p>TikTok、Facebook、Threads、X 等平台若沒有公開字幕或匿名媒體介面，可能只能取得中繼資料，不能把貼文說明冒充成影片語音字幕。</p>
       </article>
       <article>
         <h3>私人與受限內容</h3>
-        <p>不支援私人帳號、付費牆、登入限定、DRM 或需要 Cookie、帳號 Token、權限繞過的內容。</p>
+        <p>不支援私人帳號、登入限定、付費牆、DRM、地區／年齡限制或需要 Cookie、帳號 Token、權限繞過的內容。</p>
       </article>
     </section>
 
     <section class="support-card">
       <h2>常見影片與音訊格式</h2>
-      <p>網站會接受下列常見副檔名；最終能否解碼仍取決於裝置、作業系統與瀏覽器內建編解碼器。</p>
+      <p>網站接受下列常見副檔名；最終能否解碼仍取決於裝置、作業系統與瀏覽器內建編解碼器。</p>
       <div class="tag-list">
         <span>MP4</span><span>M4V</span><span>MOV</span><span>WebM</span><span>MKV</span><span>AVI</span><span>WMV</span><span>FLV</span><span>MPEG／MPG</span><span>TS／MTS／M2TS</span><span>3GP／3G2</span><span>OGV</span><span>MP3</span><span>M4A</span><span>AAC</span><span>WAV</span><span>FLAC</span><span>Opus</span><span>OGG／OGA</span><span>WebA</span><span>MKA</span><span>AMR</span><span>AIFF／AIF</span><span>CAF</span><span>WMA</span>
       </div>
-      <p>跨裝置穩定性最高的選擇通常是 MP4（H.264／AAC）、M4A、MP3、WAV 或 WebM。特殊格式無法讀取時，建議先轉成以上格式。</p>
+      <p>跨裝置穩定性最高的選擇通常是 MP4（H.264／AAC）、M4A、MP3、WAV 或 WebM。</p>
     </section>
 
     <section class="support-card">
       <h2>長影片處理方式</h2>
       <ul>
-        <li>智慧模式會依影片長度、裝置記憶體與 WebGPU 狀況選擇模型。</li>
-        <li>長影片會分段辨識，避免一次等待到最後才看到進度。</li>
-        <li>大段靜音會自動跳過，減少不必要運算。</li>
-        <li>重疊區段會去除重複文字並重新對齊時間軸。</li>
+        <li>智慧模式依影片長度、裝置記憶體與 WebGPU 狀況選擇模型。</li>
+        <li>長影片分段辨識，避免單次推論耗盡記憶體。</li>
+        <li>大段靜音自動跳過，重疊區段去除重複文字並保留時間軸。</li>
+        <li>瀏覽器關閉、系統回收頁面或記憶體不足仍可能中斷，建議長片保持頁面前景與電源充足。</li>
       </ul>
     </section>
   </main>
