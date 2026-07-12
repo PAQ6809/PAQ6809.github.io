@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="ReelScribe：在瀏覽器本機將影片或音訊轉成可複製、可下載的繁體中文字幕。免登入、免 API Key，影片不會上傳伺服器。" />
+  <meta name="color-scheme" content="light dark" />
+  <title>ReelScribe｜免費本機影片轉字幕</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="ReelScribe 首頁">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span>
+        <strong>ReelScribe</strong>
+        <small>本機 AI 字幕工具</small>
+      </span>
+    </a>
+    <span class="privacy-pill">影片不上傳</span>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div class="eyebrow">免費 · 無帳號 · 無 API Key</div>
+      <h1>把短影片變成<br /><span>可以複製的完整字幕。</span></h1>
+      <p class="hero-copy">直接在你的裝置上執行 Whisper。第一次使用會下載模型，之後由瀏覽器快取；字幕完成後可編輯、複製並匯出 TXT、SRT、VTT。</p>
+      <div class="feature-row" aria-label="主要特色">
+        <span>本機辨識</span><span>繁中支援</span><span>時間軸字幕</span><span>PWA 可安裝</span>
+      </div>
+    </section>
+
+    <section class="workspace shell" aria-label="影片轉字幕工作區">
+      <article class="card link-card">
+        <div class="card-heading">
+          <div>
+            <p class="step">步驟 1</p>
+            <h2>貼上 Instagram 連結</h2>
+          </div>
+          <span class="optional">選填</span>
+        </div>
+        <p class="muted">用來驗證與保存來源。Instagram 沒有提供任意公開影片的通用下載介面，因此無法合法穩定地只靠貼文網址取得影片檔。</p>
+        <div class="input-row">
+          <label class="sr-only" for="ig-url">Instagram 連結</label>
+          <input id="ig-url" inputmode="url" autocomplete="url" placeholder="https://www.instagram.com/reel/..." />
+          <button id="paste-url" class="button ghost" type="button">貼上</button>
+          <button id="check-url" class="button secondary" type="button">驗證</button>
+        </div>
+        <div id="url-status" class="inline-status" role="status" aria-live="polite"></div>
+        <div id="verified-link-actions" class="link-actions" hidden>
+          <a id="open-instagram" class="text-link" target="_blank" rel="noopener noreferrer">在 Instagram 開啟</a>
+          <button id="focus-upload" class="text-link button-link" type="button">接著選擇影片檔</button>
+        </div>
+      </article>
+
+      <article class="card upload-card">
+        <div class="card-heading">
+          <div>
+            <p class="step">步驟 2</p>
+            <h2>選擇影片或音訊</h2>
+          </div>
+          <span class="required">必要</span>
+        </div>
+
+        <label id="drop-zone" class="drop-zone" for="media-file">
+          <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac" />
+          <span class="upload-symbol" aria-hidden="true">↑</span>
+          <strong>點一下選擇檔案</strong>
+          <span>或把檔案拖曳到這裡</span>
+          <small>建議 250 MB 以內；影片只會在你的裝置中處理</small>
+        </label>
+
+        <div id="file-panel" class="file-panel" hidden>
+          <div class="preview-wrap">
+            <video id="media-preview" controls playsinline preload="metadata"></video>
+          </div>
+          <div class="file-meta">
+            <strong id="file-name"></strong>
+            <span id="file-detail"></span>
+            <button id="remove-file" class="text-link button-link danger" type="button">移除檔案</button>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <label>
+            <span>辨識模式</span>
+            <select id="model-select">
+              <option value="onnx-community/whisper-tiny">快速模式（建議手機）</option>
+              <option value="onnx-community/whisper-base">品質模式（較慢）</option>
+            </select>
+          </label>
+          <label>
+            <span>影片語言</span>
+            <select id="language-select">
+              <option value="auto">自動偵測</option>
+              <option value="chinese">中文</option>
+              <option value="english">英文</option>
+              <option value="japanese">日文</option>
+              <option value="korean">韓文</option>
+            </select>
+          </label>
+          <label class="switch-line">
+            <input id="prefer-gpu" type="checkbox" checked />
+            <span>支援時優先使用 WebGPU 加速</span>
+          </label>
+        </div>
+
+        <button id="transcribe" class="button primary wide" type="button" disabled>開始產生字幕</button>
+
+        <div id="progress-panel" class="progress-panel" hidden>
+          <div class="progress-copy">
+            <strong id="progress-title">準備中</strong>
+            <span id="progress-detail">正在初始化...</span>
+          </div>
+          <div class="progress-track" aria-hidden="true"><div id="progress-bar"></div></div>
+          <p id="progress-note" class="muted small"></p>
+        </div>
+      </article>
+    </section>
+
+    <section id="results" class="results shell" hidden>
+      <div class="results-heading">
+        <div>
+          <p class="step">步驟 3</p>
+          <h2>完整字幕</h2>
+          <p id="result-stats" class="muted"></p>
+        </div>
+        <div class="action-row">
+          <button id="copy-text" class="button secondary" type="button">複製全文</button>
+          <button id="download-txt" class="button ghost" type="button">TXT</button>
+          <button id="download-srt" class="button ghost" type="button">SRT</button>
+          <button id="download-vtt" class="button ghost" type="button">VTT</button>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <article class="card transcript-card">
+          <div class="section-label-row">
+            <label for="full-transcript">可編輯全文</label>
+            <button id="rebuild-text" class="text-link button-link" type="button">依時間軸重建</button>
+          </div>
+          <textarea id="full-transcript" spellcheck="true" aria-label="完整字幕文字"></textarea>
+        </article>
+
+        <article class="card timeline-card">
+          <div class="section-label-row">
+            <span>時間軸</span>
+            <span id="segment-count" class="muted small"></span>
+          </div>
+          <div id="segments" class="segments"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="notes shell">
+      <article>
+        <h2>如何從 IG 使用？</h2>
+        <ol>
+          <li>貼上 Reel 連結，確認來源。</li>
+          <li>對自己的 Reel 使用 Instagram 的下載功能；其他影片請先取得作者授權。</li>
+          <li>將影片檔選進 ReelScribe，等待本機辨識完成。</li>
+        </ol>
+      </article>
+      <article>
+        <h2>為什麼不直接偷抓影片？</h2>
+        <p>非官方爬蟲容易失效、可能要求登入 Cookie，也會增加帳號與著作權風險。這個版本把影片留在使用者裝置上，速度、隱私和長期可維護性都比較好。</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer shell">
+    <span>ReelScribe · Local-first transcription</span>
+    <span>請只處理你擁有或已取得授權的內容</span>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
