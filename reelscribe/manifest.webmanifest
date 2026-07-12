@@ -1,7 +1,7 @@
 {
-  "name": "ReelScribe｜免費社群影片字幕",
+  "name": "ReelScribe｜免費社群與長影片字幕",
   "short_name": "ReelScribe",
-  "description": "貼上或分享公開社群影片連結，自動查找可複製字幕；無字幕時使用本機 Whisper 備援。",
+  "description": "貼上公開影片連結取得字幕；也支援常見影音格式、長影片智慧分段與本機 Whisper 備援。",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
