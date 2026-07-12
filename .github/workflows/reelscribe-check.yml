@@ -58,6 +58,7 @@ jobs:
           test -s reelscribe/index.html
           test -s reelscribe/styles.css
           test -s reelscribe/ui-polish.css
+          test -s reelscribe/OPTIMIZATION.md
           test -s reelscribe/app.js
           test -s reelscribe/capture.js
           test -s reelscribe/traditional.js
@@ -70,11 +71,14 @@ jobs:
           grep -q './universal-link.js' reelscribe/index.html
           grep -q './ui.js' reelscribe/index.html
           grep -q 'id="fallback-tools"' reelscribe/index.html
+          grep -q 'traditional-button' reelscribe/traditional.js
+          grep -q 'traditional-button' reelscribe/ui-polish.css
           grep -q 'share_target' reelscribe/manifest.webmanifest
           grep -q '@media (max-width: 680px)' reelscribe/styles.css
           grep -q '@media (max-width: 380px)' reelscribe/styles.css
           grep -q 'prefers-reduced-motion' reelscribe/styles.css
           grep -q 'min-height: 46px' reelscribe/styles.css
+          grep -q 'Every future UI' reelscribe/OPTIMIZATION.md
           grep -q 'ReelScribe' reelscribe/index.html
       - name: Free provider discovery health
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
