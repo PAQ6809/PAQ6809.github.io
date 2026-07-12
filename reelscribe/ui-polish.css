@@ -79,16 +79,9 @@
   font-size: clamp(21px, 4vw, 26px);
 }
 
-.compact-trust {
-  margin: 2px 2px 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.55;
-  text-align: center;
-}
-
-.footer .button-link {
-  min-height: 32px;
+.compact-trust,
+#footer-share {
+  display: none;
 }
 
 @media (max-width: 680px) {
@@ -114,10 +107,6 @@
   .header-share {
     min-height: 40px;
     padding-inline: 11px;
-  }
-
-  .compact-trust {
-    padding-inline: 6px;
   }
 }
 
