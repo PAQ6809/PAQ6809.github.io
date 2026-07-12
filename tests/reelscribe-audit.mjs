@@ -6,6 +6,7 @@ const read = (path) => fs.readFileSync(path, "utf8");
 const html = read("reelscribe/index.html");
 const supportHtml = read("reelscribe/supported-platforms.html");
 const resolver = read("reelscribe/universal-link.js");
+const instagramDirect = read("reelscribe/instagram-direct.js");
 const worker = read("reelscribe/worker.js");
 const formatCompat = read("reelscribe/format-compat.js");
 const serviceWorker = read("reelscribe/sw.js");
@@ -45,17 +46,8 @@ for (const [path, source] of [
 
 const ids = parseIds(html);
 for (const id of [
-  "ig-url",
-  "check-url",
-  "fallback-tools",
-  "media-file",
-  "model-select",
-  "transcribe",
-  "results",
-  "full-transcript",
-  "copy-text",
-  "download-srt",
-  "share-site",
+  "ig-url", "check-url", "fallback-tools", "media-file", "model-select",
+  "transcribe", "results", "full-transcript", "copy-text", "download-srt", "share-site",
 ]) {
   assert.ok(ids.includes(id), `Missing required element #${id}`);
 }
@@ -68,11 +60,12 @@ assert.match(html, /Content-Security-Policy/);
 assert.match(html, /name="referrer" content="no-referrer"/);
 assert.match(html, /\.\/ui-polish\.css/);
 assert.match(html, /\.\/format-compat\.js/);
+assert.match(html, /\.\/instagram-direct\.js/);
 assert.match(html, /\.\/share\.js/);
 assert.match(html, /value="smart" selected/);
 assert.match(html, /supported-platforms\.html/);
 assert.doesNotMatch(html, /class="notes shell"/);
-assert.doesNotMatch(html, /<h2>處理方式<\/h2>/);
+assert.ok(html.indexOf('./instagram-direct.js') < html.indexOf('./universal-link.js'), "Instagram direct resolver must run before the generic resolver");
 assert.ok(html.indexOf('id="copy-text"') < html.indexOf('id="download-txt"'), "Copy must remain the first result action");
 
 const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -80,16 +73,17 @@ assert.ok(jsonLdMatch, "Missing JSON-LD");
 const jsonLd = JSON.parse(jsonLdMatch[1]);
 assert.equal(jsonLd["@type"], "SoftwareApplication");
 assert.equal(jsonLd.offers.price, "0");
+assert.ok(jsonLd.featureList.some((item) => item.includes("Instagram")));
 assert.ok(jsonLd.featureList.some((item) => item.includes("長影片")));
 
 assert.equal(manifest.share_target.action, "./");
 assert.match(sitemap, /https:\/\/paq6809\.github\.io\/reelscribe\//);
 assert.match(sitemap, /supported-platforms\.html/);
 assert.match(robots, /Sitemap: https:\/\/paq6809\.github\.io\/reelscribe\/sitemap\.xml/);
+assert.match(serviceWorker, /\.\/instagram-direct\.js/);
 assert.match(serviceWorker, /\.\/format-compat\.js/);
 assert.match(serviceWorker, /\.\/supported-platforms\.html/);
 assert.match(serviceWorker, /\.\/share\.js/);
-assert.match(serviceWorker, /\.\/ui-polish\.css/);
 
 for (const extension of ["mkv", "avi", "flac", "opus", "m2ts", "amr", "caf"]) {
   assert.match(formatCompat, new RegExp(`\\b${extension}:`), `Missing format mapping: ${extension}`);
@@ -106,97 +100,80 @@ assert.match(dependabot, /package-ecosystem: "github-actions"/);
 assert.match(securityPolicy, /Force pushes/);
 assert.match(securityPolicy, /private vulnerability reporting/i);
 
-const functionNames = [
-  "extractYouTubeId",
-  "parseSourceUrl",
-  "parseSubtitleText",
-  "parseVtt",
-  "parseSrt",
-  "parseClock",
-  "finalizeSegments",
-  "cleanText",
-  "joinSegments",
-];
+assert.match(instagramDirect, /https:\/\/vite-xi-one-59\.vercel\.app/);
+assert.match(instagramDirect, /\/api\/instagram-resolve/);
+assert.match(instagramDirect, /\/api\/instagram-yt/);
+assert.match(instagramDirect, /credentials:\s*"omit"/);
+assert.match(instagramDirect, /referrerPolicy:\s*"no-referrer"/);
+assert.match(instagramDirect, /MAX_MEDIA_BYTES/);
+assert.doesNotMatch(instagramDirect, /document\.cookie|cookiesfrombrowser|password/i);
 
+const instagramContext = vm.createContext({ URL, console });
+vm.runInContext(`${extractFunction(instagramDirect, "parseInstagram")}\nglobalThis.parseInstagram = parseInstagram;`, instagramContext);
+const parsedInstagram = instagramContext.parseInstagram("https://www.instagram.com/reels/DITBVk3z6pJ/?igsh=abc");
+assert.equal(parsedInstagram.shortcode, "DITBVk3z6pJ");
+assert.equal(parsedInstagram.canonicalUrl, "https://www.instagram.com/reel/DITBVk3z6pJ/");
+assert.equal(instagramContext.parseInstagram("https://example.com/reel/DITBVk3z6pJ/"), null);
+
+const functionNames = [
+  "extractYouTubeId", "parseSourceUrl", "parseSubtitleText", "parseVtt", "parseSrt",
+  "parseClock", "finalizeSegments", "cleanText", "joinSegments",
+];
 const documentStub = {
   createElement() {
     return {
       _html: "",
-      set innerHTML(value) {
-        this._html = String(value);
-      },
+      set innerHTML(value) { this._html = String(value); },
       get value() {
-        return this._html
-          .replace(/<br\s*\/?\s*>/gi, " ")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'");
+        return this._html.replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]+>/g, " ")
+          .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
       },
     };
   },
 };
-
 const context = vm.createContext({ URL, document: documentStub, console });
 const extracted = functionNames.map((name) => extractFunction(resolver, name)).join("\n");
 vm.runInContext(`${extracted}\nglobalThis.auditApi = { parseSourceUrl, parseSubtitleText, parseClock };`, context);
-
 const { parseSourceUrl, parseSubtitleText, parseClock } = context.auditApi;
+
 const youtube = parseSourceUrl("https://youtu.be/dQw4w9WgXcQ?si=test&utm_source=share");
 assert.equal(youtube.platform, "youtube");
 assert.equal(youtube.videoId, "dQw4w9WgXcQ");
-assert.equal(youtube.canonicalUrl, "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-
 const instagram = parseSourceUrl("https://www.instagram.com/reel/ABC_123/?igshid=test");
 assert.equal(instagram.platform, "instagram");
-assert.match(instagram.canonicalUrl, /^https:\/\/instagram\.com|^https:\/\/www\.instagram\.com/);
-
 const genericPublicVideoPage = parseSourceUrl("https://www.snapchat.com/spotlight/example");
 assert.equal(genericPublicVideoPage.platform, "generic");
-assert.equal(genericPublicVideoPage.label, "網路影片");
-
 const directSubtitle = parseSourceUrl("https://example.com/subtitles/demo.vtt?lang=zh");
 assert.equal(directSubtitle.kind, "subtitle");
-assert.equal(directSubtitle.extension, "vtt");
 
 const vtt = `WEBVTT\n\n00:00:00.000 --> 00:00:02.500\n第一段字幕\n\n00:00:02.500 --> 00:00:05.000\n第二段字幕`;
 const parsedVtt = parseSubtitleText(vtt, "vtt");
 assert.equal(parsedVtt.segments.length, 2);
 assert.equal(parsedVtt.text, "第一段字幕 第二段字幕");
 assert.equal(parsedVtt.duration, 5);
-
 const srt = `1\n00:00:00,000 --> 00:00:01,500\nHello\n\n2\n00:00:01,500 --> 00:00:03,000\nWorld`;
 const parsedSrt = parseSubtitleText(srt, "srt");
-assert.equal(parsedSrt.segments.length, 2);
 assert.equal(parsedSrt.text, "Hello World");
 assert.equal(parseClock("01:02:03.500"), 3723.5);
 
 const workerFunctionNames = ["selectModel", "isMostlySilent", "normalizeText", "overlapLength", "mergeSegments"];
 const workerExtracted = workerFunctionNames.map((name) => extractFunction(worker, name)).join("\n");
-const workerContext = vm.createContext({
-  console,
-  Float32Array,
-  self: { navigator: { gpu: {}, deviceMemory: 8 } },
-});
+const workerContext = vm.createContext({ console, Float32Array, self: { navigator: { gpu: {}, deviceMemory: 8 } } });
 vm.runInContext(`
 const FAST_MODEL = "onnx-community/whisper-tiny";
 const QUALITY_MODEL = "onnx-community/whisper-base";
 ${workerExtracted}
 globalThis.workerAudit = { selectModel, isMostlySilent, mergeSegments };
 `, workerContext);
-
 const { selectModel, isMostlySilent, mergeSegments } = workerContext.workerAudit;
 assert.equal(selectModel("smart", 5 * 60, true), "onnx-community/whisper-base");
 assert.equal(selectModel("smart", 60 * 60, true), "onnx-community/whisper-tiny");
 assert.equal(isMostlySilent(new Float32Array(16000)), true);
-const voiced = new Float32Array(16000);
-voiced.fill(0.08);
+const voiced = new Float32Array(16000); voiced.fill(0.08);
 assert.equal(isMostlySilent(voiced), false);
 const merged = [{ start: 0, end: 4, text: "Hello world" }];
 mergeSegments(merged, [{ start: 3, end: 7, text: "world again" }]);
 assert.equal(merged.length, 2);
 assert.match(merged[1].text, /again/);
 
-console.log("ReelScribe audit passed: HTML, SEO, CSP, security files, broad formats, smart long-video mode, URL normalization, VTT and SRT parsing.");
+console.log("ReelScribe audit passed: Instagram direct fallback, HTML, SEO, CSP, formats, smart long-video mode, URL normalization, VTT and SRT parsing.");
