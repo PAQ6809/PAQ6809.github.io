@@ -1,9 +1,10 @@
-const CACHE_NAME = "reelscribe-shell-v1";
+const CACHE_NAME = "reelscribe-shell-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./capture.js",
   "./worker.js",
   "./manifest.webmanifest",
   "./icon.svg"
