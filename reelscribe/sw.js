@@ -1,4 +1,4 @@
-const CACHE_NAME = "reelscribe-shell-v5";
+const CACHE_NAME = "reelscribe-shell-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,9 +9,11 @@ const APP_SHELL = [
   "./traditional.js",
   "./universal-link.js",
   "./ui.js",
+  "./share.js",
   "./worker.js",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./icon.svg",
+  "./social-card.svg"
 ];
 
 self.addEventListener("install", (event) => {
