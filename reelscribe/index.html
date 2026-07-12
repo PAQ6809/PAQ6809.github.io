@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="color-scheme" content="light" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' blob: https:; worker-src 'self' blob:; font-src 'self' data:; upgrade-insecure-requests" />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。貼上公開影片連結，自動查找可複製字幕；沒有公開字幕時可使用本機 Whisper 備援。免登入、免 API Key。" />
-  <meta name="keywords" content="影片轉字幕,YouTube字幕,短影片字幕,Reels字幕,TikTok字幕,Whisper,免費字幕工具,繁體中文字幕" />
+  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。支援各類公開影片連結與常見影音格式，優先取得公開字幕；無字幕時可用本機 Whisper 智慧分段處理長影片。" />
+  <meta name="keywords" content="影片轉字幕,YouTube字幕,Instagram字幕,TikTok字幕,Facebook影片字幕,X影片字幕,短影片字幕,長影片字幕,Whisper,免費字幕工具,SRT,VTT,繁體中文字幕" />
   <link rel="canonical" href="https://paq6809.github.io/reelscribe/" />
   <link rel="sitemap" type="application/xml" href="./sitemap.xml" />
 
@@ -15,17 +17,17 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ReelScribe" />
   <meta property="og:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta property="og:description" content="貼上公開影片連結，快速取得可複製字幕；無公開字幕時可用本機 AI 備援。" />
+  <meta property="og:description" content="貼上公開影片連結取得字幕；也支援常見影音檔與長影片本機 AI 分段辨識。" />
   <meta property="og:url" content="https://paq6809.github.io/reelscribe/" />
   <meta property="og:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
   <meta property="og:image:alt" content="ReelScribe 免費社群影片字幕工具" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta name="twitter:description" content="貼上公開影片連結，快速取得可複製字幕。" />
+  <meta name="twitter:description" content="公開字幕優先；支援常見影音格式與長影片本機 AI 分段辨識。" />
   <meta name="twitter:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
 
-  <title>ReelScribe｜免費社群影片字幕工具</title>
+  <title>ReelScribe｜免費社群影片與長影片字幕工具</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://noembed.com" crossorigin />
@@ -39,7 +41,7 @@
     "@type": "SoftwareApplication",
     "name": "ReelScribe",
     "url": "https://paq6809.github.io/reelscribe/",
-    "description": "免費社群影片字幕工具。貼上公開影片連結，自動查找可複製字幕；沒有公開字幕時可使用本機 Whisper 備援。",
+    "description": "免費社群影片字幕工具。支援公開影片連結、常見影音格式與長影片本機 Whisper 分段辨識。",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Web",
     "inLanguage": "zh-Hant",
@@ -50,8 +52,10 @@
       "priceCurrency": "TWD"
     },
     "featureList": [
-      "公開影片字幕解析",
-      "YouTube、Vimeo、Bilibili、Dailymotion、PeerTube 字幕來源",
+      "各類公開社群影片連結解析",
+      "YouTube、Vimeo、Bilibili、Dailymotion、PeerTube 公開字幕來源",
+      "常見影片與音訊格式相容處理",
+      "長影片智慧分段、靜音跳過與 WebGPU 加速",
       "本機 Whisper 語音辨識",
       "TXT、SRT、VTT 匯出",
       "手機 PWA 分享"
@@ -78,7 +82,7 @@
     <section class="hero shell">
       <div class="eyebrow">免費 · 免登入 · 無 API Key</div>
       <h1>貼上影片連結，<br /><span>取得可複製字幕。</span></h1>
-      <p class="hero-copy">優先查找公開字幕；找不到時再使用本機 AI。</p>
+      <p class="hero-copy">公開字幕優先；沒有字幕時再由本機 AI 智慧分段處理。</p>
     </section>
 
     <section class="workspace shell" aria-label="影片字幕工作區">
@@ -91,7 +95,7 @@
         </div>
         <div class="input-row">
           <label class="sr-only" for="ig-url">社群影片連結</label>
-          <input id="ig-url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="YouTube、Instagram、TikTok、Vimeo…" aria-describedby="url-status" />
+          <input id="ig-url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="YouTube、Instagram、TikTok、Facebook、X、更多…" aria-describedby="url-status" />
           <button id="paste-url" class="button ghost" type="button">貼上</button>
           <button id="check-url" class="button secondary" type="button" aria-controls="results">取得字幕</button>
         </div>
@@ -120,7 +124,7 @@
           </div>
 
           <label id="drop-zone" class="drop-zone" for="media-file">
-            <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac" />
+            <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.m4v,.mov,.webm,.mkv,.avi,.wmv,.flv,.mpg,.mpeg,.ts,.mts,.m2ts,.3gp,.3g2,.ogv,.mp3,.m4a,.aac,.wav,.flac,.opus,.ogg,.oga,.weba,.mka,.amr,.aiff,.aif,.caf,.wma" />
             <span class="upload-symbol" aria-hidden="true">↑</span>
             <strong>選擇影片或音訊</strong>
             <span>也可以拖曳檔案</span>
@@ -142,8 +146,9 @@
             <label>
               <span>辨識模式</span>
               <select id="model-select">
-                <option value="onnx-community/whisper-tiny">快速模式（建議手機）</option>
-                <option value="onnx-community/whisper-base">品質模式（較慢）</option>
+                <option value="smart" selected>智慧模式（自動平衡速度與精度）</option>
+                <option value="onnx-community/whisper-tiny">極速模式（長影片／手機）</option>
+                <option value="onnx-community/whisper-base">高品質模式（短片／較強裝置）</option>
               </select>
             </label>
             <label>
@@ -175,7 +180,7 @@
         </article>
       </details>
 
-      <p class="compact-trust">只處理公開字幕來源，不要求密碼、Cookie 或私人 Token。</p>
+      <p class="compact-trust">支援所有公開 HTTPS 影片頁面；是否能只靠連結取得字幕，取決於平台是否公開文字軌。</p>
     </section>
 
     <section id="results" class="results shell" hidden>
@@ -215,10 +220,14 @@
 
   <footer class="footer shell">
     <span>ReelScribe · 免費開源字幕工具</span>
-    <button id="footer-share" class="text-link button-link" type="button" onclick="document.querySelector('#share-site')?.click()">分享給朋友</button>
+    <span class="footer-links">
+      <a class="text-link" href="./supported-platforms.html">支援平台與格式</a>
+      <button id="footer-share" class="text-link button-link" type="button" onclick="document.querySelector('#share-site')?.click()">分享給朋友</button>
+    </span>
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="./format-compat.js"></script>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./capture.js"></script>
   <script type="module" src="./traditional.js"></script>
