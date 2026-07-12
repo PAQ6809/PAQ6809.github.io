@@ -4,11 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
-  <meta name="description" content="ReelScribe：在瀏覽器本機將影片或音訊轉成可複製、可下載的繁體中文字幕。免登入、免 API Key，影片不會上傳伺服器。" />
+  <meta name="description" content="ReelScribe：貼上公開社群影片連結，自動查找可用字幕；找不到時可改用本機 Whisper。免登入、免 API Key，不傳送 Cookie 或私人檔案。" />
   <meta name="color-scheme" content="light dark" />
-  <title>ReelScribe｜免費本機影片轉字幕</title>
+  <title>ReelScribe｜免費社群影片字幕擷取</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://noembed.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -17,19 +19,19 @@
       <span class="brand-mark" aria-hidden="true">R</span>
       <span>
         <strong>ReelScribe</strong>
-        <small>本機 AI 字幕工具</small>
+        <small>免費社群影片字幕工具</small>
       </span>
     </a>
-    <span class="privacy-pill">影片不上傳</span>
+    <span class="privacy-pill">不傳 Cookie</span>
   </header>
 
   <main>
     <section class="hero shell">
       <div class="eyebrow">免費 · 無帳號 · 無 API Key</div>
-      <h1>把短影片變成<br /><span>可以複製的完整字幕。</span></h1>
-      <p class="hero-copy">直接在你的裝置上執行 Whisper。第一次使用會下載模型，之後由瀏覽器快取；字幕完成後可編輯、複製並匯出 TXT、SRT、VTT。</p>
+      <h1>貼上影片連結，<br /><span>直接取得可複製字幕。</span></h1>
+      <p class="hero-copy">系統會先競速查詢平台既有字幕、公開文字軌與免費開源字幕節點，不下載原影片；沒有公開字幕時，才切換到本機 Whisper 備援。</p>
       <div class="feature-row" aria-label="主要特色">
-        <span>本機辨識</span><span>繁中支援</span><span>時間軸字幕</span><span>PWA 可安裝</span>
+        <span>連結優先</span><span>多來源競速</span><span>本機快取</span><span>手機分享</span><span>本機 AI 備援</span>
       </div>
     </section>
 
@@ -38,39 +40,39 @@
         <div class="card-heading">
           <div>
             <p class="step">步驟 1</p>
-            <h2>貼上 Instagram 連結</h2>
+            <h2>貼上社群影片連結</h2>
           </div>
-          <span class="optional">選填</span>
+          <span class="optional">主要方式</span>
         </div>
-        <p class="muted">用來驗證與保存來源。Instagram 沒有提供任意公開影片的通用下載介面，因此無法合法穩定地只靠貼文網址取得影片檔。</p>
+        <p class="muted">支援平台會先讀取既有字幕或公開文字軌，不取得原始影片檔。公開字幕不存在或平台封鎖時，才使用備援方式。</p>
         <div class="input-row">
-          <label class="sr-only" for="ig-url">Instagram 連結</label>
-          <input id="ig-url" inputmode="url" autocomplete="url" placeholder="https://www.instagram.com/reel/..." />
+          <label class="sr-only" for="ig-url">社群影片連結</label>
+          <input id="ig-url" inputmode="url" autocomplete="url" placeholder="YouTube、Instagram、TikTok、Vimeo、Bilibili…" />
           <button id="paste-url" class="button ghost" type="button">貼上</button>
-          <button id="check-url" class="button secondary" type="button">驗證</button>
+          <button id="check-url" class="button secondary" type="button">自動取得字幕</button>
         </div>
         <div id="url-status" class="inline-status" role="status" aria-live="polite"></div>
         <div id="verified-link-actions" class="link-actions" hidden>
-          <a id="open-instagram" class="text-link" target="_blank" rel="noopener noreferrer">在 Instagram 開啟</a>
-          <button id="focus-upload" class="text-link button-link" type="button">接著選擇影片檔</button>
+          <a id="open-instagram" class="text-link" target="_blank" rel="noopener noreferrer">開啟原始頁面</a>
+          <button id="focus-upload" class="text-link button-link" type="button">改用本機檔案</button>
         </div>
       </article>
 
       <article class="card upload-card">
         <div class="card-heading">
           <div>
-            <p class="step">步驟 2</p>
-            <h2>選擇影片或音訊</h2>
+            <p class="step">備援</p>
+            <h2>本機 Whisper 辨識</h2>
           </div>
-          <span class="required">必要</span>
+          <span class="required">連結無字幕時</span>
         </div>
 
         <label id="drop-zone" class="drop-zone" for="media-file">
           <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac" />
           <span class="upload-symbol" aria-hidden="true">↑</span>
-          <strong>點一下選擇檔案</strong>
-          <span>或把檔案拖曳到這裡</span>
-          <small>建議 250 MB 以內；影片只會在你的裝置中處理</small>
+          <strong>點一下選擇影片或音訊</strong>
+          <span>也可把檔案拖曳到這裡</span>
+          <small>只在目前裝置處理，不會上傳伺服器</small>
         </label>
 
         <div id="file-panel" class="file-panel" hidden>
@@ -108,7 +110,7 @@
           </label>
         </div>
 
-        <button id="transcribe" class="button primary wide" type="button" disabled>開始產生字幕</button>
+        <button id="transcribe" class="button primary wide" type="button" disabled>開始本機辨識</button>
 
         <div id="progress-panel" class="progress-panel" hidden>
           <div class="progress-copy">
@@ -124,7 +126,7 @@
     <section id="results" class="results shell" hidden>
       <div class="results-heading">
         <div>
-          <p class="step">步驟 3</p>
+          <p class="step">結果</p>
           <h2>完整字幕</h2>
           <p id="result-stats" class="muted"></p>
         </div>
@@ -157,28 +159,29 @@
 
     <section class="notes shell">
       <article>
-        <h2>如何從 IG 使用？</h2>
+        <h2>系統會怎麼處理？</h2>
         <ol>
-          <li>貼上 Reel 連結，確認來源。</li>
-          <li>對自己的 Reel 使用 Instagram 的下載功能；其他影片請先取得作者授權。</li>
-          <li>將影片檔選進 ReelScribe，或在桌機使用分頁錄製備援。</li>
+          <li>偵測平台並先讀取公開字幕與文字軌。</li>
+          <li>免費開源節點會並行競速，最快有效結果先顯示。</li>
+          <li>同一連結成功後會保存於本機快取，再次查詢立即開啟。</li>
         </ol>
       </article>
       <article>
-        <h2>為什麼不直接偷抓影片？</h2>
-        <p>非官方爬蟲容易失效、可能要求登入 Cookie，也會增加帳號與著作權風險。這個版本把影片留在使用者裝置上，速度、隱私和長期可維護性都比較好。</p>
+        <h2>安全與限制</h2>
+        <p>網站不要求社群密碼、登入 Cookie 或私人 Token。部分平台不向匿名網頁提供語音字幕；這種情況會直接說明，而不會把貼文說明冒充成影片字幕。</p>
       </article>
     </section>
   </main>
 
   <footer class="footer shell">
-    <span>ReelScribe · Local-first transcription</span>
-    <span>請只處理你擁有或已取得授權的內容</span>
+    <span>ReelScribe · Link-first subtitle resolver</span>
+    <span>請只處理你有權使用的公開內容</span>
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./capture.js"></script>
   <script type="module" src="./traditional.js"></script>
+  <script type="module" src="./universal-link.js"></script>
 </body>
 </html>
