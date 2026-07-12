@@ -4,8 +4,8 @@
 }
 
 .resolver-panel {
-  margin-top: 14px !important;
-  padding-top: 13px !important;
+  margin-top: 12px !important;
+  padding-top: 12px !important;
 }
 
 .resolver-options {
@@ -24,7 +24,7 @@
 }
 
 .resolver-privacy::before {
-  content: "自動競速公開字幕來源 · ";
+  content: "公開字幕來源 · ";
   color: #2563eb;
   font-weight: 800;
 }
@@ -52,6 +52,45 @@
   background: #f8fafc !important;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-share {
+  min-height: 38px;
+  padding: 7px 12px;
+  border-color: #d8e0ec;
+  color: #1d4ed8;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.header-share:hover {
+  background: #eff6ff;
+}
+
+.compact-heading {
+  margin-bottom: 12px;
+}
+
+.compact-heading h2 {
+  font-size: clamp(21px, 4vw, 26px);
+}
+
+.compact-trust {
+  margin: 2px 2px 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.footer .button-link {
+  min-height: 32px;
+}
+
 @media (max-width: 680px) {
   .resolver-privacy {
     max-width: 100%;
@@ -62,5 +101,32 @@
 
   .action-row .traditional-button {
     grid-column: 1 / -1;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .privacy-pill {
+    display: none;
+  }
+
+  .header-share {
+    min-height: 40px;
+    padding-inline: 11px;
+  }
+
+  .compact-trust {
+    padding-inline: 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand small {
+    display: none;
+  }
+
+  .header-share {
+    min-width: 64px;
   }
 }
