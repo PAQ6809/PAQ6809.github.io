@@ -53,6 +53,7 @@ jobs:
           node --check reelscribe/app.js
           node --check reelscribe/capture.js
           node --check reelscribe/traditional.js
+          node --check reelscribe/instagram-direct.js
           node --check reelscribe/universal-link.js
           node --check reelscribe/ui.js
           node --check reelscribe/share.js
@@ -123,6 +124,7 @@ jobs:
           test -s reelscribe/app.js
           test -s reelscribe/capture.js
           test -s reelscribe/traditional.js
+          test -s reelscribe/instagram-direct.js
           test -s reelscribe/universal-link.js
           test -s reelscribe/ui.js
           test -s reelscribe/share.js
@@ -132,6 +134,7 @@ jobs:
           grep -q './format-compat.js' reelscribe/index.html
           grep -q './capture.js' reelscribe/index.html
           grep -q './traditional.js' reelscribe/index.html
+          grep -q './instagram-direct.js' reelscribe/index.html
           grep -q './universal-link.js' reelscribe/index.html
           grep -q './ui.js' reelscribe/index.html
           grep -q './share.js' reelscribe/index.html
@@ -141,11 +144,15 @@ jobs:
           grep -q 'value="smart"' reelscribe/index.html
           grep -q 'Content-Security-Policy' reelscribe/index.html
           grep -q 'supported-platforms.html' reelscribe/index.html
+          grep -q 'instagram-direct.js' reelscribe/sw.js
           grep -q 'format-compat.js' reelscribe/sw.js
           grep -q 'supported-platforms.html' reelscribe/sw.js
           grep -q 'selectModel' reelscribe/worker.js
           grep -q 'transcribeAdaptive' reelscribe/worker.js
           grep -q 'isMostlySilent' reelscribe/worker.js
+          grep -q '/api/instagram-resolve' reelscribe/instagram-direct.js
+          grep -q '/api/instagram-yt' reelscribe/instagram-direct.js
+          grep -q 'credentials: "omit"' reelscribe/instagram-direct.js
           grep -q 'rel="canonical"' reelscribe/index.html
           grep -q 'property="og:title"' reelscribe/index.html
           grep -q 'SoftwareApplication' reelscribe/index.html
@@ -186,6 +193,19 @@ jobs:
           assert not re.search(r'(^|[^\w])eval\s*\(', source), 'eval() is prohibited'
           PY
 
+      - name: Check Instagram resolver service
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://vite-xi-one-59.vercel.app/api/health \
+            | tee /tmp/instagram-health.json
+          python - <<'PY'
+          import json
+          data = json.load(open('/tmp/instagram-health.json', encoding='utf-8'))
+          assert data.get('ok') is True
+          assert data.get('mode') == 'public-only-no-cookies-no-storage'
+          PY
+
       - name: Free provider discovery health
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
@@ -204,7 +224,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          files=(index.html format-compat.js worker.js universal-link.js sw.js supported-platforms.html)
+          files=(index.html format-compat.js instagram-direct.js worker.js universal-link.js sw.js supported-platforms.html)
           for attempt in {1..12}; do
             all_match=true
             for file in "${files[@]}"; do
