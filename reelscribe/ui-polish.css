@@ -59,4 +59,8 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .action-row .traditional-button {
+    grid-column: 1 / -1;
+  }
 }
