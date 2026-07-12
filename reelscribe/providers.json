@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-13T00:00:00Z",
+  "piped": [
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.leptons.xyz",
+    "https://pipedapi.nosebs.ru",
+    "https://pipedapi-libre.kavin.rocks",
+    "https://piped-api.privacy.com.de",
+    "https://pipedapi.adminforge.de",
+    "https://api.piped.yt",
+    "https://pipedapi.drgns.space",
+    "https://pipedapi.owo.si",
+    "https://pipedapi.ducks.party",
+    "https://piped-api.codespace.cz",
+    "https://pipedapi.reallyaweso.me",
+    "https://api.piped.private.coffee",
+    "https://pipedapi.darkness.services",
+    "https://pipedapi.orangenet.cc"
+  ],
+  "invidious": [
+    "https://inv.nadeko.net",
+    "https://invidious.nerdvpn.de",
+    "https://yt.chocolatemoo53.com",
+    "https://invidious.tiekoetter.com",
+    "https://invidious.f5.si",
+    "https://inv.zoomerville.com"
+  ],
+  "reader": {
+    "enabled": true,
+    "baseUrl": "https://r.jina.ai/",
+    "timeoutMs": 12000,
+    "cacheToleranceSeconds": 3600
+  }
+}
