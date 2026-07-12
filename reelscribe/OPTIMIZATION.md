@@ -2,110 +2,94 @@
 
 ## Goal
 
-Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and fully usable on desktop browsers without introducing paid core dependencies.
+Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usable on desktop browsers without paid core dependencies.
 
 ## Interface rules
 
-1. The first screen must focus on one task: paste a link and get subtitles.
-2. The main input and primary action must remain visible on common phone screens without horizontal scrolling.
+1. The first screen focuses on one task: paste a link and get subtitles.
+2. The main input and primary action remain visible on common phone screens without horizontal scrolling.
 3. Upload, local Whisper, tab capture, and microphone recording stay inside the collapsed fallback section.
-4. Light theme is the default and only visual theme unless a future change is explicitly approved.
-5. Use white surfaces, subtle borders, restrained shadows, and one blue primary color.
-6. Avoid decorative gradients, excessive badges, oversized typography, repeated feature lists, repeated safety explanations, and unnecessary animation.
-7. Touch targets must be at least 44 CSS pixels high.
-8. Mobile widths 320, 375, 390, and 430 pixels must not overflow horizontally.
-9. Tablet width 768 pixels and desktop widths 1280 pixels or above must keep readable line lengths and centered content.
-10. Copy is the primary result action; TXT, SRT, and VTT are secondary actions.
-11. A compact share action may appear in the header and footer, but promotion must not interrupt the subtitle workflow.
-12. Platform and format details belong on `supported-platforms.html`, not as repeated blocks on the landing screen.
+4. Light theme remains the default; use white surfaces, subtle borders, restrained shadows, and one blue primary color.
+5. Avoid decorative gradients, excessive badges, oversized typography, repeated feature lists, repeated safety explanations, and unnecessary animation.
+6. Touch targets are at least 44 CSS pixels high.
+7. Widths 320, 375, 390, 430, 768, and 1280 pixels must remain usable without horizontal overflow.
+8. Copy is the primary result action; TXT, SRT, and VTT are secondary.
+9. Platform and format details belong on `supported-platforms.html`, not repeated on the landing screen.
 
-## Accessibility rules
+## Instagram direct-link rules
 
-- Preserve visible labels or screen-reader labels.
-- Keep clear `:focus-visible` styles.
-- Preserve live regions for resolver and processing status.
-- Use native `details` and `summary` for fallback disclosure.
-- Respect `prefers-reduced-motion`.
-- Do not rely on color alone to communicate success or failure.
+- `instagram-direct.js` must load before `universal-link.js` so Instagram receives the dedicated path first.
+- The fast resolver `/api/instagram-resolve` runs first; `/api/instagram-yt` is the compatibility fallback.
+- The compatibility resolver pins yt-dlp and curl_cffi versions and is updated only after a real public Reel regression test.
+- Both backends are public-only and must never accept passwords, browser cookies, session IDs, private tokens, or login bypass instructions.
+- Media proxy URLs must be HMAC-signed, short-lived, HTTPS-only, limited to Instagram/Facebook CDN hosts, and capped at 300 MB.
+- Backend responses and media are `no-store`; the backend does not persist media or captions.
+- The frontend uses `credentials: omit`, `no-referrer`, request timeouts, streaming size checks, and local Whisper.
+- A failed anonymous extraction must display a truthful fallback message instead of claiming success.
+- Private, login-only, age-restricted, region-restricted, removed, DRM, or platform-blocked content is not bypassed.
 
 ## Format and platform rules
 
 - Accept every public HTTPS page as a candidate source.
-- Platform-specific success is never guaranteed; direct-link subtitle extraction requires a public caption or text track.
-- Keep generic handling for platforms that do not expose captions anonymously.
-- Accept common video and audio extensions through `format-compat.js` and normalize missing MIME types before the core file handler runs.
+- Platform-specific success is never universally guaranteed.
+- Keep generic handling for platforms that do not expose captions or public media anonymously.
+- Accept common video and audio extensions through `format-compat.js` and normalize missing MIME types.
 - Browser and operating-system codec support remains the final decoder boundary.
-- Never add login bypass, DRM circumvention, cookie extraction, private-content scraping, or an unofficial service that requires user session data.
 
 ## Long-video and accuracy rules
 
 - `smart` mode is the default.
-- Short clips on capable devices may use the base model; long clips and constrained devices use the tiny model for speed.
-- Long recordings must be processed in bounded windows with overlap.
-- Skip mostly silent windows to reduce wasted inference.
-- Remove overlap duplicates when merging windows.
-- Keep timestamp output for TXT, SRT, and VTT workflows.
-- Do not promise real-time completion or identical accuracy across devices, languages, accents, noise levels, or codecs.
-- Do not raise file-size limits without a measured memory-safety review because `decodeAudioData` loads media into memory.
+- Short clips on capable devices may use base; long clips and constrained devices use tiny for speed.
+- Long recordings use bounded windows with overlap, silence skipping, duplicate removal, and timestamps.
+- Do not promise real-time completion or identical accuracy across devices, languages, accents, noise, or codecs.
+- Do not raise file-size limits without measured memory-safety review because `decodeAudioData` loads media into memory.
 
 ## Performance rules
 
-- Do not add a UI framework.
-- Do not preload Whisper models.
-- Keep the first page static and lightweight.
-- Keep model inference in a Web Worker.
-- Keep Service Worker App Shell caching.
-- Keep free subtitle provider requests parallel, timed out, and independently degradable.
-- Cache successful link transcripts locally.
-- Do not add third-party analytics or advertising scripts without explicit approval and a privacy review.
+- Do not add a UI framework or preload Whisper models.
+- Keep model inference in a Web Worker and App Shell caching in the Service Worker.
+- Keep free subtitle providers parallel, timed out, and independently degradable.
+- Cache successful text results locally, but do not persist proxied Instagram media.
+- Do not add third-party analytics or advertising scripts without explicit approval and privacy review.
 
 ## Security rules
 
-- Keep a restrictive Content Security Policy and `no-referrer` policy in the main page.
+- Keep restrictive CSP and `no-referrer` in the main page.
 - Never access `document.cookie`, use `eval`, or construct dynamic functions.
-- GitHub Actions must use read-only permissions and pin third-party actions to full commit SHAs.
-- Keep checkout credentials disabled in CI.
+- GitHub Actions use read-only permissions, full-SHA pinned actions, and disabled checkout credentials.
 - Maintain `SECURITY.md`, `.github/CODEOWNERS`, `.github/dependabot.yml`, and `reelscribe/SECURITY-HARDENING.md`.
-- Production integrity checks must compare deployed core assets with repository files.
-- Branch rules, signed commits, owner review, force-push blocking, secret scanning, and account 2FA must be enabled in GitHub settings by the repository owner.
+- Production integrity checks compare deployed core assets with repository files.
+- Branch rules, signed commits, owner review, force-push blocking, secret scanning, and account 2FA are enabled by the repository owner.
+- Vercel resolver signing secrets remain private and are never exposed in the GitHub Pages repository or client JavaScript.
 
 ## Required regression checks
 
+- Instagram URL normalization, script order, fast resolver, yt-dlp fallback, signed proxy handoff, and Vercel health endpoint.
+- Resolver privacy controls: no cookies, no credentials, no-referrer, CDN allowlist, expiry, rate limit, timeout, and size cap.
 - Link resolver, provider status, metadata, and local cache.
-- Actual VTT and SRT parsing fixtures through `tests/reelscribe-audit.mjs`.
-- URL normalization for YouTube, known social links, generic public pages, and direct subtitle links.
-- Broad format MIME normalization for chooser and drag-and-drop flows.
-- Smart model selection, silence detection, long-video segmentation, and overlap deduplication.
-- Copy, TXT, SRT, and VTT.
-- Local file selection and drag-and-drop.
-- Local Whisper and WebGPU/WASM fallback.
-- Desktop tab-audio capture and microphone recording.
-- Mobile PWA share target and website share button.
-- Canonical, Open Graph, Twitter Card, JSON-LD, sitemap, robots.txt, and IndexNow ownership file.
-- iPhone safe-area spacing and 16px form font sizing.
-- No horizontal overflow at 320px.
-- Keyboard focus order and visible focus ring.
-- No duplicate HTML IDs and no return of the removed repetitive notes section.
-- Workflow action references are full SHAs and the workflow token remains read-only.
+- VTT/SRT fixtures, YouTube and generic URL normalization.
+- Broad format MIME normalization for chooser and drag-and-drop.
+- Smart model selection, silence detection, segmentation, and overlap deduplication.
+- Copy, TXT, SRT, VTT, local file selection, local Whisper, WebGPU/WASM, tab capture, microphone, PWA sharing.
+- SEO, sitemap, robots, IndexNow, safe-area spacing, 16px mobile form sizing, focus order, no duplicate IDs, and no repeated notes section.
 
 ## Promotion rules
 
 - Keep launch copy and UTM conventions in `reelscribe/PROMOTION.md`.
-- Organic promotion should demonstrate the real workflow and disclose unsupported/private-content limitations.
-- Never claim every social platform, codec, or video is guaranteed to return subtitles.
-- IndexNow may be used to notify participating search engines after verified deployment.
-- Do not auto-post to social accounts, buy ads, spend money, or connect advertising accounts without explicit user approval and account access.
-- Do not add fake testimonials, fake usage numbers, dark patterns, forced sharing, or intrusive banners.
+- Promotion may state that public Instagram Reels and video posts have a direct best-effort path, but must disclose that Instagram can block anonymous access and that private/restricted posts are unsupported.
+- Never claim every Instagram link, social platform, codec, or video is guaranteed to return subtitles.
+- Do not auto-post, buy ads, connect ad accounts, fabricate testimonials, force sharing, or use intrusive banners.
 
 ## Automation rule
 
-Every future UI, resolver, format, performance, long-video, accuracy, privacy, security, SEO, testing, sharing, or promotion optimization must update all applicable items:
+Every future UI, resolver, Instagram backend, format, performance, long-video, accuracy, privacy, security, SEO, testing, sharing, or promotion optimization updates all applicable items:
 
 1. `.github/workflows/reelscribe-check.yml`
 2. `tests/reelscribe-audit.mjs`
-3. `reelscribe/OPTIMIZATION.md`
-4. `reelscribe/PROMOTION.md` when public positioning or campaign material changes
-5. `reelscribe/SECURITY-HARDENING.md` when repository protection changes
-6. The `ReelScribe 自動維護` scheduled task
+3. `reelscribe/README.md`
+4. `reelscribe/OPTIMIZATION.md`
+5. `reelscribe/PROMOTION.md` when public positioning changes
+6. `reelscribe/SECURITY-HARDENING.md` when protection changes
+7. The `ReelScribe 自動維護` scheduled task
 
-The automated process may apply only small, testable, non-destructive fixes. It must not add paid core dependencies, account-cookie extraction, login bypass, private-content scraping, unverified third-party services, third-party tracking, or unauthorized paid advertising.
+Automated maintenance applies only small, testable, non-destructive fixes. It must not add paid core dependencies, cookie extraction, login bypass, private scraping, unverified public proxy services, tracking, or unauthorized advertising.
