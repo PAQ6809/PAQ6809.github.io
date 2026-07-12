@@ -1,0 +1,8 @@
+# ReelScribe and deployment-sensitive files
+/reelscribe/ @PAQ6809
+/.github/workflows/ @PAQ6809
+/tests/ @PAQ6809
+/robots.txt @PAQ6809
+
+# Default owner for any other repository change
+* @PAQ6809
