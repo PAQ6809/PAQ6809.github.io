@@ -1,0 +1,62 @@
+.platform-row,
+.resolver-switch {
+  display: none !important;
+}
+
+.resolver-panel {
+  margin-top: 14px !important;
+  padding-top: 13px !important;
+}
+
+.resolver-options {
+  justify-content: flex-start !important;
+}
+
+.resolver-privacy {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #526178 !important;
+  background: #f8fafc;
+  font-size: 11px !important;
+}
+
+.resolver-privacy::before {
+  content: "自動競速公開字幕來源 · ";
+  color: #2563eb;
+  font-weight: 800;
+}
+
+.provider-log {
+  margin-top: 9px !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.provider-log::-webkit-scrollbar {
+  display: none;
+}
+
+.provider-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.link-metadata {
+  border: 1px solid #e5eaf2;
+  background: #f8fafc !important;
+}
+
+@media (max-width: 680px) {
+  .resolver-privacy {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
