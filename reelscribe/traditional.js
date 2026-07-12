@@ -3,10 +3,13 @@ const actionRow = document.querySelector(".action-row");
 if (actionRow) {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "button ghost";
+  button.className = "button ghost traditional-button";
   button.textContent = "轉台灣繁體";
   button.title = "將簡體中文字詞轉換成台灣繁體用語";
-  actionRow.insertBefore(button, actionRow.firstChild);
+
+  const copyButton = actionRow.querySelector("#copy-text");
+  if (copyButton) copyButton.insertAdjacentElement("afterend", button);
+  else actionRow.appendChild(button);
 
   let converter = null;
 
@@ -16,7 +19,7 @@ if (actionRow) {
 
     const originalLabel = button.textContent;
     button.disabled = true;
-    button.textContent = "載入轉換字典…";
+    button.textContent = "載入字典中…";
 
     try {
       if (!converter) {
