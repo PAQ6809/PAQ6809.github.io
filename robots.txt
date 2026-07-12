@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://paq6809.github.io/reelscribe/sitemap.xml
