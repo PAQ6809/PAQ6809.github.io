@@ -55,17 +55,33 @@
     });
   }
 
+  function replaceInputFile(file) {
+    if (!file || typeof DataTransfer === "undefined") return false;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    return true;
+  }
+
   input.addEventListener("change", () => {
     const file = input.files?.[0];
     if (!file || file.type) return;
     const normalized = normalizeFileType(file);
-    if (normalized === file || typeof DataTransfer === "undefined") return;
-    const transfer = new DataTransfer();
-    transfer.items.add(normalized);
-    input.files = transfer.files;
+    if (normalized === file) return;
+    replaceInputFile(normalized);
   }, true);
 
   const dropZone = document.querySelector("#drop-zone");
+  dropZone?.addEventListener("drop", (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    if (!file || file.type) return;
+    const normalized = normalizeFileType(file);
+    if (normalized === file || !replaceInputFile(normalized)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, true);
+
   if (dropZone && !dropZone.querySelector(".format-compat-note")) {
     const note = document.createElement("small");
     note.className = "format-compat-note";
