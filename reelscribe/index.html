@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' blob: https:; worker-src 'self' blob:; font-src 'self' data:; upgrade-insecure-requests" />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。支援各類公開影片連結與常見影音格式，優先取得公開字幕；無字幕時可用本機 Whisper 智慧分段處理長影片。" />
-  <meta name="keywords" content="影片轉字幕,YouTube字幕,Instagram字幕,TikTok字幕,Facebook影片字幕,X影片字幕,短影片字幕,長影片字幕,Whisper,免費字幕工具,SRT,VTT,繁體中文字幕" />
+  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援各類公開影片連結、常見影音格式及長影片本機 Whisper 智慧分段。" />
+  <meta name="keywords" content="影片轉字幕,YouTube字幕,Instagram字幕,Instagram Reel字幕,TikTok字幕,Facebook影片字幕,X影片字幕,短影片字幕,長影片字幕,Whisper,免費字幕工具,SRT,VTT,繁體中文字幕" />
   <link rel="canonical" href="https://paq6809.github.io/reelscribe/" />
   <link rel="sitemap" type="application/xml" href="./sitemap.xml" />
 
@@ -17,21 +17,22 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ReelScribe" />
   <meta property="og:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta property="og:description" content="貼上公開影片連結取得字幕；也支援常見影音檔與長影片本機 AI 分段辨識。" />
+  <meta property="og:description" content="貼上公開 Instagram、YouTube 等影片連結取得字幕；也支援常見影音檔與長影片本機 AI 分段辨識。" />
   <meta property="og:url" content="https://paq6809.github.io/reelscribe/" />
   <meta property="og:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
   <meta property="og:image:alt" content="ReelScribe 免費社群影片字幕工具" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta name="twitter:description" content="公開字幕優先；支援常見影音格式與長影片本機 AI 分段辨識。" />
+  <meta name="twitter:description" content="公開 Instagram 影片可直接解析；支援常見影音格式與長影片本機 AI 分段辨識。" />
   <meta name="twitter:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
 
-  <title>ReelScribe｜免費社群影片與長影片字幕工具</title>
+  <title>ReelScribe｜Instagram、社群影片與長影片字幕工具</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://noembed.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://vite-xi-one-59.vercel.app" crossorigin />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./ui-polish.css" />
 
@@ -41,7 +42,7 @@
     "@type": "SoftwareApplication",
     "name": "ReelScribe",
     "url": "https://paq6809.github.io/reelscribe/",
-    "description": "免費社群影片字幕工具。支援公開影片連結、常見影音格式與長影片本機 Whisper 分段辨識。",
+    "description": "免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援公開影片連結、常見影音格式與長影片本機 Whisper 分段辨識。",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Web",
     "inLanguage": "zh-Hant",
@@ -52,6 +53,7 @@
       "priceCurrency": "TWD"
     },
     "featureList": [
+      "公開 Instagram Reel 與影片貼文直接解析",
       "各類公開社群影片連結解析",
       "YouTube、Vimeo、Bilibili、Dailymotion、PeerTube 公開字幕來源",
       "常見影片與音訊格式相容處理",
@@ -82,7 +84,7 @@
     <section class="hero shell">
       <div class="eyebrow">免費 · 免登入 · 無 API Key</div>
       <h1>貼上影片連結，<br /><span>取得可複製字幕。</span></h1>
-      <p class="hero-copy">公開字幕優先；沒有字幕時再由本機 AI 智慧分段處理。</p>
+      <p class="hero-copy">公開 Instagram 影片可直接解析；其他平台優先讀取公開字幕，沒有字幕時再由本機 AI 處理。</p>
     </section>
 
     <section class="workspace shell" aria-label="影片字幕工作區">
@@ -180,7 +182,7 @@
         </article>
       </details>
 
-      <p class="compact-trust">支援所有公開 HTTPS 影片頁面；是否能只靠連結取得字幕，取決於平台是否公開文字軌。</p>
+      <p class="compact-trust">Instagram 公開 Reel／影片貼文會以無 Cookie、暫存串流方式交給本機 AI；私人、登入限定或受限制內容不支援。</p>
     </section>
 
     <section id="results" class="results shell" hidden>
@@ -231,6 +233,7 @@
   <script type="module" src="./app.js"></script>
   <script type="module" src="./capture.js"></script>
   <script type="module" src="./traditional.js"></script>
+  <script type="module" src="./instagram-direct.js"></script>
   <script type="module" src="./universal-link.js"></script>
   <script type="module" src="./ui.js"></script>
   <script type="module" src="./share.js"></script>
