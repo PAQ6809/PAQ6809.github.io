@@ -31,25 +31,50 @@ jobs:
           node --check reelscribe/capture.js
           node --check reelscribe/traditional.js
           node --check reelscribe/universal-link.js
+          node --check reelscribe/ui.js
           cp reelscribe/worker.js /tmp/reelscribe-worker.mjs
           node --check /tmp/reelscribe-worker.mjs
           node --check reelscribe/sw.js
       - name: Validate manifest JSON
         run: python -m json.tool reelscribe/manifest.webmanifest >/dev/null
+      - name: Validate HTML and CSS structure
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Parser(HTMLParser):
+              pass
+
+          html = Path("reelscribe/index.html").read_text(encoding="utf-8")
+          Parser().feed(html)
+
+          for path in ["reelscribe/styles.css", "reelscribe/ui-polish.css"]:
+              css = Path(path).read_text(encoding="utf-8")
+              assert css.count("{") == css.count("}"), f"Unbalanced CSS braces: {path}"
+          PY
       - name: Confirm required app files and wiring
         run: |
           test -s reelscribe/index.html
           test -s reelscribe/styles.css
+          test -s reelscribe/ui-polish.css
           test -s reelscribe/app.js
           test -s reelscribe/capture.js
           test -s reelscribe/traditional.js
           test -s reelscribe/universal-link.js
+          test -s reelscribe/ui.js
           test -s reelscribe/worker.js
           test -s reelscribe/sw.js
           grep -q './capture.js' reelscribe/index.html
           grep -q './traditional.js' reelscribe/index.html
           grep -q './universal-link.js' reelscribe/index.html
+          grep -q './ui.js' reelscribe/index.html
+          grep -q 'id="fallback-tools"' reelscribe/index.html
           grep -q 'share_target' reelscribe/manifest.webmanifest
+          grep -q '@media (max-width: 680px)' reelscribe/styles.css
+          grep -q '@media (max-width: 380px)' reelscribe/styles.css
+          grep -q 'prefers-reduced-motion' reelscribe/styles.css
+          grep -q 'min-height: 46px' reelscribe/styles.css
           grep -q 'ReelScribe' reelscribe/index.html
       - name: Free provider discovery health
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -71,3 +96,5 @@ jobs:
             | tee /tmp/reelscribe.html \
             | grep -q "ReelScribe"
           grep -q "universal-link.js" /tmp/reelscribe.html
+          grep -q "ui.js" /tmp/reelscribe.html
+          grep -q "fallback-tools" /tmp/reelscribe.html
