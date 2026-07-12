@@ -1,12 +1,14 @@
-const CACHE_NAME = "reelscribe-shell-v4";
+const CACHE_NAME = "reelscribe-shell-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./ui-polish.css",
   "./app.js",
   "./capture.js",
   "./traditional.js",
   "./universal-link.js",
+  "./ui.js",
   "./worker.js",
   "./manifest.webmanifest",
   "./icon.svg"
