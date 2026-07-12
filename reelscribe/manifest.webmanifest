@@ -1,13 +1,23 @@
 {
-  "name": "ReelScribe｜免費本機影片轉字幕",
+  "name": "ReelScribe｜免費社群影片字幕擷取",
   "short_name": "ReelScribe",
-  "description": "在瀏覽器本機將影片或音訊轉成可複製與下載的字幕。",
+  "description": "貼上或分享公開社群影片連結，自動查找可複製字幕；無字幕時可使用本機 Whisper 備援。",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f5f7",
   "theme_color": "#111827",
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "./icon.svg",
