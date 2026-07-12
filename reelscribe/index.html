@@ -4,14 +4,60 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" />
-  <meta name="description" content="ReelScribe：貼上公開社群影片連結，自動查找可用字幕；找不到時可改用本機 Whisper。免登入、免 API Key，不傳送 Cookie 或私人檔案。" />
   <meta name="color-scheme" content="light" />
-  <title>ReelScribe｜免費社群影片字幕擷取</title>
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。貼上公開影片連結，自動查找可複製字幕；沒有公開字幕時可使用本機 Whisper 備援。免登入、免 API Key。" />
+  <meta name="keywords" content="影片轉字幕,YouTube字幕,短影片字幕,Reels字幕,TikTok字幕,Whisper,免費字幕工具,繁體中文字幕" />
+  <link rel="canonical" href="https://paq6809.github.io/reelscribe/" />
+  <link rel="sitemap" type="application/xml" href="./sitemap.xml" />
+
+  <meta property="og:locale" content="zh_TW" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ReelScribe" />
+  <meta property="og:title" content="ReelScribe｜免費社群影片字幕工具" />
+  <meta property="og:description" content="貼上公開影片連結，快速取得可複製字幕；無公開字幕時可用本機 AI 備援。" />
+  <meta property="og:url" content="https://paq6809.github.io/reelscribe/" />
+  <meta property="og:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
+  <meta property="og:image:alt" content="ReelScribe 免費社群影片字幕工具" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ReelScribe｜免費社群影片字幕工具" />
+  <meta name="twitter:description" content="貼上公開影片連結，快速取得可複製字幕。" />
+  <meta name="twitter:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
+
+  <title>ReelScribe｜免費社群影片字幕工具</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://noembed.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./ui-polish.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ReelScribe",
+    "url": "https://paq6809.github.io/reelscribe/",
+    "description": "免費社群影片字幕工具。貼上公開影片連結，自動查找可複製字幕；沒有公開字幕時可使用本機 Whisper 備援。",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "zh-Hant",
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "TWD"
+    },
+    "featureList": [
+      "公開影片字幕解析",
+      "YouTube、Vimeo、Bilibili、Dailymotion、PeerTube 字幕來源",
+      "本機 Whisper 語音辨識",
+      "TXT、SRT、VTT 匯出",
+      "手機 PWA 分享"
+    ]
+  }
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -19,35 +65,33 @@
       <span class="brand-mark" aria-hidden="true">R</span>
       <span>
         <strong>ReelScribe</strong>
-        <small>社群影片字幕工具</small>
+        <small>免費影片字幕工具</small>
       </span>
     </a>
-    <span class="privacy-pill">不傳 Cookie</span>
+    <div class="topbar-actions">
+      <span class="privacy-pill">不傳 Cookie</span>
+      <button id="share-site" class="button header-share" type="button" aria-label="分享 ReelScribe">分享</button>
+    </div>
   </header>
 
   <main>
     <section class="hero shell">
-      <div class="eyebrow">免費 · 無帳號 · 無 API Key</div>
-      <h1>貼上影片連結，<br /><span>直接取得可複製字幕。</span></h1>
-      <p class="hero-copy">優先查找平台既有字幕與免費公開文字軌；沒有公開字幕時，再使用裝置上的本機 AI 備援。</p>
-      <div class="feature-row" aria-label="主要特色">
-        <span>連結優先</span><span>多來源競速</span><span>本機快取</span><span>手機分享</span><span>本機 AI 備援</span>
-      </div>
+      <div class="eyebrow">免費 · 免登入 · 無 API Key</div>
+      <h1>貼上影片連結，<br /><span>取得可複製字幕。</span></h1>
+      <p class="hero-copy">優先查找公開字幕；找不到時再使用本機 AI。</p>
     </section>
 
     <section class="workspace shell" aria-label="影片字幕工作區">
       <article class="card link-card">
-        <div class="card-heading">
+        <div class="card-heading compact-heading">
           <div>
-            <p class="step">主要功能</p>
-            <h2>貼上社群影片連結</h2>
+            <p class="step">開始</p>
+            <h2>貼上影片連結</h2>
           </div>
-          <span class="optional">最快方式</span>
         </div>
-        <p class="muted">網站只查詢公開字幕與文字軌，不要求社群密碼、登入 Cookie 或私人 Token。</p>
         <div class="input-row">
           <label class="sr-only" for="ig-url">社群影片連結</label>
-          <input id="ig-url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="貼上 YouTube、Instagram、TikTok、Vimeo…" aria-describedby="url-status" />
+          <input id="ig-url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="YouTube、Instagram、TikTok、Vimeo…" aria-describedby="url-status" />
           <button id="paste-url" class="button ghost" type="button">貼上</button>
           <button id="check-url" class="button secondary" type="button" aria-controls="results">取得字幕</button>
         </div>
@@ -61,26 +105,26 @@
       <details id="fallback-tools" class="fallback-details">
         <summary>
           <span class="fallback-summary-copy">
-            <span>連結沒有字幕？使用本機備援</span>
-            <small>影片上傳、分頁音訊或麥克風錄音</small>
+            <span>沒有公開字幕？</span>
+            <small>使用本機影片、分頁音訊或麥克風</small>
           </span>
         </summary>
 
         <article class="card upload-card">
           <div class="card-heading">
             <div>
-              <p class="step">備援工具</p>
-              <h2>本機 Whisper 辨識</h2>
+              <p class="step">本機備援</p>
+              <h2>Whisper 辨識</h2>
             </div>
-            <span class="required">影片不離開裝置</span>
+            <span class="required">檔案不上傳</span>
           </div>
 
           <label id="drop-zone" class="drop-zone" for="media-file">
             <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac" />
             <span class="upload-symbol" aria-hidden="true">↑</span>
             <strong>選擇影片或音訊</strong>
-            <span>也可以把檔案拖曳到這裡</span>
-            <small>只在目前裝置處理，不會上傳伺服器</small>
+            <span>也可以拖曳檔案</span>
+            <small>只在目前裝置處理</small>
           </label>
 
           <div id="file-panel" class="file-panel" hidden>
@@ -114,7 +158,7 @@
             </label>
             <label class="switch-line">
               <input id="prefer-gpu" type="checkbox" checked />
-              <span>支援時優先使用 WebGPU 加速</span>
+              <span>支援時使用 WebGPU 加速</span>
             </label>
           </div>
 
@@ -130,12 +174,14 @@
           </div>
         </article>
       </details>
+
+      <p class="compact-trust">只處理公開字幕來源，不要求密碼、Cookie 或私人 Token。</p>
     </section>
 
     <section id="results" class="results shell" hidden>
       <div class="results-heading">
         <div>
-          <p class="step">字幕結果</p>
+          <p class="step">結果</p>
           <h2>完整字幕</h2>
           <p id="result-stats" class="muted"></p>
         </div>
@@ -165,26 +211,11 @@
         </article>
       </div>
     </section>
-
-    <section class="notes shell">
-      <article>
-        <h2>處理方式</h2>
-        <ol>
-          <li>先讀取平台公開字幕與文字軌。</li>
-          <li>多個免費來源同步查詢，最快有效結果先顯示。</li>
-          <li>成功結果保存在本機快取，下次可立即開啟。</li>
-        </ol>
-      </article>
-      <article>
-        <h2>安全與限制</h2>
-        <p>沒有公開字幕時會明確告知，不會把標題或貼文說明冒充成語音字幕，也不會要求 Cookie 或繞過登入。</p>
-      </article>
-    </section>
   </main>
 
   <footer class="footer shell">
-    <span>ReelScribe · Link-first subtitle resolver</span>
-    <span>請只處理你有權使用的公開內容</span>
+    <span>ReelScribe · 免費開源字幕工具</span>
+    <button id="footer-share" class="text-link button-link" type="button" onclick="document.querySelector('#share-site')?.click()">分享給朋友</button>
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -193,5 +224,6 @@
   <script type="module" src="./traditional.js"></script>
   <script type="module" src="./universal-link.js"></script>
   <script type="module" src="./ui.js"></script>
+  <script type="module" src="./share.js"></script>
 </body>
 </html>
