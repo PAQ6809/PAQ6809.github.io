@@ -1,4 +1,4 @@
-const CACHE_NAME = "reelscribe-shell-v7";
+const CACHE_NAME = "reelscribe-shell-v8";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "./app.js",
   "./capture.js",
   "./traditional.js",
+  "./instagram-direct.js",
   "./universal-link.js",
   "./ui.js",
   "./share.js",
