@@ -1,0 +1,47 @@
+name: ReelScribe quality check
+
+on:
+  push:
+    paths:
+      - "reelscribe/**"
+      - ".github/workflows/reelscribe-check.yml"
+  pull_request:
+    paths:
+      - "reelscribe/**"
+      - ".github/workflows/reelscribe-check.yml"
+  schedule:
+    - cron: "15 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax
+        run: |
+          node --check reelscribe/app.js
+          cp reelscribe/worker.js /tmp/reelscribe-worker.mjs
+          node --check /tmp/reelscribe-worker.mjs
+      - name: Validate manifest JSON
+        run: python -m json.tool reelscribe/manifest.webmanifest >/dev/null
+      - name: Confirm required app files
+        run: |
+          test -s reelscribe/index.html
+          test -s reelscribe/styles.css
+          test -s reelscribe/app.js
+          test -s reelscribe/worker.js
+          test -s reelscribe/sw.js
+      - name: Scheduled production smoke test
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl --fail --location --retry 3 --retry-delay 5 \
+            https://paq6809.github.io/reelscribe/ \
+            | grep -q "ReelScribe"
