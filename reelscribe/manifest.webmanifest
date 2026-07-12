@@ -1,0 +1,19 @@
+{
+  "name": "ReelScribe｜免費本機影片轉字幕",
+  "short_name": "ReelScribe",
+  "description": "在瀏覽器本機將影片或音訊轉成可複製與下載的字幕。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
