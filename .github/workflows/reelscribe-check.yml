@@ -4,10 +4,14 @@ on:
   push:
     paths:
       - "reelscribe/**"
+      - "tests/reelscribe-audit.mjs"
+      - "robots.txt"
       - ".github/workflows/reelscribe-check.yml"
   pull_request:
     paths:
       - "reelscribe/**"
+      - "tests/reelscribe-audit.mjs"
+      - "robots.txt"
       - ".github/workflows/reelscribe-check.yml"
   schedule:
     - cron: "15 1 * * 1,4"
@@ -25,6 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
       - name: Check JavaScript syntax
         run: |
           node --check reelscribe/app.js
@@ -32,16 +37,30 @@ jobs:
           node --check reelscribe/traditional.js
           node --check reelscribe/universal-link.js
           node --check reelscribe/ui.js
+          node --check reelscribe/share.js
+          node --check tests/reelscribe-audit.mjs
           cp reelscribe/worker.js /tmp/reelscribe-worker.mjs
           node --check /tmp/reelscribe-worker.mjs
           node --check reelscribe/sw.js
-      - name: Validate manifest JSON
-        run: python -m json.tool reelscribe/manifest.webmanifest >/dev/null
+
+      - name: Run dependency-free functional audit
+        run: node tests/reelscribe-audit.mjs
+
+      - name: Validate manifest, sitemap and JSON files
+        run: |
+          python -m json.tool reelscribe/manifest.webmanifest >/dev/null
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          ET.parse("reelscribe/sitemap.xml")
+          PY
+
       - name: Validate HTML and CSS structure
         run: |
           python - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
+          import json
+          import re
 
           class Parser(HTMLParser):
               pass
@@ -49,28 +68,48 @@ jobs:
           html = Path("reelscribe/index.html").read_text(encoding="utf-8")
           Parser().feed(html)
 
+          ids = re.findall(r'\sid=["\']([^"\']+)["\']', html)
+          assert len(ids) == len(set(ids)), "Duplicate HTML ids"
+
+          match = re.search(r'<script type="application/ld\+json">([\s\S]*?)</script>', html)
+          assert match, "Missing JSON-LD"
+          json.loads(match.group(1))
+
           for path in ["reelscribe/styles.css", "reelscribe/ui-polish.css"]:
               css = Path(path).read_text(encoding="utf-8")
               assert css.count("{") == css.count("}"), f"Unbalanced CSS braces: {path}"
           PY
-      - name: Confirm required app files and wiring
+
+      - name: Confirm required app, SEO and campaign files
         run: |
           test -s reelscribe/index.html
           test -s reelscribe/styles.css
           test -s reelscribe/ui-polish.css
           test -s reelscribe/OPTIMIZATION.md
+          test -s reelscribe/PROMOTION.md
+          test -s reelscribe/sitemap.xml
+          test -s reelscribe/social-card.svg
+          test -s robots.txt
           test -s reelscribe/app.js
           test -s reelscribe/capture.js
           test -s reelscribe/traditional.js
           test -s reelscribe/universal-link.js
           test -s reelscribe/ui.js
+          test -s reelscribe/share.js
           test -s reelscribe/worker.js
           test -s reelscribe/sw.js
+          test -s tests/reelscribe-audit.mjs
           grep -q './capture.js' reelscribe/index.html
           grep -q './traditional.js' reelscribe/index.html
           grep -q './universal-link.js' reelscribe/index.html
           grep -q './ui.js' reelscribe/index.html
+          grep -q './share.js' reelscribe/index.html
+          grep -q './ui-polish.css' reelscribe/index.html
           grep -q 'id="fallback-tools"' reelscribe/index.html
+          grep -q 'id="share-site"' reelscribe/index.html
+          grep -q 'rel="canonical"' reelscribe/index.html
+          grep -q 'property="og:title"' reelscribe/index.html
+          grep -q 'SoftwareApplication' reelscribe/index.html
           grep -q 'traditional-button' reelscribe/traditional.js
           grep -q 'traditional-button' reelscribe/ui-polish.css
           grep -q 'share_target' reelscribe/manifest.webmanifest
@@ -79,7 +118,8 @@ jobs:
           grep -q 'prefers-reduced-motion' reelscribe/styles.css
           grep -q 'min-height: 46px' reelscribe/styles.css
           grep -q 'Every future UI' reelscribe/OPTIMIZATION.md
-          grep -q 'ReelScribe' reelscribe/index.html
+          ! grep -q 'class="notes shell"' reelscribe/index.html
+
       - name: Free provider discovery health
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
@@ -92,6 +132,7 @@ jobs:
           curl --fail --silent --show-error --location --retry 3 --max-time 20 \
             https://raw.githubusercontent.com/wiki/TeamPiped/Piped/Instances.md \
             | grep -Eiq 'piped|api'
+
       - name: Scheduled production smoke test
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
@@ -100,5 +141,8 @@ jobs:
             | tee /tmp/reelscribe.html \
             | grep -q "ReelScribe"
           grep -q "universal-link.js" /tmp/reelscribe.html
-          grep -q "ui.js" /tmp/reelscribe.html
+          grep -q "share.js" /tmp/reelscribe.html
           grep -q "fallback-tools" /tmp/reelscribe.html
+          curl --fail --location --retry 3 --retry-delay 5 \
+            https://paq6809.github.io/reelscribe/sitemap.xml \
+            | grep -q "paq6809.github.io/reelscribe/"
