@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="index,follow,max-snippet:-1" />
+  <meta name="description" content="ReelScribe 支援平台與影音格式說明：YouTube、Instagram、TikTok、Facebook、X、Vimeo、Bilibili、PeerTube 與常見影片、音訊、字幕格式。" />
+  <link rel="canonical" href="https://paq6809.github.io/reelscribe/supported-platforms.html" />
+  <title>ReelScribe 支援平台與影音格式</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .support-page{width:min(900px,calc(100% - 28px));margin:0 auto;padding:42px 0 64px}.support-page h1{font-size:clamp(30px,6vw,50px);letter-spacing:-.045em;margin:18px 0 12px}.support-page h2{margin:32px 0 10px;font-size:21px}.support-page p,.support-page li{color:var(--muted);line-height:1.75}.support-card{margin-top:18px;padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff}.support-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.support-grid article{padding:18px;border:1px solid var(--line);border-radius:15px;background:#fff}.support-grid h3{margin:0 0 8px}.tag-list{display:flex;flex-wrap:wrap;gap:8px}.tag-list span{padding:7px 10px;border-radius:999px;background:#f4f7fb;color:#344054;font-size:12px}.back-link{display:inline-flex;min-height:44px;align-items:center;color:#2563eb;font-weight:800;text-decoration:none}@media(max-width:680px){.support-grid{grid-template-columns:1fr}.support-page{padding-top:24px}}
+  </style>
+</head>
+<body>
+  <main class="support-page">
+    <a class="back-link" href="./">← 回到 ReelScribe</a>
+    <h1>支援平台與影音格式</h1>
+    <p>ReelScribe 接受所有公開 HTTPS 影片頁面。能否只靠連結直接取得字幕，取決於平台是否公開字幕或文字軌；沒有公開字幕時，可改用瀏覽器本機 Whisper。</p>
+
+    <section class="support-card">
+      <h2>公開連結範圍</h2>
+      <div class="tag-list">
+        <span>YouTube／Shorts</span><span>Instagram／Reels</span><span>TikTok</span><span>Facebook／Reels</span><span>Threads</span><span>X</span><span>Reddit</span><span>Twitch</span><span>Vimeo</span><span>Dailymotion</span><span>PeerTube</span><span>Bilibili</span><span>Douyin</span><span>Kuaishou</span><span>Weibo</span><span>小紅書</span><span>Niconico</span><span>Rumble</span><span>Kick</span><span>Loom</span><span>Streamable</span><span>Wistia</span><span>LinkedIn</span><span>Snapchat</span><span>Pinterest</span><span>Telegram 公開頁面</span><span>Mastodon</span><span>Bluesky</span><span>SoundCloud</span><span>Podcast 公開頁面</span><span>其他公開影片頁面</span>
+      </div>
+    </section>
+
+    <section class="support-grid">
+      <article>
+        <h3>可直接取得字幕</h3>
+        <p>平台已公開 VTT、SRT、TTML、XML、JSON 或相容文字軌時，網站會優先讀取，不下載原始影片。</p>
+      </article>
+      <article>
+        <h3>僅能取得中繼資料</h3>
+        <p>Instagram、TikTok、Facebook 等平台若沒有公開字幕介面，網站只能辨識來源與標題，無法把貼文說明冒充成影片語音字幕。</p>
+      </article>
+      <article>
+        <h3>本機 AI 備援</h3>
+        <p>使用者可選擇合法取得的影音檔、桌機分頁音訊或麥克風，交由裝置上的 Whisper 處理。</p>
+      </article>
+      <article>
+        <h3>私人與受限內容</h3>
+        <p>不支援私人帳號、付費牆、登入限定、DRM 或需要 Cookie、帳號 Token、權限繞過的內容。</p>
+      </article>
+    </section>
+
+    <section class="support-card">
+      <h2>常見影片與音訊格式</h2>
+      <p>網站會接受下列常見副檔名；最終能否解碼仍取決於裝置、作業系統與瀏覽器內建編解碼器。</p>
+      <div class="tag-list">
+        <span>MP4</span><span>M4V</span><span>MOV</span><span>WebM</span><span>MKV</span><span>AVI</span><span>WMV</span><span>FLV</span><span>MPEG／MPG</span><span>TS／MTS／M2TS</span><span>3GP／3G2</span><span>OGV</span><span>MP3</span><span>M4A</span><span>AAC</span><span>WAV</span><span>FLAC</span><span>Opus</span><span>OGG／OGA</span><span>WebA</span><span>MKA</span><span>AMR</span><span>AIFF／AIF</span><span>CAF</span><span>WMA</span>
+      </div>
+      <p>跨裝置穩定性最高的選擇通常是 MP4（H.264／AAC）、M4A、MP3、WAV 或 WebM。特殊格式無法讀取時，建議先轉成以上格式。</p>
+    </section>
+
+    <section class="support-card">
+      <h2>長影片處理方式</h2>
+      <ul>
+        <li>智慧模式會依影片長度、裝置記憶體與 WebGPU 狀況選擇模型。</li>
+        <li>長影片會分段辨識，避免一次等待到最後才看到進度。</li>
+        <li>大段靜音會自動跳過，減少不必要運算。</li>
+        <li>重疊區段會去除重複文字並重新對齊時間軸。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
