@@ -6,16 +6,27 @@ on:
       - "reelscribe/**"
       - "tests/reelscribe-audit.mjs"
       - "robots.txt"
+      - "SECURITY.md"
+      - ".github/CODEOWNERS"
+      - ".github/dependabot.yml"
       - ".github/workflows/reelscribe-check.yml"
+      - "023a07a03f89a9a325ac29506c5f91e19fda61e84ca32ed0c7d6299901a07ca1.txt"
   pull_request:
     paths:
       - "reelscribe/**"
       - "tests/reelscribe-audit.mjs"
       - "robots.txt"
+      - "SECURITY.md"
+      - ".github/CODEOWNERS"
+      - ".github/dependabot.yml"
       - ".github/workflows/reelscribe-check.yml"
   schedule:
     - cron: "15 1 * * 1,4"
   workflow_dispatch:
+
+concurrency:
+  group: reelscribe-quality-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -23,15 +34,22 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
 
       - name: Check JavaScript syntax
         run: |
+          set -euo pipefail
+          node --check reelscribe/format-compat.js
           node --check reelscribe/app.js
           node --check reelscribe/capture.js
           node --check reelscribe/traditional.js
@@ -46,43 +64,50 @@ jobs:
       - name: Run dependency-free functional audit
         run: node tests/reelscribe-audit.mjs
 
-      - name: Validate manifest, sitemap and JSON files
+      - name: Validate manifest, sitemap and structured data
         run: |
+          set -euo pipefail
           python -m json.tool reelscribe/manifest.webmanifest >/dev/null
           python - <<'PY'
+          import json
+          import re
           import xml.etree.ElementTree as ET
+          from pathlib import Path
+
           ET.parse("reelscribe/sitemap.xml")
+          html = Path("reelscribe/index.html").read_text(encoding="utf-8")
+          match = re.search(r'<script type="application/ld\+json">([\s\S]*?)</script>', html)
+          assert match, "Missing JSON-LD"
+          json.loads(match.group(1))
           PY
 
       - name: Validate HTML and CSS structure
         run: |
+          set -euo pipefail
           python - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
-          import json
           import re
 
           class Parser(HTMLParser):
               pass
 
-          html = Path("reelscribe/index.html").read_text(encoding="utf-8")
-          Parser().feed(html)
-
-          ids = re.findall(r'\sid=["\']([^"\']+)["\']', html)
-          assert len(ids) == len(set(ids)), "Duplicate HTML ids"
-
-          match = re.search(r'<script type="application/ld\+json">([\s\S]*?)</script>', html)
-          assert match, "Missing JSON-LD"
-          json.loads(match.group(1))
+          for path in ["reelscribe/index.html", "reelscribe/supported-platforms.html"]:
+              html = Path(path).read_text(encoding="utf-8")
+              Parser().feed(html)
+              ids = re.findall(r'\sid=["\']([^"\']+)["\']', html)
+              assert len(ids) == len(set(ids)), f"Duplicate HTML ids: {path}"
 
           for path in ["reelscribe/styles.css", "reelscribe/ui-polish.css"]:
               css = Path(path).read_text(encoding="utf-8")
               assert css.count("{") == css.count("}"), f"Unbalanced CSS braces: {path}"
           PY
 
-      - name: Confirm required app, SEO and campaign files
+      - name: Confirm required app, SEO, security and campaign files
         run: |
+          set -euo pipefail
           test -s reelscribe/index.html
+          test -s reelscribe/supported-platforms.html
           test -s reelscribe/styles.css
           test -s reelscribe/ui-polish.css
           test -s reelscribe/OPTIMIZATION.md
@@ -90,6 +115,11 @@ jobs:
           test -s reelscribe/sitemap.xml
           test -s reelscribe/social-card.svg
           test -s robots.txt
+          test -s SECURITY.md
+          test -s .github/CODEOWNERS
+          test -s .github/dependabot.yml
+          test -s 023a07a03f89a9a325ac29506c5f91e19fda61e84ca32ed0c7d6299901a07ca1.txt
+          test -s reelscribe/format-compat.js
           test -s reelscribe/app.js
           test -s reelscribe/capture.js
           test -s reelscribe/traditional.js
@@ -99,6 +129,7 @@ jobs:
           test -s reelscribe/worker.js
           test -s reelscribe/sw.js
           test -s tests/reelscribe-audit.mjs
+          grep -q './format-compat.js' reelscribe/index.html
           grep -q './capture.js' reelscribe/index.html
           grep -q './traditional.js' reelscribe/index.html
           grep -q './universal-link.js' reelscribe/index.html
@@ -107,6 +138,14 @@ jobs:
           grep -q './ui-polish.css' reelscribe/index.html
           grep -q 'id="fallback-tools"' reelscribe/index.html
           grep -q 'id="share-site"' reelscribe/index.html
+          grep -q 'value="smart"' reelscribe/index.html
+          grep -q 'Content-Security-Policy' reelscribe/index.html
+          grep -q 'supported-platforms.html' reelscribe/index.html
+          grep -q 'format-compat.js' reelscribe/sw.js
+          grep -q 'supported-platforms.html' reelscribe/sw.js
+          grep -q 'selectModel' reelscribe/worker.js
+          grep -q 'transcribeAdaptive' reelscribe/worker.js
+          grep -q 'isMostlySilent' reelscribe/worker.js
           grep -q 'rel="canonical"' reelscribe/index.html
           grep -q 'property="og:title"' reelscribe/index.html
           grep -q 'SoftwareApplication' reelscribe/index.html
@@ -120,9 +159,37 @@ jobs:
           grep -q 'Every future UI' reelscribe/OPTIMIZATION.md
           ! grep -q 'class="notes shell"' reelscribe/index.html
 
+      - name: Audit workflow and client security controls
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow = Path('.github/workflows/reelscribe-check.yml').read_text(encoding='utf-8')
+          uses = re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M)
+          for value in uses:
+              if value.startswith('./'):
+                  continue
+              assert re.search(r'@[0-9a-f]{40}$', value), f'Action is not pinned to a full SHA: {value}'
+
+          assert re.search(r'^permissions:\s*\n\s+contents:\s+read\s*$', workflow, flags=re.M), 'Workflow token must remain read-only'
+
+          index = Path('reelscribe/index.html').read_text(encoding='utf-8')
+          assert 'Content-Security-Policy' in index
+          assert 'name="referrer" content="no-referrer"' in index
+
+          source_files = list(Path('reelscribe').glob('*.js'))
+          source = '\n'.join(path.read_text(encoding='utf-8') for path in source_files)
+          assert 'document.cookie' not in source, 'Cookie access is prohibited'
+          assert 'new Function(' not in source, 'Dynamic Function construction is prohibited'
+          assert not re.search(r'(^|[^\w])eval\s*\(', source), 'eval() is prohibited'
+          PY
+
       - name: Free provider discovery health
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
+          set -euo pipefail
           curl --fail --silent --show-error --location --retry 3 --max-time 20 \
             https://noembed.com/providers >/tmp/noembed-providers.json
           python -m json.tool /tmp/noembed-providers.json >/dev/null
@@ -133,16 +200,55 @@ jobs:
             https://raw.githubusercontent.com/wiki/TeamPiped/Piped/Instances.md \
             | grep -Eiq 'piped|api'
 
-      - name: Scheduled production smoke test
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      - name: Verify production deployment matches repository
+        if: github.event_name != 'pull_request'
         run: |
-          curl --fail --location --retry 3 --retry-delay 5 \
-            https://paq6809.github.io/reelscribe/ \
-            | tee /tmp/reelscribe.html \
-            | grep -q "ReelScribe"
-          grep -q "universal-link.js" /tmp/reelscribe.html
-          grep -q "share.js" /tmp/reelscribe.html
-          grep -q "fallback-tools" /tmp/reelscribe.html
-          curl --fail --location --retry 3 --retry-delay 5 \
-            https://paq6809.github.io/reelscribe/sitemap.xml \
-            | grep -q "paq6809.github.io/reelscribe/"
+          set -euo pipefail
+          files=(index.html format-compat.js worker.js universal-link.js sw.js supported-platforms.html)
+          for attempt in {1..12}; do
+            all_match=true
+            for file in "${files[@]}"; do
+              remote="/tmp/remote-${file//\//-}"
+              if ! curl --fail --silent --show-error --location --max-time 25 \
+                "https://paq6809.github.io/reelscribe/${file}?revision=${GITHUB_SHA}" -o "$remote"; then
+                all_match=false
+                break
+              fi
+              if ! cmp -s "reelscribe/$file" "$remote"; then
+                all_match=false
+                break
+              fi
+            done
+            if [ "$all_match" = true ]; then
+              echo "Production files match this repository revision."
+              exit 0
+            fi
+            echo "GitHub Pages has not finished deploying; retrying in 20 seconds ($attempt/12)."
+            sleep 20
+          done
+          echo "Production deployment did not match repository files within the verification window." >&2
+          exit 1
+
+      - name: Submit updated URLs through IndexNow
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          key="023a07a03f89a9a325ac29506c5f91e19fda61e84ca32ed0c7d6299901a07ca1"
+          key_url="https://paq6809.github.io/${key}.txt"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 10 "$key_url" | grep -qx "$key"
+          cat >/tmp/indexnow.json <<JSON
+          {
+            "host": "paq6809.github.io",
+            "key": "$key",
+            "keyLocation": "$key_url",
+            "urlList": [
+              "https://paq6809.github.io/reelscribe/",
+              "https://paq6809.github.io/reelscribe/supported-platforms.html",
+              "https://paq6809.github.io/reelscribe/sitemap.xml"
+            ]
+          }
+          JSON
+          curl --fail --silent --show-error --request POST \
+            --header 'Content-Type: application/json; charset=utf-8' \
+            --data-binary @/tmp/indexnow.json \
+            https://api.indexnow.org/indexnow
