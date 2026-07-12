@@ -61,20 +61,50 @@
     }
   }
 
-  async function resolveMedia(canonicalUrl) {
-    const response = await fetch(`${API_BASE}/api/instagram-resolve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ url: canonicalUrl }),
-      credentials: "omit",
-      referrerPolicy: "no-referrer",
-      cache: "no-store",
-    });
-    const data = await readJson(response);
-    if (!response.ok || !data?.ok || !Array.isArray(data.media) || !data.media.length) {
-      throw new Error(data?.message || "Instagram 沒有提供可匿名讀取的公開影片。");
+  async function callResolver(path, canonicalUrl) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), path.includes("instagram-yt") ? 45_000 : 15_000);
+    try {
+      const response = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ url: canonicalUrl }),
+        credentials: "omit",
+        referrerPolicy: "no-referrer",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data?.ok || !Array.isArray(data.media) || !data.media.length) {
+        const error = new Error(data?.message || "Instagram 沒有提供可匿名讀取的公開影片。");
+        error.code = data?.error || `HTTP_${response.status}`;
+        throw error;
+      }
+      return data;
+    } finally {
+      clearTimeout(timer);
     }
-    return data;
+  }
+
+  async function resolveMedia(canonicalUrl) {
+    const errors = [];
+    updateProvider("running", "快速解析");
+    try {
+      return await callResolver("/api/instagram-resolve", canonicalUrl);
+    } catch (error) {
+      errors.push(error);
+    }
+
+    updateProvider("running", "瀏覽器模擬解析");
+    setStatus("快速解析未取得影片，正在嘗試相容性較高的 Instagram 解析器…", "ok");
+    try {
+      return await callResolver("/api/instagram-yt", canonicalUrl);
+    } catch (error) {
+      errors.push(error);
+    }
+
+    const useful = errors.map((error) => error?.message).filter(Boolean).at(-1);
+    throw new Error(useful || "Instagram 沒有向匿名服務提供可讀取的公開影片。");
   }
 
   async function fetchMediaFile(media, shortcode) {
@@ -156,7 +186,7 @@
       const media = data.media[0];
       if (fallback) fallback.open = true;
       setStatus(data.media.length > 1 ? `找到 ${data.media.length} 段影片，先處理第一段…` : "已找到公開影片，正在交給本機 AI…", "ok");
-      updateProvider("ok", "已取得公開影片");
+      updateProvider("ok", data.provider?.includes("yt-dlp") ? "相容解析成功" : "快速解析成功");
 
       const file = await fetchMediaFile(media, parsed.shortcode);
       assignFile(file);
@@ -168,7 +198,7 @@
       console.warn("Instagram direct transcription failed", error);
       const message = error instanceof Error ? error.message : "Instagram 直接解析失敗。";
       setStatus(`${message} 可改用下方分頁音訊或本機檔案備援。`, "error");
-      updateProvider("fail", "公開解析失敗");
+      updateProvider("fail", "匿名解析受限");
       if (fallback) fallback.open = true;
       return true;
     } finally {
