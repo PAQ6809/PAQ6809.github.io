@@ -28,8 +28,10 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check reelscribe/app.js
+          node --check reelscribe/capture.js
           cp reelscribe/worker.js /tmp/reelscribe-worker.mjs
           node --check /tmp/reelscribe-worker.mjs
+          node --check reelscribe/sw.js
       - name: Validate manifest JSON
         run: python -m json.tool reelscribe/manifest.webmanifest >/dev/null
       - name: Confirm required app files
@@ -37,8 +39,11 @@ jobs:
           test -s reelscribe/index.html
           test -s reelscribe/styles.css
           test -s reelscribe/app.js
+          test -s reelscribe/capture.js
           test -s reelscribe/worker.js
           test -s reelscribe/sw.js
+          grep -q './capture.js' reelscribe/index.html
+          grep -q 'ReelScribe' reelscribe/index.html
       - name: Scheduled production smoke test
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
