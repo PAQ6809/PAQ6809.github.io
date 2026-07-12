@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#ffffff" />
   <meta name="description" content="ReelScribe：貼上公開社群影片連結，自動查找可用字幕；找不到時可改用本機 Whisper。免登入、免 API Key，不傳送 Cookie 或私人檔案。" />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="color-scheme" content="light" />
   <title>ReelScribe｜免費社群影片字幕擷取</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
@@ -19,7 +19,7 @@
       <span class="brand-mark" aria-hidden="true">R</span>
       <span>
         <strong>ReelScribe</strong>
-        <small>免費社群影片字幕工具</small>
+        <small>社群影片字幕工具</small>
       </span>
     </a>
     <span class="privacy-pill">不傳 Cookie</span>
@@ -29,104 +29,113 @@
     <section class="hero shell">
       <div class="eyebrow">免費 · 無帳號 · 無 API Key</div>
       <h1>貼上影片連結，<br /><span>直接取得可複製字幕。</span></h1>
-      <p class="hero-copy">系統會先競速查詢平台既有字幕、公開文字軌與免費開源字幕節點，不下載原影片；沒有公開字幕時，才切換到本機 Whisper 備援。</p>
+      <p class="hero-copy">優先查找平台既有字幕與免費公開文字軌；沒有公開字幕時，再使用裝置上的本機 AI 備援。</p>
       <div class="feature-row" aria-label="主要特色">
         <span>連結優先</span><span>多來源競速</span><span>本機快取</span><span>手機分享</span><span>本機 AI 備援</span>
       </div>
     </section>
 
-    <section class="workspace shell" aria-label="影片轉字幕工作區">
+    <section class="workspace shell" aria-label="影片字幕工作區">
       <article class="card link-card">
         <div class="card-heading">
           <div>
-            <p class="step">步驟 1</p>
+            <p class="step">主要功能</p>
             <h2>貼上社群影片連結</h2>
           </div>
-          <span class="optional">主要方式</span>
+          <span class="optional">最快方式</span>
         </div>
-        <p class="muted">支援平台會先讀取既有字幕或公開文字軌，不取得原始影片檔。公開字幕不存在或平台封鎖時，才使用備援方式。</p>
+        <p class="muted">網站只查詢公開字幕與文字軌，不要求社群密碼、登入 Cookie 或私人 Token。</p>
         <div class="input-row">
           <label class="sr-only" for="ig-url">社群影片連結</label>
-          <input id="ig-url" inputmode="url" autocomplete="url" placeholder="YouTube、Instagram、TikTok、Vimeo、Bilibili…" />
+          <input id="ig-url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="貼上 YouTube、Instagram、TikTok、Vimeo…" aria-describedby="url-status" />
           <button id="paste-url" class="button ghost" type="button">貼上</button>
-          <button id="check-url" class="button secondary" type="button">自動取得字幕</button>
+          <button id="check-url" class="button secondary" type="button" aria-controls="results">取得字幕</button>
         </div>
         <div id="url-status" class="inline-status" role="status" aria-live="polite"></div>
         <div id="verified-link-actions" class="link-actions" hidden>
           <a id="open-instagram" class="text-link" target="_blank" rel="noopener noreferrer">開啟原始頁面</a>
-          <button id="focus-upload" class="text-link button-link" type="button">改用本機檔案</button>
+          <button id="focus-upload" class="text-link button-link" type="button">改用本機備援</button>
         </div>
       </article>
 
-      <article class="card upload-card">
-        <div class="card-heading">
-          <div>
-            <p class="step">備援</p>
-            <h2>本機 Whisper 辨識</h2>
-          </div>
-          <span class="required">連結無字幕時</span>
-        </div>
+      <details id="fallback-tools" class="fallback-details">
+        <summary>
+          <span class="fallback-summary-copy">
+            <span>連結沒有字幕？使用本機備援</span>
+            <small>影片上傳、分頁音訊或麥克風錄音</small>
+          </span>
+        </summary>
 
-        <label id="drop-zone" class="drop-zone" for="media-file">
-          <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac" />
-          <span class="upload-symbol" aria-hidden="true">↑</span>
-          <strong>點一下選擇影片或音訊</strong>
-          <span>也可把檔案拖曳到這裡</span>
-          <small>只在目前裝置處理，不會上傳伺服器</small>
-        </label>
-
-        <div id="file-panel" class="file-panel" hidden>
-          <div class="preview-wrap">
-            <video id="media-preview" controls playsinline preload="metadata"></video>
+        <article class="card upload-card">
+          <div class="card-heading">
+            <div>
+              <p class="step">備援工具</p>
+              <h2>本機 Whisper 辨識</h2>
+            </div>
+            <span class="required">影片不離開裝置</span>
           </div>
-          <div class="file-meta">
-            <strong id="file-name"></strong>
-            <span id="file-detail"></span>
-            <button id="remove-file" class="text-link button-link danger" type="button">移除檔案</button>
-          </div>
-        </div>
 
-        <div class="settings-grid">
-          <label>
-            <span>辨識模式</span>
-            <select id="model-select">
-              <option value="onnx-community/whisper-tiny">快速模式（建議手機）</option>
-              <option value="onnx-community/whisper-base">品質模式（較慢）</option>
-            </select>
+          <label id="drop-zone" class="drop-zone" for="media-file">
+            <input id="media-file" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac" />
+            <span class="upload-symbol" aria-hidden="true">↑</span>
+            <strong>選擇影片或音訊</strong>
+            <span>也可以把檔案拖曳到這裡</span>
+            <small>只在目前裝置處理，不會上傳伺服器</small>
           </label>
-          <label>
-            <span>影片語言</span>
-            <select id="language-select">
-              <option value="auto">自動偵測</option>
-              <option value="chinese">中文</option>
-              <option value="english">英文</option>
-              <option value="japanese">日文</option>
-              <option value="korean">韓文</option>
-            </select>
-          </label>
-          <label class="switch-line">
-            <input id="prefer-gpu" type="checkbox" checked />
-            <span>支援時優先使用 WebGPU 加速</span>
-          </label>
-        </div>
 
-        <button id="transcribe" class="button primary wide" type="button" disabled>開始本機辨識</button>
-
-        <div id="progress-panel" class="progress-panel" hidden>
-          <div class="progress-copy">
-            <strong id="progress-title">準備中</strong>
-            <span id="progress-detail">正在初始化...</span>
+          <div id="file-panel" class="file-panel" hidden>
+            <div class="preview-wrap">
+              <video id="media-preview" controls playsinline preload="metadata"></video>
+            </div>
+            <div class="file-meta">
+              <strong id="file-name"></strong>
+              <span id="file-detail"></span>
+              <button id="remove-file" class="text-link button-link danger" type="button">移除檔案</button>
+            </div>
           </div>
-          <div class="progress-track" aria-hidden="true"><div id="progress-bar"></div></div>
-          <p id="progress-note" class="muted small"></p>
-        </div>
-      </article>
+
+          <div class="settings-grid">
+            <label>
+              <span>辨識模式</span>
+              <select id="model-select">
+                <option value="onnx-community/whisper-tiny">快速模式（建議手機）</option>
+                <option value="onnx-community/whisper-base">品質模式（較慢）</option>
+              </select>
+            </label>
+            <label>
+              <span>影片語言</span>
+              <select id="language-select">
+                <option value="auto">自動偵測</option>
+                <option value="chinese">中文</option>
+                <option value="english">英文</option>
+                <option value="japanese">日文</option>
+                <option value="korean">韓文</option>
+              </select>
+            </label>
+            <label class="switch-line">
+              <input id="prefer-gpu" type="checkbox" checked />
+              <span>支援時優先使用 WebGPU 加速</span>
+            </label>
+          </div>
+
+          <button id="transcribe" class="button primary wide" type="button" disabled>開始本機辨識</button>
+
+          <div id="progress-panel" class="progress-panel" hidden>
+            <div class="progress-copy">
+              <strong id="progress-title">準備中</strong>
+              <span id="progress-detail">正在初始化...</span>
+            </div>
+            <div class="progress-track" aria-hidden="true"><div id="progress-bar"></div></div>
+            <p id="progress-note" class="muted small"></p>
+          </div>
+        </article>
+      </details>
     </section>
 
     <section id="results" class="results shell" hidden>
       <div class="results-heading">
         <div>
-          <p class="step">結果</p>
+          <p class="step">字幕結果</p>
           <h2>完整字幕</h2>
           <p id="result-stats" class="muted"></p>
         </div>
@@ -159,16 +168,16 @@
 
     <section class="notes shell">
       <article>
-        <h2>系統會怎麼處理？</h2>
+        <h2>處理方式</h2>
         <ol>
-          <li>偵測平台並先讀取公開字幕與文字軌。</li>
-          <li>免費開源節點會並行競速，最快有效結果先顯示。</li>
-          <li>同一連結成功後會保存於本機快取，再次查詢立即開啟。</li>
+          <li>先讀取平台公開字幕與文字軌。</li>
+          <li>多個免費來源同步查詢，最快有效結果先顯示。</li>
+          <li>成功結果保存在本機快取，下次可立即開啟。</li>
         </ol>
       </article>
       <article>
         <h2>安全與限制</h2>
-        <p>網站不要求社群密碼、登入 Cookie 或私人 Token。部分平台不向匿名網頁提供語音字幕；這種情況會直接說明，而不會把貼文說明冒充成影片字幕。</p>
+        <p>沒有公開字幕時會明確告知，不會把標題或貼文說明冒充成語音字幕，也不會要求 Cookie 或繞過登入。</p>
       </article>
     </section>
   </main>
@@ -183,5 +192,6 @@
   <script type="module" src="./capture.js"></script>
   <script type="module" src="./traditional.js"></script>
   <script type="module" src="./universal-link.js"></script>
+  <script type="module" src="./ui.js"></script>
 </body>
 </html>
