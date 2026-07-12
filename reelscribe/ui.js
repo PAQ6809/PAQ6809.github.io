@@ -1,6 +1,11 @@
 (() => {
   "use strict";
 
+  const polish = document.createElement("link");
+  polish.rel = "stylesheet";
+  polish.href = "./ui-polish.css";
+  document.head.appendChild(polish);
+
   const fallback = document.querySelector("#fallback-tools");
   const focusUpload = document.querySelector("#focus-upload");
   const fileInput = document.querySelector("#media-file");
