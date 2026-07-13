@@ -12,8 +12,9 @@
     "typecheck": "tsc --noEmit",
     "audit:catalog": "node scripts/audit-model-catalog.mjs",
     "audit:native": "node scripts/audit-native-manager.mjs",
+    "audit:store": "node scripts/audit-store-metadata.mjs",
     "install:native-manager": "node scripts/install-native-manager.mjs",
-    "check": "npm run typecheck && npm run audit:catalog && npm run audit:native"
+    "check": "npm run typecheck && npm run audit:catalog && npm run audit:native && npm run audit:store"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "3.1.1",
