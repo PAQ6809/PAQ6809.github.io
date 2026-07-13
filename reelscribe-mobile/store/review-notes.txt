@@ -1,0 +1,15 @@
+ReelScribe is an offline-first transcription utility. No login is required.
+
+Testing local mode:
+1. Open the app.
+2. Choose a local video or audio file through the system picker.
+3. Select Whisper Tiny or Base.
+4. Approve the model download when prompted.
+5. Start on-device transcription.
+6. Review the editable transcript and timeline.
+
+The selected media, decoded audio, OCR frames and transcript remain on the device in local mode. Model files are downloaded from an allowlisted HTTPS source and must pass SHA-256 verification before a release build may load them.
+
+Public-link mode supports public YouTube captions and best-effort public Instagram media. It does not use account cookies, passwords, private tokens, login bypasses, paywall bypasses or DRM circumvention. Private and restricted content is unsupported.
+
+The planned first release has no account, advertising, subscription or in-app purchase. Optional server ASR is disabled.
