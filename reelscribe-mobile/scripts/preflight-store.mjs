@@ -63,6 +63,10 @@ const storeText = [
   read('reelscribe-mobile/STORE-LAUNCH.md'),
   read('reelscribe-mobile/store/OWNER-ACTIONS.md'),
 ].join('\n');
+const claimableStoreText = storeText
+  .split(/\r?\n/)
+  .filter(line => !/(?:do not|must not|never)\s+claim|不得宣稱|不可宣稱|不要宣稱|不應宣稱/i.test(line))
+  .join('\n');
 
 if (appJson.name !== 'ReelScribeMobile' || appJson.displayName !== 'ReelScribe') {
   errors.push('Unexpected React Native app identity.');
@@ -91,7 +95,7 @@ for (const url of [
 }
 
 if (!storeText.includes('io.github.paq6809.reelscribe')) errors.push('Store launch file must contain the provisional application identifier.');
-if (/100%|perfect accuracy|all links work|所有連結.*成功|百分之百準確/i.test(storeText)) {
+if (/100%|perfect accuracy|all links work|所有連結.*成功|百分之百準確/i.test(claimableStoreText)) {
   errors.push('Store metadata contains an unsupported success/accuracy claim.');
 }
 if (/advertising id|廣告識別碼/i.test(source)) errors.push('App source unexpectedly references advertising identifiers.');
