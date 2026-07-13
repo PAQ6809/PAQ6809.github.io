@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const QUALITY_BUILD = "2026.07.13.4";
+  const QUALITY_BUILD = "2026.07.13.5";
 
   const polish = document.createElement("link");
   polish.rel = "stylesheet";
@@ -23,6 +23,7 @@
   const progressDetail = document.querySelector("#progress-detail");
   const progressBar = document.querySelector("#progress-bar");
   const progressNote = document.querySelector("#progress-note");
+  const modelSelect = document.querySelector("#model-select");
 
   document.documentElement.classList.add("js");
 
@@ -52,6 +53,30 @@
         // Quality checks still work without offline caching.
       }
     });
+  }
+
+  function installModelChoices() {
+    if (!modelSelect) return;
+
+    const smart = modelSelect.querySelector('option[value="smart"]');
+    const tiny = modelSelect.querySelector('option[value="onnx-community/whisper-tiny"]');
+    const base = modelSelect.querySelector('option[value="onnx-community/whisper-base"]');
+    if (smart) smart.textContent = "智慧模式（依裝置自動選 Tiny／Base／Small）";
+    if (tiny) tiny.textContent = "極速模式 · Whisper Tiny（長影片／手機）";
+    if (base) base.textContent = "平衡模式 · Whisper Base（一般短片）";
+
+    if (!modelSelect.querySelector('option[value="onnx-community/whisper-small"]')) {
+      const accurate = document.createElement("option");
+      accurate.value = "onnx-community/whisper-small";
+      accurate.textContent = "精準模式 · Whisper Small（桌機 WebGPU）";
+
+      const userAgent = String(navigator.userAgent || "");
+      const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)
+        || (/Macintosh/i.test(userAgent) && Number(navigator.maxTouchPoints) > 1);
+      accurate.disabled = mobile || !navigator.gpu;
+      if (accurate.disabled) accurate.textContent += " · 此裝置改用智慧模式";
+      modelSelect.appendChild(accurate);
+    }
   }
 
   function openFallback() {
@@ -161,6 +186,7 @@
     }).observe(results, { attributes: true, attributeFilter: ["hidden"] });
   }
 
+  installModelChoices();
   clearBadSavedResult();
   queueMicrotask(suppressHallucinatedResult);
   refreshServiceWorker();
