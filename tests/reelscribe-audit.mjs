@@ -169,7 +169,7 @@ assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.9"/);
 assert.match(ui, /onnx-community\/whisper-large-v3-turbo/);
 assert.match(ui, /此裝置不建議/);
 assert.match(ui, /smallestRepeatingUnit/);
-assert.match(ui, /重複符號或文字/);
+assert.match(ui, /偵測到重複單字、短句、符號或字元/);
 assert.match(ui, /ReelScribeQualityGuard/);
 assert.doesNotMatch(ui, /controllerchange/);
 assert.doesNotMatch(ui, /window\.location\.reload\s*\(/);
