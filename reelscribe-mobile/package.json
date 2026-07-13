@@ -13,8 +13,9 @@
     "audit:catalog": "node scripts/audit-model-catalog.mjs",
     "audit:native": "node scripts/audit-native-manager.mjs",
     "audit:store": "node scripts/audit-store-metadata.mjs",
+    "audit:export": "node scripts/audit-subtitle-export.mjs",
     "install:native-manager": "node scripts/install-native-manager.mjs",
-    "check": "npm run typecheck && npm run audit:catalog && npm run audit:native && npm run audit:store"
+    "check": "npm run typecheck && npm run audit:catalog && npm run audit:native && npm run audit:store && npm run audit:export"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "3.1.1",
