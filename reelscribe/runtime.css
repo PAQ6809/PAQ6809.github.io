@@ -164,6 +164,25 @@ html.model-loading *::after {
 @media (max-width: 680px) {
   :root {
     --runtime-panel-height: 8.5rem;
+    --mobile-browser-chrome-clearance: calc(6.5rem + env(safe-area-inset-bottom));
+  }
+
+  body {
+    padding-bottom: var(--mobile-browser-chrome-clearance);
+  }
+
+  main,
+  .fallback-details,
+  .upload-card,
+  .ocr-tools,
+  .results,
+  .timeline-card,
+  .transcript-card {
+    scroll-margin-bottom: var(--mobile-browser-chrome-clearance);
+  }
+
+  .footer {
+    padding-bottom: var(--mobile-browser-chrome-clearance);
   }
 
   .resource-status {
