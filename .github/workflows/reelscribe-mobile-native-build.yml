@@ -1,6 +1,20 @@
 name: ReelScribe native build validation
 
 on:
+  push:
+    paths:
+      - "reelscribe-mobile/package.json"
+      - "reelscribe-mobile/scripts/bootstrap.sh"
+      - "reelscribe-mobile/scripts/bootstrap.ps1"
+      - "reelscribe-mobile/native/**"
+      - ".github/workflows/reelscribe-mobile-native-build.yml"
+  pull_request:
+    paths:
+      - "reelscribe-mobile/package.json"
+      - "reelscribe-mobile/scripts/bootstrap.sh"
+      - "reelscribe-mobile/scripts/bootstrap.ps1"
+      - "reelscribe-mobile/native/**"
+      - ".github/workflows/reelscribe-mobile-native-build.yml"
   workflow_dispatch:
 
 concurrency:
