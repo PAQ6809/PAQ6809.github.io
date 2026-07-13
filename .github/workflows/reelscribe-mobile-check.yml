@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate JSON, scripts and model policy
+      - name: Validate JSON, scripts, model policy and store metadata
         run: |
           set -euo pipefail
           python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
@@ -50,9 +50,11 @@ jobs:
           python -m json.tool reelscribe-mobile/app.json >/dev/null
           node --check reelscribe-mobile/scripts/audit-model-catalog.mjs
           node --check reelscribe-mobile/scripts/audit-native-manager.mjs
+          node --check reelscribe-mobile/scripts/audit-store-metadata.mjs
           node --check reelscribe-mobile/scripts/install-native-manager.mjs
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
           node reelscribe-mobile/scripts/audit-native-manager.mjs
+          node reelscribe-mobile/scripts/audit-store-metadata.mjs
 
       - name: Install pinned JavaScript dependencies without lifecycle scripts
         working-directory: reelscribe-mobile
@@ -92,6 +94,7 @@ jobs:
           test -s reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           test -s reelscribe-mobile/src/services/publicResolver.ts
           test -s reelscribe-mobile/native/IMPLEMENTATION.md
+          test -s reelscribe-mobile/native/STATUS.md
           test -s reelscribe-mobile/native/ios/ReelScribeManager.swift
           test -s reelscribe-mobile/native/ios/ReelScribeManagerBridge.m
           test -s reelscribe-mobile/native/ios/ReelScribeManager.podspec
@@ -99,10 +102,24 @@ jobs:
           test -s reelscribe-mobile/native/android/ReelScribeManagerPackage.kt
           test -s reelscribe-mobile/scripts/install-native-manager.mjs
           test -s reelscribe-mobile/scripts/audit-native-manager.mjs
+          test -s reelscribe-mobile/scripts/audit-store-metadata.mjs
           test -s reelscribe-mobile/MODEL-RESEARCH.md
           test -s reelscribe-mobile/STORE-LAUNCH.md
           test -s reelscribe-mobile/PRIVACY.md
           test -s reelscribe-mobile/.do-not-ship
+          test -s reelscribe-mobile/store/ios/zh-Hant/name.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/subtitle.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/promotional_text.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/description.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/keywords.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/release_notes.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/privacy_url.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/support_url.txt
+          test -s reelscribe-mobile/store/android/zh-TW/title.txt
+          test -s reelscribe-mobile/store/android/zh-TW/short_description.txt
+          test -s reelscribe-mobile/store/android/zh-TW/full_description.txt
+          test -s reelscribe-mobile/store/REVIEW-NOTES.md
+          test -s reelscribe-mobile/store/SCREENSHOT-PLAN.md
           test -s reelscribe/privacy.html
           test -s reelscribe/terms.html
           grep -q 'io.github.paq6809.reelscribe' reelscribe-mobile/README.md
