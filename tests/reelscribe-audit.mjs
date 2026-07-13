@@ -9,6 +9,7 @@ const app = read("reelscribe/app.js");
 const resolver = read("reelscribe/universal-link.js");
 const instagramDirect = read("reelscribe/instagram-direct.js");
 const worker = read("reelscribe/worker.js");
+const ui = read("reelscribe/ui.js");
 const formatCompat = read("reelscribe/format-compat.js");
 const serviceWorker = read("reelscribe/sw.js");
 const uiPolish = read("reelscribe/ui-polish.css");
@@ -86,7 +87,7 @@ assert.match(serviceWorker, /\.\/instagram-direct\.js/);
 assert.match(serviceWorker, /\.\/format-compat\.js/);
 assert.match(serviceWorker, /\.\/supported-platforms\.html/);
 assert.match(serviceWorker, /\.\/share\.js/);
-assert.match(serviceWorker, /reelscribe-shell-v9/);
+assert.match(serviceWorker, /reelscribe-shell-v10/);
 assert.match(serviceWorker, /async function networkFirst/);
 assert.match(serviceWorker, /cache:\s*"no-store"/);
 assert.match(serviceWorker, /event\.request\.mode === "navigate"/);
@@ -99,6 +100,10 @@ assert.match(app, /sessionStorage\.getItem/);
 assert.match(instagramDirect, /window\.ReelScribeApp/);
 assert.match(instagramDirect, /app\.setFile\(file\)/);
 assert.match(instagramDirect, /app\.startTranscription/);
+assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.4"/);
+assert.match(ui, /ReelScribeQualityGuard/);
+assert.match(ui, /clearBadSavedResult/);
+assert.match(ui, /suppressHallucinatedResult/);
 assert.match(uiPolish, /\.topbar\s*\{\s*position:\s*relative/);
 assert.match(uiPolish, /\.provider-log[\s\S]*flex-wrap:\s*wrap/);
 assert.match(uiPolish, /overflow-wrap:\s*anywhere/);
@@ -174,16 +179,25 @@ const parsedSrt = parseSubtitleText(srt, "srt");
 assert.equal(parsedSrt.text, "Hello World");
 assert.equal(parseClock("01:02:03.500"), 3723.5);
 
-const workerFunctionNames = ["selectModel", "isMostlySilent", "normalizeText", "overlapLength", "mergeSegments"];
+assert.match(worker, /repetition_penalty:\s*1\.18/);
+assert.match(worker, /no_repeat_ngram_size:\s*3/);
+assert.match(worker, /max_new_tokens/);
+assert.match(worker, /transcribeWithHallucinationGuard/);
+
+const workerFunctionNames = [
+  "selectModel", "isMostlySilent", "normalizeText", "meaningfulCharacters",
+  "longestCharacterRun", "textRepetitionMetrics", "isHallucinatedText",
+  "overlapLength", "mergeSegments",
+];
 const workerExtracted = workerFunctionNames.map((name) => extractFunction(worker, name)).join("\n");
-const workerContext = vm.createContext({ console, Float32Array, self: { navigator: { gpu: {}, deviceMemory: 8 } } });
+const workerContext = vm.createContext({ console, Float32Array, Map, Set, Array, String, Math, self: { navigator: { gpu: {}, deviceMemory: 8 } } });
 vm.runInContext(`
 const FAST_MODEL = "onnx-community/whisper-tiny";
 const QUALITY_MODEL = "onnx-community/whisper-base";
 ${workerExtracted}
-globalThis.workerAudit = { selectModel, isMostlySilent, mergeSegments };
+globalThis.workerAudit = { selectModel, isMostlySilent, mergeSegments, isHallucinatedText, textRepetitionMetrics };
 `, workerContext);
-const { selectModel, isMostlySilent, mergeSegments } = workerContext.workerAudit;
+const { selectModel, isMostlySilent, mergeSegments, isHallucinatedText, textRepetitionMetrics } = workerContext.workerAudit;
 assert.equal(selectModel("smart", 5 * 60, true), "onnx-community/whisper-base");
 assert.equal(selectModel("smart", 60 * 60, true), "onnx-community/whisper-tiny");
 assert.equal(isMostlySilent(new Float32Array(16000)), true);
@@ -193,5 +207,8 @@ const merged = [{ start: 0, end: 4, text: "Hello world" }];
 mergeSegments(merged, [{ start: 3, end: 7, text: "world again" }]);
 assert.equal(merged.length, 2);
 assert.match(merged[1].text, /again/);
+assert.equal(isHallucinatedText("居".repeat(120)), true);
+assert.equal(isHallucinatedText("今天我們要介紹一個能快速整理影片字幕的免費工具。"), false);
+assert.ok(textRepetitionMetrics("居".repeat(80)).dominantRatio > 0.95);
 
-console.log("ReelScribe audit passed: fresh PWA cache, iPhone Instagram handoff, Instagram fallback, HTML, SEO, CSP, formats, long-video mode, URL normalization, VTT and SRT parsing.");
+console.log("ReelScribe audit passed: anti-hallucination retry and rejection, fresh PWA cache, iPhone Instagram handoff, Instagram fallback, HTML, SEO, CSP, formats, long-video mode, URL normalization, VTT and SRT parsing.");
