@@ -1,0 +1,33 @@
+{
+  "name": "reelscribe-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "typecheck": "tsc --noEmit",
+    "audit:catalog": "node scripts/audit-model-catalog.mjs",
+    "check": "npm run typecheck && npm run audit:catalog"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "3.1.1",
+    "@react-native-documents/picker": "12.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-safe-area-context": "5.8.0"
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "20.2.0",
+    "@react-native-community/cli-platform-android": "20.2.0",
+    "@react-native-community/cli-platform-ios": "20.2.0",
+    "@react-native/babel-preset": "0.86.0",
+    "@react-native/metro-config": "0.86.0",
+    "@react-native/typescript-config": "0.86.0",
+    "@types/react": "^19.2.0",
+    "typescript": "5.9.3"
+  }
+}
