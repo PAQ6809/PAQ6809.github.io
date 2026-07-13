@@ -21,22 +21,18 @@ ReelScribe 不假設每個瀏覽器都有足夠快取空間。`runtime-optimizer
 - `navigator.storage.estimate()` 回報的使用量、配額與估算剩餘空間。
 - Persistent Storage 是否已取得。
 - Data Saver、2G／slow-2g、裝置類型與電量狀態。
-- 手機至少約 220 MB、桌機至少約 420 MB 的保守背景準備門檻。
-- 快取使用率是否已達約 86%。
+- 手機約 260 MB、桌機約 420 MB 的保守空間門檻。
+- 快取使用率是否已達約 82%。
 
 空間或網路受限時，網站會停止背景下載、改用 Whisper Tiny，OCR 也會使用不寫入快取的模式。使用者可按「清除 AI 快取」移除模型與 OCR 快取；網站介面 App Shell 與已輸出的字幕文字不會被刪除。
 
-背景準備只在頁面可見、電量合理、未開啟省流量且儲存空間足夠時，於瀏覽器空閒時啟動：
+行動裝置不會在首頁自動下載 Whisper。手機流程會先讀取及解碼影片、完成人聲強化，再按需載入 Tiny／Base，避免模型下載與影片解碼同時搶記憶體。桌機只有在頁面可見、沒有選取檔案、沒有前景處理、電量與儲存空間足夠時，才於空閒時預備 Base 或 Tiny；Small 與 Large-v3-turbo 不會在首頁自動背景下載。
 
-- 行動裝置預先準備 Whisper Tiny。
-- 桌機 WebGPU 預先準備 Whisper Base。
-- Small 與 Large-v3-turbo 不會在首頁自動背景下載。
-
-這是 best-effort 加速，不保證瀏覽器永久保留模型。模型仍會在實際辨識時自動重試與降級。
+背景準備是 best-effort 加速，不保證瀏覽器永久保留模型。模型仍會在實際辨識時自動重試與降級。
 
 ## 穩定更新與防止強制重新整理
 
-Service Worker v14 不呼叫 `skipWaiting()` 或 `clients.claim()`，App 與 UI 也不在 `controllerchange` 後強制 `window.location.reload()`。
+Service Worker v15 不呼叫 `skipWaiting()` 或 `clients.claim()`，App 與 UI 也不在 `controllerchange` 後強制 `window.location.reload()`。
 
 新版部署時：
 
@@ -54,11 +50,16 @@ Service Worker v14 不呼叫 `skipWaiting()` 或 `clients.claim()`，App 與 UI 
 - 只擷取影片下方 35%、45% 或 60% 的畫面區域。
 - 手機最多取樣 60 幀，桌機最多 120 幀，避免長影片耗盡記憶體。
 - 可選每 1、1.5 或 2.5 秒取樣，長片自動拉大間隔。
-- 先做灰階與有限對比增強，再辨識繁體中文、英文、日文或韓文。
-- 低於可信度門檻、純符號與重複幻覺會被拒絕。
+- 畫面加入白色邊界並放大至適合 OCR 的尺寸，使用 300 DPI 提示。
+- 第一輪做灰階與有限對比增強；低可信時才追加亮字幕二值化重試，避免所有畫面都雙倍運算。
+- 依所選語言檢查繁體中文、英文、日文或韓文的字元比例。
+- 拒絕數字、百分比、零碎英文字母與符號混合的亂碼。
+- 低可信單幀不會立即寫入字幕；需要高可信度或相鄰畫面辨識出相似文字才確認。
 - 連續相同字幕自動合併，並可取代時間上重疊但較不可靠的語音字幕。
 - 每次完成或停止後立即終止 OCR Worker，釋放記憶體。
 - 截圖、影片與 OCR 結果不會上傳。
+
+已保存的 OCR 結果在每次開啟時會重新通過最新版語言、符號與可信度規則。像 `x - yo § J 78 9%` 這類混合亂碼會從 localStorage 清除，不再顯示為成功字幕。
 
 OCR 只適合畫面中真正存在的文字，不是場景理解或自動描述模型；字體過小、動畫字、傾斜文字、強烈特效與低畫質仍可能降低辨識率。
 
@@ -159,8 +160,8 @@ Repository 防護包含 `.github/CODEOWNERS`、`.github/dependabot.yml`、`SECUR
 GitHub Actions 在 push、Pull Request、每週一與週四執行：
 
 - JavaScript 語法與 dependency-free 功能測試。
-- 儲存配額、背景準備、Data Saver、無強制 reload 與 Service Worker v14 檢查。
-- Tesseract.js 7、OCR 取樣、可信度、去重、Worker 清理及本機合併檢查。
+- 儲存配額、背景準備、Data Saver、無強制 reload 與 Service Worker v15 檢查。
+- Tesseract.js 7、OCR 語言比例、符號／數字亂碼、雙路預處理、時間相鄰確認、Worker 清理及本機合併檢查。
 - Silero VAD、語音遮罩、頻帶濾波及無人聲降級。
 - Turbo／Small／Base／Tiny 裝置分流、混合精度與模型降級。
 - Instagram 解析器、iPhone handoff 與 Vercel 健康檢查。
