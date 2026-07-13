@@ -4,7 +4,15 @@ ReelScribe Mobile is the native iOS/Android product track for the existing ReelS
 
 ## Current status
 
-This directory now contains the React Native application layer, the installed `whisper.rn` native binding, the secure native model/media manager contract, model policy, public-link resolver client, store metadata, privacy documents, CI checks and bootstrap scripts.
+This directory contains:
+
+- a React Native 0.86 application UI;
+- the pinned `whisper.rn` 0.6.0 binding to whisper.cpp;
+- a local autolinkable Swift/Kotlin package named `@reelscribe/native-manager`;
+- public YouTube/Instagram resolver integration;
+- on-device media preparation, native OCR, checkpoints and cleanup implementations;
+- a curated 2026 ASR model/service registry;
+- store metadata, privacy/data-safety drafts, support pages and CI/preflight checks.
 
 The provisional application identifier is:
 
@@ -12,37 +20,47 @@ The provisional application identifier is:
 io.github.paq6809.reelscribe
 ```
 
-It is **not yet registered** in App Store Connect or Google Play Console. Confirm availability before signing a release.
+It is **not yet registered** in App Store Connect or Google Play Console. The repository is now a release-engineering candidate, not a signed or store-approved app.
 
 ## Architecture
 
-- React Native 0.86 + React 19.2 for the shared app UI and task orchestration.
-- `whisper.rn` 0.6.0 is installed and provides the React Native binding to `whisper.cpp` for native iOS/Android ASR.
-- `NativeReelScribeEngine.ts` calls `whisper.rn` directly for local transcription, cancellation, progress and timestamped segments.
-- A small Swift/Kotlin native module named `ReelScribeManager` remains responsible for resumable model download, SHA-256 verification, media-to-local-audio preparation, checkpoint persistence and platform OCR.
-- `whisper.cpp` 1.9.1 is the pinned production engine target in the release catalog.
-- Optional `sherpa-onnx` integration for SenseVoice, VAD, source separation, diarization and enhancement remains a candidate until model-license and device testing pass.
-- Apple Vision text recognition on iOS and ML Kit Text Recognition v2 on Android provide on-device burned-in subtitle OCR.
-- The existing public link resolver remains a public text/metadata service; local media and transcripts stay on the device unless the user explicitly enables a future self-hosted server mode.
+- React Native 0.86 + React 19.2 for shared UI and task orchestration.
+- `whisper.rn` 0.6.0 for native local ASR on iOS and Android.
+- `NativeReelScribeEngine.ts` for model verification, one-context-at-a-time inference, cancellation, progress, timestamps and OCR fusion.
+- `@reelscribe/native-manager` for device capabilities, media-to-mono-16-kHz-WAV preparation, temporary-file cleanup, checkpoints and platform OCR.
+- iOS uses AVFoundation and Apple Vision.
+- Android uses MediaExtractor/MediaCodec and bundled Google ML Kit Text Recognition v2 models.
+- The public resolver receives only a public URL and language preference; local media and transcripts stay on the device in local mode.
+
+The native package is source-complete enough for compilation review, but has not yet been compiled, signed or tested on physical devices in this environment.
 
 ## Model policy
 
-The app does not package every model. It uses a curated registry in:
+The app never installs every new model into every phone. The catalog at:
 
 ```text
 ../reelscribe/models/mobile-model-catalog.json
 ```
 
-Default mobile tiers:
+separates models into production mobile, optional mobile, server-only, research and excluded tiers.
 
-1. Whisper Tiny: phones, long video, low memory and fast preview.
-2. Whisper Base: balanced quality.
-3. Whisper Small: optional download for high-end devices.
-4. Whisper Large-v3-turbo: explicit optional download for flagship devices only.
-5. SenseVoice Small: research candidate for Chinese/Cantonese/Japanese/Korean; not released until runtime, license and device benchmarks pass.
-6. Qwen3-ASR 0.6B/1.7B: optional self-hosted GPU mode only, never silently used and never treated as an on-device model.
+First-release mobile tiers:
 
-Every downloadable artifact requires an approved HTTPS source, exact byte size, SHA-256 hash, license record and device eligibility rule before a store release.
+1. Whisper Tiny — phones, long video, low memory and fast preview.
+2. Whisper Base — balanced quality.
+3. Whisper Small — optional download for high-end devices after tests.
+4. Whisper Large-v3-turbo — explicit flagship-device download after tests.
+
+Candidates, not first-release defaults:
+
+- WhisperKit/Core ML on supported iPhones.
+- SenseVoice Small through a pinned mobile runtime after license/device review.
+- Moonshine English models for low-latency English after runtime-size review.
+- Qwen3-ASR and NVIDIA Nemotron/Parakeet only as explicit, self-hosted server modes with separate consent and privacy disclosures.
+
+Non-English Moonshine community-license models remain excluded from commercial store distribution.
+
+Every downloadable release artifact requires an approved HTTPS origin, exact byte size, SHA-256, license record and device eligibility rule. Release builds intentionally reject unpinned artifacts.
 
 ## Bootstrap
 
@@ -58,32 +76,46 @@ macOS/Linux:
 ./scripts/bootstrap.sh
 ```
 
-The scripts create the native `ios/` and `android/` projects through the pinned React Native community CLI, then copy the maintained ReelScribe source files into the generated project. A macOS machine with Xcode is required to produce and sign an iOS build.
+The scripts create the native `ios/` and `android/` projects with the pinned React Native CLI. Local package autolinking then connects both `whisper.rn` and `@reelscribe/native-manager`.
 
-After bootstrap, native autolinking connects `whisper.rn`; the project still must implement `ReelScribeManager` according to `native/IMPLEMENTATION.md` before model download, media conversion and OCR work in a signed build.
+A macOS machine with the release Xcode version is required to compile/sign iOS. Android requires the current Android SDK/NDK, Java 17 and a release keystore.
 
-## Native implementation gates
-
-The store build is blocked until all of these pass:
-
-- `ReelScribeManager` implements model download, exact-size and SHA-256 verification, media preparation, cancellation, checkpoints, resume and one-model-at-a-time memory rules.
-- iOS uses background asset delivery or a reviewed Application Support download location; Android uses Play Asset Delivery or verified app-private storage.
-- App stays responsive during model download, OCR and long transcription.
-- 15-minute, 60-minute and 3-hour regression files complete without process termination on the supported device matrix.
-- Airplane-mode transcription works after the selected model is installed.
-- No audio, video frame, transcript, cookie, session or device identifier leaves the device in local mode.
-- App Privacy and Google Data Safety declarations match every shipped SDK.
-
-## Release commands
-
-After the native projects exist:
+## Verification commands
 
 ```bash
-npm ci
-npm run typecheck
-npm run audit:catalog
+npm install
+npm run check
+npm run preflight:store
+```
+
+Release-only integrity gate:
+
+```bash
+npm run preflight:release
+```
+
+`preflight:release` is expected to fail until every production model has an exact locked SHA-256. This is intentional.
+
+After bootstrap and native dependency installation:
+
+```bash
 npm run ios
 npm run android
 ```
 
-Store signing and submission steps are in `STORE-LAUNCH.md`.
+## Store release gates
+
+The app must not be submitted until all of these pass:
+
+- iOS and Android native projects compile with no placeholder native methods.
+- Tiny/Base production models have exact byte sizes and SHA-256 values.
+- Model tampering, interrupted download and low-storage tests pass.
+- 15-minute, 60-minute and 3-hour tasks complete/resume on the supported device matrix.
+- Airplane-mode transcription works after model installation.
+- OCR and ASR do not run high-memory models concurrently.
+- App remains usable through memory warnings, background/foreground changes and thermal throttling.
+- App Privacy and Google Data Safety forms match the final signed binaries and resolver logs.
+- Icons, screenshots, feature graphics and review demo media are final.
+- Bundle/application identifiers, signing keys, certificates and store accounts are owned and approved by the account holder.
+
+Store metadata and submission steps are in `STORE-LAUNCH.md` and `store/`.
