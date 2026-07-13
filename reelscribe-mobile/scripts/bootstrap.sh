@@ -47,6 +47,26 @@ cp -R "$TEMPLATE_DIR/ios" "$PROJECT_DIR/ios"
 cp -R "$TEMPLATE_DIR/android" "$PROJECT_DIR/android"
 rm -rf "$TEMPLATE_DIR"
 
+ANDROID_APP_GRADLE="$PROJECT_DIR/android/app/build.gradle"
+test -s "$ANDROID_APP_GRADLE"
+if ! grep -q "coreLibraryDesugaringEnabled true" "$ANDROID_APP_GRADLE"; then
+  cat >>"$ANDROID_APP_GRADLE" <<'EOF'
+
+// Required by the app-owned native manager for java.time support on Android 23-25.
+android {
+  compileOptions {
+    coreLibraryDesugaringEnabled true
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
+
+dependencies {
+  coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+}
+EOF
+fi
+
 npm install \
   --fetch-retries=3 \
   --fetch-retry-mintimeout=10000 \
