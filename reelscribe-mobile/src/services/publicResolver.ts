@@ -27,11 +27,14 @@ async function postJson(path: string, body: Record<string, unknown>): Promise<Re
   try {
     const response = await fetch(`${RESOLVER_ORIGIN}${path}`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, max-age=0',
+        Pragma: 'no-cache',
+      },
       body: JSON.stringify(body),
       signal: timeout.signal,
       credentials: 'omit',
-      cache: 'no-store',
       referrerPolicy: 'no-referrer',
     });
     const payload = (await response.json().catch(() => ({}))) as Record<string, any>;
