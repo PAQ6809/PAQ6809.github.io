@@ -48,6 +48,7 @@ const state = {
 
 const MAX_FILE_BYTES = 300 * 1024 * 1024;
 const TARGET_SAMPLE_RATE = 16000;
+const APP_BUILD = "2026.07.13.3";
 
 function showToast(message) {
   elements.toast.textContent = message;
@@ -130,15 +131,15 @@ function clearFile() {
 }
 
 function setFile(file) {
-  if (!file) return;
+  if (!file) return false;
   if (file.size > MAX_FILE_BYTES) {
     showToast("檔案超過 300 MB，請先壓縮或裁剪");
-    return;
+    return false;
   }
-  const acceptable = file.type.startsWith("video/") || file.type.startsWith("audio/") || /\.(mp4|mov|m4v|webm|mp3|m4a|wav|aac)$/i.test(file.name);
+  const acceptable = file.type.startsWith("video/") || file.type.startsWith("audio/") || /\.(mp4|mov|m4v|webm|mkv|avi|wmv|flv|mpg|mpeg|ts|mts|m2ts|3gp|3g2|ogv|mp3|m4a|wav|aac|flac|opus|ogg|oga|weba|mka|amr|aiff|aif|caf|wma)$/i.test(file.name);
   if (!acceptable) {
     showToast("不支援這個檔案格式");
-    return;
+    return false;
   }
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
   state.file = file;
@@ -149,6 +150,7 @@ function setFile(file) {
   elements.filePanel.hidden = false;
   elements.transcribe.disabled = false;
   elements.results.hidden = true;
+  return true;
 }
 
 function downmixToMono(audioBuffer) {
@@ -196,7 +198,7 @@ async function decodeMedia(file) {
 
 function getWorker() {
   if (state.worker) return state.worker;
-  state.worker = new Worker("./worker.js", { type: "module" });
+  state.worker = new Worker(`./worker.js?v=${APP_BUILD}`, { type: "module" });
   state.worker.addEventListener("message", handleWorkerMessage);
   state.worker.addEventListener("error", (event) => {
     failTranscription(event.message || "字幕模型啟動失敗。 ");
@@ -231,7 +233,7 @@ function handleWorkerMessage(event) {
 }
 
 async function startTranscription() {
-  if (!state.file) return;
+  if (!state.file || elements.transcribe.disabled) return false;
   elements.transcribe.disabled = true;
   elements.results.hidden = true;
   state.startedAt = performance.now();
@@ -250,8 +252,10 @@ async function startTranscription() {
       },
       [decoded.audio.buffer],
     );
+    return true;
   } catch (error) {
     failTranscription(error.message || "無法處理這個檔案。 ");
+    return false;
   }
 }
 
@@ -426,10 +430,39 @@ function restoreLatest() {
 }
 
 function registerServiceWorker() {
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
-  }
+  if (!("serviceWorker" in navigator)) return;
+
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    const key = `reelscribe:sw-reload:${APP_BUILD}`;
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, "1");
+      window.location.reload();
+    }
+  });
+
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register(`./sw.js?v=${APP_BUILD}`, {
+        scope: "./",
+        updateViaCache: "none",
+      });
+      await registration.update();
+    } catch {
+      // The website remains usable without offline caching.
+    }
+  });
 }
+
+window.ReelScribeApp = Object.freeze({
+  build: APP_BUILD,
+  setFile,
+  clearFile,
+  startTranscription,
+  isReady: () => Boolean(state.file && !elements.transcribe.disabled),
+});
 
 elements.pasteUrl.addEventListener("click", pasteUrl);
 elements.checkUrl.addEventListener("click", validateUrl);
