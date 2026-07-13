@@ -24,8 +24,8 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
-  // Do not call skipWaiting here. An update must never replace the active worker
-  // while a long model download, OCR pass, or transcription is in progress.
+  // Keep the update waiting while an older client may still be downloading a
+  // model, running OCR, or transcribing a long recording.
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
 });
 
