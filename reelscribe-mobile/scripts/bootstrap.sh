@@ -27,13 +27,15 @@ rm -rf "$TEMPLATE_DIR"
 
 echo "Installing ReelScribe native model/media manager..."
 node scripts/install-native-manager.mjs
-npm install
-npm run check
+
+echo "Installing pinned JavaScript dependencies without lifecycle scripts..."
+npm install --ignore-scripts --no-audit --no-fund --silent
 
 cat <<'EOF'
 Bootstrap complete.
-1. On macOS: cd ios && pod install, then compile on a physical iPhone with Xcode.
-2. Android: npm run android for a debug-device build.
-3. Confirm the bundle/application identifier is available.
-4. Never submit while .do-not-ship exists.
+1. Run npm run check before compiling.
+2. On macOS: cd ios && pod install, then compile on a physical iPhone with Xcode.
+3. Android: npm run android for a debug-device build.
+4. Confirm the bundle/application identifier is available.
+5. Never submit while .do-not-ship exists.
 EOF
