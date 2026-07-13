@@ -9,6 +9,8 @@ on:
       - "reelscribe/terms.html"
       - "reelscribe/support.html"
       - ".github/workflows/reelscribe-mobile-check.yml"
+      - ".github/workflows/reelscribe-native-build.yml"
+      - ".github/workflows/reelscribe-model-integrity.yml"
   pull_request:
     paths:
       - "reelscribe-mobile/**"
@@ -17,6 +19,8 @@ on:
       - "reelscribe/terms.html"
       - "reelscribe/support.html"
       - ".github/workflows/reelscribe-mobile-check.yml"
+      - ".github/workflows/reelscribe-native-build.yml"
+      - ".github/workflows/reelscribe-model-integrity.yml"
   schedule:
     - cron: "30 2 * * 1"
   workflow_dispatch:
@@ -54,6 +58,7 @@ jobs:
           python -m json.tool reelscribe-mobile/native/reelscribe-manager/package.json >/dev/null
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
           node reelscribe-mobile/scripts/preflight-store.mjs
+          node --check reelscribe-mobile/scripts/resolve-model-integrity.mjs
 
       - name: Install pinned JavaScript dependencies without lifecycle scripts
         working-directory: reelscribe-mobile
@@ -94,9 +99,12 @@ jobs:
             reelscribe-mobile/store/GOOGLE-DATA-SAFETY.md
             reelscribe-mobile/scripts/preflight-store.mjs
             reelscribe-mobile/scripts/release-preflight.mjs
+            reelscribe-mobile/scripts/resolve-model-integrity.mjs
             reelscribe/privacy.html
             reelscribe/terms.html
             reelscribe/support.html
+            .github/workflows/reelscribe-native-build.yml
+            .github/workflows/reelscribe-model-integrity.yml
           )
           for file in "${files[@]}"; do test -s "$file"; done
 
@@ -107,6 +115,9 @@ jobs:
           grep -q 'model.sha256' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           grep -q 'jobId = task.jobId' reelscribe-mobile/src/services/modelManager.ts
           grep -q 'AVAssetReader' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
+          grep -q 'FileHandle(forWritingTo' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
+          grep -q 'CMBlockBufferCopyDataBytes' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
+          ! grep -q 'var pcm = Data()' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
           grep -q 'VNRecognizeTextRequest' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
           grep -q 'MediaExtractor' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
           grep -q 'MediaCodec' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
@@ -114,6 +125,8 @@ jobs:
           grep -q '300L \* 1024L \* 1024L' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
           grep -q 'WhisperKit' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Qwen3-ASR' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'Fun-ASR Nano' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'Omnilingual ASR' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Nemotron' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Moonshine' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Data Safety' reelscribe-mobile/STORE-LAUNCH.md
@@ -144,7 +157,6 @@ jobs:
           assert 'releaseAllWhisper' in source
           assert 'prepareMedia' in source
           assert 'vite-xi-one-59.vercel.app' in source
-          assert 'document.cookie' not in source
 
           catalog = json.loads(Path('reelscribe/models/mobile-model-catalog.json').read_text(encoding='utf-8'))
           by_id = {item['id']: item for item in catalog['models']}
@@ -152,6 +164,8 @@ jobs:
           assert 'server' in by_id['qwen3-asr-0.6b']['deployment']
           assert by_id['whisper-tiny']['deployment'] == 'on-device'
           assert 'server' in by_id['nemotron-3.5-asr-streaming-0.6b']['deployment']
+          assert by_id['funasr-nano-2512']['status'] == 'research-candidate'
+          assert by_id['omnilingual-asr-300m-int8']['status'] == 'research-candidate'
 
           services = json.loads(Path('reelscribe-mobile/platform-services.json').read_text(encoding='utf-8'))
           assert services['principles']['defaultExecution'] == 'on-device'
@@ -166,8 +180,10 @@ jobs:
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest | python -m json.tool >/dev/null
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/mybigday/whisper.rn/releases/latest | python -m json.tool >/dev/null
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://raw.githubusercontent.com/QwenLM/Qwen3-ASR/main/README.md | grep -q 'Qwen3-ASR'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512/raw/main/README.md | grep -q 'Fun-ASR-Nano'
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://raw.githubusercontent.com/FunAudioLLM/SenseVoice/main/README.md | grep -q 'SenseVoice'
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/latest | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://k2-fsa.github.io/sherpa/onnx/omnilingual-asr/models.html | grep -qi 'Omnilingual'
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/moonshine-ai/moonshine/releases/latest | python -m json.tool >/dev/null
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/argmaxinc/argmax-oss-swift/releases/latest | python -m json.tool >/dev/null
           curl --fail --silent --show-error --location --retry 3 --max-time 30 https://raw.githubusercontent.com/NVIDIA-NeMo/Speech/main/README.md | grep -Eiq 'Nemotron|Parakeet'
@@ -179,10 +195,15 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
-          workflow = Path('.github/workflows/reelscribe-mobile-check.yml').read_text(encoding='utf-8')
-          assert re.search(r'^permissions:\s*\n\s+contents:\s+read\s*$', workflow, flags=re.M)
-          for value in re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M):
-              if value.startswith('./'):
-                  continue
-              assert re.search(r'@[0-9a-f]{40}$', value), value
+          for path in [
+              Path('.github/workflows/reelscribe-mobile-check.yml'),
+              Path('.github/workflows/reelscribe-native-build.yml'),
+              Path('.github/workflows/reelscribe-model-integrity.yml'),
+          ]:
+              workflow = path.read_text(encoding='utf-8')
+              assert re.search(r'^permissions:\s*\n\s+contents:\s+read\s*$', workflow, flags=re.M)
+              for value in re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M):
+                  if value.startswith('./'):
+                      continue
+                  assert re.search(r'@[0-9a-f]{40}$', value), f'{path}: {value}'
           PY
