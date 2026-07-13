@@ -1,0 +1,1 @@
+Open a temporary pull request from reelscribe-mobile/validate-current-main-20260713 to main, wait for ReelScribe mobile readiness checks, then close without merge.
