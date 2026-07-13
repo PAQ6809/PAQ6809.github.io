@@ -7,9 +7,11 @@ on:
       - "reelscribe/runtime-optimizer.js"
       - "reelscribe/app.js"
       - "reelscribe/ui.js"
+      - "reelscribe/instagram-direct.js"
       - "reelscribe/screen-ocr.js"
       - "reelscribe/sw.js"
       - "tests/reelscribe-stability-audit.mjs"
+      - "tests/reelscribe-youtube-quality-audit.mjs"
       - ".github/workflows/reelscribe-stability-check.yml"
   pull_request:
     paths:
@@ -17,9 +19,11 @@ on:
       - "reelscribe/runtime-optimizer.js"
       - "reelscribe/app.js"
       - "reelscribe/ui.js"
+      - "reelscribe/instagram-direct.js"
       - "reelscribe/screen-ocr.js"
       - "reelscribe/sw.js"
       - "tests/reelscribe-stability-audit.mjs"
+      - "tests/reelscribe-youtube-quality-audit.mjs"
       - ".github/workflows/reelscribe-stability-check.yml"
   schedule:
     - cron: "45 1 * * 1,4"
@@ -35,7 +39,7 @@ permissions:
 jobs:
   stability:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -54,12 +58,29 @@ jobs:
           node --check reelscribe/runtime-optimizer.js
           node --check reelscribe/app.js
           node --check reelscribe/ui.js
+          node --check reelscribe/instagram-direct.js
           node --check reelscribe/screen-ocr.js
           node --check reelscribe/sw.js
           node --check tests/reelscribe-stability-audit.mjs
+          node --check tests/reelscribe-youtube-quality-audit.mjs
 
       - name: Run renderer stability audit
-        run: node tests/reelscribe-stability-audit.mjs
+        run: |
+          node tests/reelscribe-stability-audit.mjs
+          node tests/reelscribe-youtube-quality-audit.mjs
+
+      - name: Check YouTube captions endpoint contract
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --show-error --output /tmp/youtube-endpoint.json --write-out '%{http_code}' \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data '{"url":"invalid","language":"auto"}' \
+            --max-time 30 \
+            https://vite-xi-one-59.vercel.app/api/youtube-captions)
+          test "$status" = "400"
+          grep -q 'INVALID_REQUEST' /tmp/youtube-endpoint.json
 
       - name: Enforce read-only and pinned actions
         run: |
