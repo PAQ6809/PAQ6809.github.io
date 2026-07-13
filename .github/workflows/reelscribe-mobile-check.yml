@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate JSON, scripts, model policy and store metadata
+      - name: Validate JSON, scripts, model policy, exports and store metadata
         run: |
           set -euo pipefail
           python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
@@ -51,10 +51,12 @@ jobs:
           node --check reelscribe-mobile/scripts/audit-model-catalog.mjs
           node --check reelscribe-mobile/scripts/audit-native-manager.mjs
           node --check reelscribe-mobile/scripts/audit-store-metadata.mjs
+          node --check reelscribe-mobile/scripts/audit-subtitle-export.mjs
           node --check reelscribe-mobile/scripts/install-native-manager.mjs
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
           node reelscribe-mobile/scripts/audit-native-manager.mjs
           node reelscribe-mobile/scripts/audit-store-metadata.mjs
+          node reelscribe-mobile/scripts/audit-subtitle-export.mjs
 
       - name: Install pinned JavaScript dependencies without lifecycle scripts
         working-directory: reelscribe-mobile
@@ -93,6 +95,7 @@ jobs:
           test -s reelscribe-mobile/src/modelCatalog.ts
           test -s reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           test -s reelscribe-mobile/src/services/publicResolver.ts
+          test -s reelscribe-mobile/src/services/subtitleExport.ts
           test -s reelscribe-mobile/native/IMPLEMENTATION.md
           test -s reelscribe-mobile/native/STATUS.md
           test -s reelscribe-mobile/native/ios/ReelScribeManager.swift
@@ -103,6 +106,7 @@ jobs:
           test -s reelscribe-mobile/scripts/install-native-manager.mjs
           test -s reelscribe-mobile/scripts/audit-native-manager.mjs
           test -s reelscribe-mobile/scripts/audit-store-metadata.mjs
+          test -s reelscribe-mobile/scripts/audit-subtitle-export.mjs
           test -s reelscribe-mobile/MODEL-RESEARCH.md
           test -s reelscribe-mobile/STORE-LAUNCH.md
           test -s reelscribe-mobile/PRIVACY.md
@@ -126,8 +130,13 @@ jobs:
           grep -q 'React Native 0.86' reelscribe-mobile/README.md
           grep -q 'whisper.rn.*0.6.0' reelscribe-mobile/README.md
           grep -q 'whisper.rn' reelscribe-mobile/package.json
+          grep -q '@react-native-clipboard/clipboard' reelscribe-mobile/package.json
+          grep -q 'react-native-share' reelscribe-mobile/package.json
           grep -q 'initWhisper' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           grep -q 'ReelScribeManager' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+          grep -q 'copyTranscript' reelscribe-mobile/src/App.tsx
+          grep -q 'shareSubtitle' reelscribe-mobile/src/App.tsx
+          grep -q 'WEBVTT' reelscribe-mobile/src/services/subtitleExport.ts
           grep -q 'willPerformHTTPRedirection' reelscribe-mobile/native/ios/ReelScribeManager.swift
           grep -q 'instanceFollowRedirects = false' reelscribe-mobile/native/android/ReelScribeManagerModule.kt
           grep -q 'ReelScribeManagerPackage()' reelscribe-mobile/scripts/install-native-manager.mjs
@@ -161,6 +170,9 @@ jobs:
           assert 'releaseAllWhisper' in app_source
           assert 'model.sha256' in app_source
           assert 'prepareMedia' in app_source
+          assert 'Clipboard.setString' in app_source
+          assert 'useInternalStorage: true' in app_source
+          assert 'RNFS.unlink' in app_source
           assert 'httpCookieStorage = nil' in native_source
           assert 'httpShouldSetCookies = false' in native_source
           assert 'instanceFollowRedirects = false' in native_source
