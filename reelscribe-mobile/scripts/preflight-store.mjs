@@ -65,7 +65,7 @@ const storeText = [
 ].join('\n');
 const claimableStoreText = storeText
   .split(/\r?\n/)
-  .filter(line => !/(?:do not|must not|never)\s+claim|不得宣稱|不可宣稱|不要宣稱|不應宣稱/i.test(line))
+  .filter(line => !/(?:do not|must not|never)[^\n]{0,80}(?:claim|unsupported)|不得宣稱|不可宣稱|不要宣稱|不應宣稱/i.test(line))
   .join('\n');
 
 if (appJson.name !== 'ReelScribeMobile' || appJson.displayName !== 'ReelScribe') {
