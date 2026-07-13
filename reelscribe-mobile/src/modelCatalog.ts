@@ -16,7 +16,12 @@ export type ModelDefinition = {
   defaultFor: 'all' | 'mid' | 'high' | 'research';
   releaseStatus: 'production' | 'candidate' | 'research';
   languages: string;
+  artifactUrl: string | null;
+  expectedSha256: string | null;
+  explicitDownload: boolean;
 };
+
+const WHISPER_MODEL_ORIGIN = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
 
 export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
   {
@@ -28,6 +33,9 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     defaultFor: 'all',
     releaseStatus: 'production',
     languages: '多語言',
+    artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-tiny.bin`,
+    expectedSha256: null,
+    explicitDownload: true,
   },
   {
     id: 'whisper-base',
@@ -38,6 +46,9 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     defaultFor: 'mid',
     releaseStatus: 'production',
     languages: '多語言',
+    artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-base.bin`,
+    expectedSha256: null,
+    explicitDownload: true,
   },
   {
     id: 'whisper-small',
@@ -48,16 +59,22 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     defaultFor: 'high',
     releaseStatus: 'candidate',
     languages: '多語言',
+    artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-small.bin`,
+    expectedSha256: null,
+    explicitDownload: true,
   },
   {
     id: 'whisper-large-v3-turbo',
     name: 'Whisper Large v3 Turbo',
     summary: '旗艦裝置選用；必須由使用者明確下載。',
     minimumMemoryGb: 8,
-    estimatedDownloadMb: null,
+    estimatedDownloadMb: 1600,
     defaultFor: 'high',
     releaseStatus: 'candidate',
     languages: '多語言',
+    artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-large-v3-turbo.bin`,
+    expectedSha256: null,
+    explicitDownload: true,
   },
   {
     id: 'sensevoice-small',
@@ -68,6 +85,9 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     defaultFor: 'research',
     releaseStatus: 'research',
     languages: '中／粵／英／日／韓',
+    artifactUrl: null,
+    expectedSha256: null,
+    explicitDownload: true,
   },
 ];
 
@@ -78,6 +98,12 @@ export type DeviceCapabilities = {
   freeStorageMb?: number;
 };
 
+export function modelById(modelId: ModelId): ModelDefinition {
+  const model = MOBILE_MODELS.find(item => item.id === modelId);
+  if (!model) throw new Error(`未知模型：${modelId}`);
+  return model;
+}
+
 export function recommendedModel(capabilities: DeviceCapabilities): ModelId {
   const memory = capabilities.totalMemoryGb ?? (Platform.OS === 'ios' ? 4 : 3);
   const constrained = capabilities.lowPowerMode
@@ -86,10 +112,10 @@ export function recommendedModel(capabilities: DeviceCapabilities): ModelId {
     || (capabilities.freeStorageMb !== undefined && capabilities.freeStorageMb < 500);
 
   if (constrained || memory < 4) return 'whisper-tiny';
-  if (memory >= 6 && (capabilities.freeStorageMb ?? 0) >= 1200) return 'whisper-small';
+  if (memory >= 6 && (capabilities.freeStorageMb ?? 0) >= 1400) return 'whisper-small';
   return 'whisper-base';
 }
 
 export function isStoreApproved(model: ModelDefinition): boolean {
-  return model.releaseStatus === 'production';
+  return model.releaseStatus === 'production' && /^[a-f0-9]{64}$/i.test(model.expectedSha256 || '');
 }
