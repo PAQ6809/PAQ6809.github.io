@@ -48,11 +48,20 @@ const state = {
   mediaDuration: 0,
   enhancement: null,
   modelReadyLabel: "",
+  processing: false,
+  backgroundPreparing: false,
+  storagePolicy: {
+    constrained: false,
+    cacheAllowed: true,
+    availableBytes: 0,
+    quotaBytes: 0,
+  },
 };
 
 const MAX_FILE_BYTES = 300 * 1024 * 1024;
 const TARGET_SAMPLE_RATE = 16000;
-const APP_BUILD = "2026.07.13.6";
+const APP_BUILD = "2026.07.13.7";
+const TINY_MODEL = "onnx-community/whisper-tiny";
 
 function showToast(message) {
   elements.toast.textContent = message;
@@ -125,12 +134,13 @@ function clearFile() {
   state.result = null;
   state.enhancement = null;
   state.mediaDuration = 0;
-  state.modelReadyLabel = "";
+  state.processing = false;
   elements.fileInput.value = "";
   elements.filePanel.hidden = true;
   elements.transcribe.disabled = true;
   elements.results.hidden = true;
   elements.progressPanel.hidden = true;
+  document.documentElement.classList.remove("model-loading");
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
   state.previewUrl = null;
   elements.preview.removeAttribute("src");
@@ -235,10 +245,15 @@ async function decodeMedia(file) {
     };
     return { audio: enhanced.audio, duration: decoded.duration, enhancement: state.enhancement };
   } catch (error) {
+    if (error instanceof Error && /語音|人聲|Silero|VAD/.test(error.message)) throw error;
     throw new Error("無法讀取這個影片的音訊。請改用 MP4（H.264/AAC）、M4A、MP3 或 WAV。 ");
   } finally {
     await context.close().catch(() => {});
   }
+}
+
+function dispatchModelEvent(detail) {
+  window.dispatchEvent(new CustomEvent("reelscribe:model", { detail }));
 }
 
 function getWorker() {
@@ -246,6 +261,11 @@ function getWorker() {
   state.worker = new Worker(`./worker.js?v=${APP_BUILD}`, { type: "module" });
   state.worker.addEventListener("message", handleWorkerMessage);
   state.worker.addEventListener("error", (event) => {
+    if (state.backgroundPreparing && !state.processing) {
+      state.backgroundPreparing = false;
+      dispatchModelEvent({ type: "error", message: event.message || "背景模型啟動失敗" });
+      return;
+    }
     failTranscription(event.message || "字幕模型啟動失敗。 ");
   });
   return state.worker;
@@ -261,17 +281,32 @@ function setProgress(title, detail, percent, note = "") {
 
 function handleWorkerMessage(event) {
   const message = event.data || {};
+  const background = state.backgroundPreparing && !state.processing;
+
   if (message.type === "status") {
-    setProgress(message.title || "處理中", message.detail || "", message.progress || 0, message.note || "");
+    if (background) dispatchModelEvent({ ...message, type: "status" });
+    else setProgress(message.title || "處理中", message.detail || "", message.progress || 0, message.note || "");
     return;
   }
   if (message.type === "download") {
-    const progress = Number.isFinite(message.progress) ? message.progress : 0;
-    setProgress("正在準備 AI 模型", message.file || "下載模型中", Math.max(8, Math.round(progress)), "模型會保存在瀏覽器快取；再次使用不需重新完整下載。 ");
+    if (background) dispatchModelEvent({ ...message, type: "download" });
+    else {
+      const progress = Number.isFinite(message.progress) ? message.progress : 0;
+      setProgress("正在準備 AI 模型", message.file || "下載模型中", Math.max(8, Math.round(progress)), "模型快取會依瀏覽器可用空間決定；空間不足時不會強制寫入。 ");
+    }
     return;
   }
   if (message.type === "ready") {
     state.modelReadyLabel = message.modelLabel || "字幕模型";
+    if (background) {
+      state.backgroundPreparing = false;
+      dispatchModelEvent({ ...message, type: "ready" });
+    }
+    return;
+  }
+  if (message.type === "prepare-error") {
+    state.backgroundPreparing = false;
+    dispatchModelEvent({ ...message, type: "error" });
     return;
   }
   if (message.type === "result") {
@@ -290,12 +325,44 @@ function estimateDuration() {
 
 async function requestPersistentStorage() {
   try {
-    if (!navigator.storage?.persist) return false;
+    if (state.storagePolicy.constrained || !navigator.storage?.persist) return false;
     if (await navigator.storage.persisted?.()) return true;
     return navigator.storage.persist();
   } catch {
     return false;
   }
+}
+
+function setStoragePolicy(policy = {}) {
+  state.storagePolicy = {
+    ...state.storagePolicy,
+    constrained: Boolean(policy.constrained),
+    cacheAllowed: policy.cacheAllowed !== false,
+    availableBytes: Number(policy.availableBytes) || 0,
+    quotaBytes: Number(policy.quotaBytes) || 0,
+  };
+  return { ...state.storagePolicy };
+}
+
+function resolveRequestedModel(requested) {
+  if (!state.storagePolicy.constrained) return requested;
+  if (requested !== TINY_MODEL) showToast("瀏覽器空間偏低，這次改用 Whisper Tiny 並停止寫入大型模型快取");
+  return TINY_MODEL;
+}
+
+function prepareModel(options = {}) {
+  const worker = getWorker();
+  const background = Boolean(options.background);
+  if (background) state.backgroundPreparing = true;
+  worker.postMessage({
+    type: "prepare",
+    duration: Number(options.duration) || estimateDuration(),
+    model: resolveRequestedModel(options.model || elements.model.value),
+    preferGpu: options.preferGpu ?? elements.preferGpu.checked,
+    cacheAllowed: options.cacheAllowed ?? state.storagePolicy.cacheAllowed,
+    background,
+  });
+  return true;
 }
 
 async function startTranscription() {
@@ -304,15 +371,21 @@ async function startTranscription() {
   elements.results.hidden = true;
   state.startedAt = performance.now();
   state.modelReadyLabel = "";
+  state.processing = true;
+  state.backgroundPreparing = false;
+  document.documentElement.classList.add("model-loading");
 
   try {
     requestPersistentStorage();
+    const requestedModel = resolveRequestedModel(elements.model.value);
     const worker = getWorker();
     worker.postMessage({
       type: "prepare",
       duration: estimateDuration(),
-      model: elements.model.value,
+      model: requestedModel,
       preferGpu: elements.preferGpu.checked,
+      cacheAllowed: state.storagePolicy.cacheAllowed,
+      background: false,
     });
 
     const decoded = await decodeMedia(state.file);
@@ -328,10 +401,11 @@ async function startTranscription() {
         type: "transcribe",
         audioBuffer: decoded.audio.buffer,
         duration: decoded.duration,
-        model: elements.model.value,
+        model: requestedModel,
         language: elements.language.value,
         preferGpu: elements.preferGpu.checked,
         enhancementMeta: decoded.enhancement,
+        cacheAllowed: state.storagePolicy.cacheAllowed,
       },
       [decoded.audio.buffer],
     );
@@ -375,6 +449,8 @@ function finishTranscription(output, duration, device, model, modelLabel, enhanc
   elements.progressPanel.hidden = false;
   setProgress("字幕完成", "可以編輯、複製或下載", 100, "字幕只保存在目前頁面，不會上傳到伺服器。 ");
   elements.transcribe.disabled = false;
+  state.processing = false;
+  document.documentElement.classList.remove("model-loading");
   saveLatest();
   elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -382,6 +458,8 @@ function finishTranscription(output, duration, device, model, modelLabel, enhanc
 function failTranscription(message) {
   setProgress("處理失敗", message, 0, "可指定正確語言、切換智慧／平衡模式；歌曲或唱歌內容可關閉語音強化再試。 ");
   elements.transcribe.disabled = false;
+  state.processing = false;
+  document.documentElement.classList.remove("model-loading");
   showToast("字幕辨識失敗，請查看錯誤說明");
 }
 
@@ -431,6 +509,102 @@ function syncTranscriptOnly() {
   if (!state.result) return;
   state.result.text = elements.transcript.value.trim();
   saveLatest();
+}
+
+function normalizedComparable(value) {
+  return String(value || "").normalize("NFKC").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
+}
+
+function textSimilarity(left, right) {
+  const a = normalizedComparable(left);
+  const b = normalizedComparable(right);
+  if (!a || !b) return 0;
+  if (a === b || a.includes(b) || b.includes(a)) return 1;
+  const first = new Set(Array.from(a));
+  const second = new Set(Array.from(b));
+  let common = 0;
+  for (const value of first) if (second.has(value)) common += 1;
+  return common / Math.max(1, first.size + second.size - common);
+}
+
+function overlapSeconds(left, right) {
+  return Math.max(0, Math.min(left.end, right.end) - Math.max(left.start, right.start));
+}
+
+function mergeExternalSegments(incoming, options = {}) {
+  const additions = (Array.isArray(incoming) ? incoming : [])
+    .map((segment) => ({
+      start: Math.max(0, Number(segment.start) || 0),
+      end: Math.max(Number(segment.start) || 0, Number(segment.end) || Number(segment.start) + 1),
+      text: String(segment.text || "").trim(),
+      source: segment.source || "external",
+      confidence: Number(segment.confidence) || 0,
+    }))
+    .filter((segment) => segment.text);
+  if (!additions.length) return false;
+
+  const existing = (state.result?.segments || []).map((segment) => ({ ...segment }));
+  const replaceOverlapping = options.replaceOverlapping !== false;
+  for (const addition of additions) {
+    let bestIndex = -1;
+    let bestOverlap = 0;
+    existing.forEach((segment, index) => {
+      const overlap = overlapSeconds(segment, addition);
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestIndex = index;
+      }
+    });
+
+    if (replaceOverlapping && bestIndex >= 0 && bestOverlap > 0.15) {
+      const target = existing[bestIndex];
+      if (textSimilarity(target.text, addition.text) < 0.96 || addition.confidence >= 55) {
+        target.text = addition.text;
+        target.start = Math.min(target.start, addition.start);
+        target.end = Math.max(target.end, addition.end);
+        target.source = addition.source;
+      }
+    } else {
+      existing.push(addition);
+    }
+  }
+
+  existing.sort((left, right) => left.start - right.start || left.end - right.end);
+  const deduped = [];
+  for (const segment of existing) {
+    const previous = deduped[deduped.length - 1];
+    if (previous && overlapSeconds(previous, segment) > 0 && textSimilarity(previous.text, segment.text) >= 0.92) {
+      previous.end = Math.max(previous.end, segment.end);
+      continue;
+    }
+    deduped.push({ ...segment, id: deduped.length + 1 });
+  }
+
+  const duration = Math.max(
+    state.result?.duration || 0,
+    state.mediaDuration || 0,
+    ...deduped.map((segment) => segment.end),
+  );
+  const text = deduped.map((segment) => segment.text).join(" ").replace(/\s+/g, " ").trim();
+  state.result = {
+    ...(state.result || {}),
+    text,
+    segments: deduped,
+    duration,
+    device: state.result?.device || "local-ocr",
+    modelLabel: state.result?.modelLabel || options.sourceLabel || "畫面 OCR",
+    externalSource: options.sourceLabel || "畫面 OCR",
+  };
+  elements.transcript.value = text;
+  renderSegments();
+  const words = text.replace(/\s/g, "").length;
+  elements.resultStats.textContent = `${formatDuration(duration)} · ${deduped.length} 段 · 約 ${words} 字 · ${options.sourceLabel || "畫面 OCR"} 輔助`;
+  elements.results.hidden = false;
+  elements.progressPanel.hidden = false;
+  setProgress("畫面字幕已套用", "可繼續編輯、複製或下載", 100, "OCR 只在目前裝置讀取影片畫面，不會上傳截圖。 ");
+  saveLatest();
+  elements.results.scrollIntoView({ behavior: "smooth", block: "start" });
+  return true;
 }
 
 function formatSrtTimestamp(seconds) {
@@ -519,18 +693,6 @@ function restoreLatest() {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-
-  let reloading = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloading) return;
-    reloading = true;
-    const key = `reelscribe:sw-reload:${APP_BUILD}`;
-    if (!sessionStorage.getItem(key)) {
-      sessionStorage.setItem(key, "1");
-      window.location.reload();
-    }
-  });
-
   window.addEventListener("load", async () => {
     try {
       const registration = await navigator.serviceWorker.register(`./sw.js?v=${APP_BUILD}`, {
@@ -538,6 +700,15 @@ function registerServiceWorker() {
         updateViaCache: "none",
       });
       await registration.update();
+      if (registration.waiting) showToast("新版已準備完成，關閉後下次開啟會自動套用");
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        installing?.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            showToast("新版已下載，不會中斷目前工作；下次開啟自動套用");
+          }
+        });
+      });
     } catch {
       // The website remains usable without offline caching.
     }
@@ -549,7 +720,14 @@ window.ReelScribeApp = Object.freeze({
   setFile,
   clearFile,
   startTranscription,
+  prepareModel,
+  setStoragePolicy,
+  mergeExternalSegments,
+  getStoragePolicy: () => ({ ...state.storagePolicy }),
+  getFile: () => state.file,
+  getDuration: () => state.mediaDuration || estimateDuration(),
   isReady: () => Boolean(state.file && !elements.transcribe.disabled),
+  isProcessing: () => state.processing,
 });
 
 elements.pasteUrl.addEventListener("click", pasteUrl);
