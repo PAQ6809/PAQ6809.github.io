@@ -52,13 +52,12 @@ Upstream:
 
 ## Production candidates
 
-### SenseVoice Small through sherpa-onnx or the 2026 GGUF runtime
+### SenseVoice Small through sherpa-onnx or a reviewed GGUF runtime
 
 Strengths:
 - Fast non-autoregressive recognition.
 - Chinese, Cantonese, English, Japanese and Korean path.
 - Audio-event and emotion metadata may help reject music/no-speech regions.
-- 2026 edge/GGUF work adds a self-contained CPU path with built-in VAD.
 
 Release gates:
 - Pin sherpa-onnx or the selected native runtime release.
@@ -70,6 +69,27 @@ Release gates:
 Upstream:
 - https://github.com/FunAudioLLM/SenseVoice
 - https://github.com/k2-fsa/sherpa-onnx
+
+### Fun-ASR Nano 2512
+
+- Apache-2.0 model family published for multilingual recognition, Chinese dialects, streaming, timestamps, hotwords and singing-oriented scenarios.
+- Particularly relevant to short-form Chinese, Cantonese and mixed-language videos.
+- It is tracked as a sherpa-onnx/native candidate, not bundled into version 1.0.
+- Promotion gate: verified mobile artifact, exact license chain, timestamps, iOS/Android native runtime, memory and thermal benchmark, and a lower error/hallucination rate than Whisper Base on the ReelScribe fixture set.
+
+Upstream:
+- https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512
+- https://github.com/FunAudioLLM
+- https://k2-fsa.github.io/sherpa/onnx/funasr-nano/pretrained.html
+
+### Omnilingual ASR 300M INT8
+
+- Candidate optional language pack for very broad long-tail language coverage.
+- Not selected as the default Taiwan/Chinese model because a 1600-plus-language model increases download, QA and language-routing complexity.
+- Promotion gate: model-card and redistribution review, exact artifact integrity, language-selection UX, device benchmark and minimum supported-language quality floor.
+
+Upstream:
+- https://k2-fsa.github.io/sherpa/onnx/omnilingual-asr/models.html
 
 ### Moonshine English models
 
@@ -88,10 +108,11 @@ These models are not silently used and are not described as on-device. A future 
 ### Qwen3-ASR 0.6B / 1.7B
 
 - Apache-2.0.
-- 52 languages and dialects.
+- Supports 52 languages and dialects, including multiple Chinese dialects.
 - Supports speech, singing voice and songs with background music.
 - 0.6B targets the accuracy/efficiency trade-off; 1.7B targets higher quality.
 - Official runtime is Python/Transformers/vLLM and GPU-oriented.
+- Native Transformers support announced in June 2026 does not make the models suitable for ordinary phone RAM or app-bundle distribution.
 - Not treated as a mobile model.
 
 Upstream:
