@@ -25,6 +25,7 @@ import {
   type TranscriptSegment,
   type TranscriptionResult,
 } from './native/NativeReelScribeEngine';
+import {ModelManager} from './services/modelManager';
 import {resolvePublicLink} from './services/publicResolver';
 
 type SelectedMedia = {
@@ -138,11 +139,48 @@ function AppContent(): React.JSX.Element {
     }
   }
 
+  async function confirmModelDownload(): Promise<boolean> {
+    if (await ModelManager.isInstalled(modelId)) return true;
+    if (!selectedModel.artifactUrl || selectedModel.releaseStatus === 'research') {
+      throw new Error(`${selectedModel.name} 尚未核准安裝。`);
+    }
+
+    const size = selectedModel.estimatedDownloadMb
+      ? `約 ${selectedModel.estimatedDownloadMb} MB`
+      : '大小將由下載伺服器回報';
+    const storage = capabilities.freeStorageMb
+      ? `目前裝置估計可用 ${Math.floor(capabilities.freeStorageMb)} MB。`
+      : '';
+
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      Alert.alert(
+        `下載 ${selectedModel.name}`,
+        `${size}。模型只會用於本機字幕辨識，下載後可離線使用並可由使用者刪除。建議使用 Wi-Fi。${storage ? `\n\n${storage}` : ''}`,
+        [
+          {text: '取消', style: 'cancel', onPress: () => finish(false)},
+          {text: '下載並開始', onPress: () => finish(true)},
+        ],
+        {cancelable: true, onDismiss: () => finish(false)},
+      );
+    });
+  }
+
   async function transcribeUri(uri: string): Promise<void> {
     setBusy(true);
     setResult(null);
     setProgress('檢查模型完整性…');
     try {
+      const accepted = await confirmModelDownload();
+      if (!accepted) {
+        setStatus('已取消模型下載，影片仍保留在目前裝置。');
+        return;
+      }
       await ReelScribeEngine.ensureModel(modelId);
       setProgress('正在本機辨識…');
       const next = await ReelScribeEngine.transcribe({
@@ -288,6 +326,7 @@ function AppContent(): React.JSX.Element {
           {MOBILE_MODELS.map(model => {
             const selected = model.id === modelId;
             const unavailable = model.releaseStatus === 'research';
+            const download = model.estimatedDownloadMb ? ` · 約 ${model.estimatedDownloadMb} MB` : '';
             return (
               <Pressable
                 key={model.id}
@@ -298,11 +337,11 @@ function AppContent(): React.JSX.Element {
                   <Text style={styles.optionName}>{model.name}</Text>
                   <Text style={styles.optionState}>{selected ? '已選' : unavailable ? '研究中' : ''}</Text>
                 </View>
-                <Text style={styles.optionSummary}>{model.summary}</Text>
+                <Text style={styles.optionSummary}>{model.summary}{download}</Text>
               </Pressable>
             );
           })}
-          <Text style={styles.policyText}>目前建議：{selectedModel.name}。App 不會同時把所有大型模型下載到手機。</Text>
+          <Text style={styles.policyText}>目前建議：{selectedModel.name}。App 不會同時把所有大型模型下載到手機；首次下載會先詢問並顯示估計大小。</Text>
         </View>
 
         <View style={styles.card}>

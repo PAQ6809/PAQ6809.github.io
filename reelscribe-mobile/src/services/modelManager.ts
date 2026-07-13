@@ -158,6 +158,10 @@ export const ModelManager = {
     return entry.promise;
   },
 
+  async isInstalled(modelId: ModelId): Promise<boolean> {
+    return Boolean(await verifiedExistingFile(modelId));
+  },
+
   async remove(modelId: ModelId): Promise<void> {
     const active = DOWNLOADS.get(modelId);
     if (active && active.jobId >= 0) RNFS.stopDownload(active.jobId);

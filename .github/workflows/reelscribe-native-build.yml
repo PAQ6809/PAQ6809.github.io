@@ -126,7 +126,6 @@ jobs:
       - name: Build unsigned simulator application
         working-directory: reelscribe-mobile
         run: |
-          set -o pipefail
           xcodebuild \
             -workspace ios/ReelScribeMobile.xcworkspace \
             -scheme ReelScribeMobile \
@@ -134,4 +133,4 @@ jobs:
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
-            build | xcpretty
+            build
