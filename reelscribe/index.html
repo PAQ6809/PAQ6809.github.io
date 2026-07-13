@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' blob: https:; worker-src 'self' blob:; font-src 'self' data:; upgrade-insecure-requests" />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援各類公開影片連結、常見影音格式及長影片本機 Whisper 智慧分段。" />
-  <meta name="keywords" content="影片轉字幕,YouTube字幕,Instagram字幕,Instagram Reel字幕,TikTok字幕,Facebook影片字幕,X影片字幕,短影片字幕,長影片字幕,Whisper,免費字幕工具,SRT,VTT,繁體中文字幕" />
+  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援背景音樂抑制、Silero 人聲偵測、Whisper Large-v3-turbo 與長影片本機智慧分段。" />
+  <meta name="keywords" content="影片轉字幕,YouTube字幕,Instagram字幕,Instagram Reel字幕,TikTok字幕,背景音樂抑制,人聲偵測,Whisper Large v3 Turbo,長影片字幕,免費字幕工具,SRT,VTT,繁體中文字幕" />
   <link rel="canonical" href="https://paq6809.github.io/reelscribe/" />
   <link rel="sitemap" type="application/xml" href="./sitemap.xml" />
 
@@ -17,14 +17,14 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ReelScribe" />
   <meta property="og:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta property="og:description" content="貼上公開 Instagram、YouTube 等影片連結取得字幕；也支援常見影音檔與長影片本機 AI 分段辨識。" />
+  <meta property="og:description" content="貼上公開 Instagram、YouTube 等影片連結取得字幕；支援人聲強化、背景音樂抑制與長影片本機 AI 分段辨識。" />
   <meta property="og:url" content="https://paq6809.github.io/reelscribe/" />
   <meta property="og:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
   <meta property="og:image:alt" content="ReelScribe 免費社群影片字幕工具" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta name="twitter:description" content="公開 Instagram 影片可直接解析；支援常見影音格式與長影片本機 AI 分段辨識。" />
+  <meta name="twitter:description" content="公開 Instagram 影片可直接解析；支援背景音樂抑制與長影片本機 AI 分段辨識。" />
   <meta name="twitter:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
 
   <title>ReelScribe｜Instagram、社群影片與長影片字幕工具</title>
@@ -32,6 +32,7 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://noembed.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://huggingface.co" crossorigin />
   <link rel="preconnect" href="https://vite-xi-one-59.vercel.app" crossorigin />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./ui-polish.css" />
@@ -42,7 +43,7 @@
     "@type": "SoftwareApplication",
     "name": "ReelScribe",
     "url": "https://paq6809.github.io/reelscribe/",
-    "description": "免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援公開影片連結、常見影音格式與長影片本機 Whisper 分段辨識。",
+    "description": "免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援背景音樂抑制、人聲偵測、常見影音格式與長影片本機 Whisper 分段辨識。",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Web",
     "inLanguage": "zh-Hant",
@@ -55,10 +56,10 @@
     "featureList": [
       "公開 Instagram Reel 與影片貼文直接解析",
       "各類公開社群影片連結解析",
-      "YouTube、Vimeo、Bilibili、Dailymotion、PeerTube 公開字幕來源",
-      "常見影片與音訊格式相容處理",
-      "長影片智慧分段、靜音跳過與 WebGPU 加速",
-      "本機 Whisper 語音辨識",
+      "Silero VAD 人聲偵測與背景音樂抑制",
+      "Whisper Tiny、Base、Small 與 Large-v3-turbo 自動分流",
+      "混合精度 WebGPU 與模型快取",
+      "長影片智慧分段、靜音跳過與低可信字幕攔截",
       "TXT、SRT、VTT 匯出",
       "手機 PWA 分享"
     ]
@@ -164,6 +165,10 @@
               </select>
             </label>
             <label class="switch-line">
+              <input id="suppress-music" type="checkbox" checked />
+              <span>語音強化（抑制背景音樂；歌曲可關閉）</span>
+            </label>
+            <label class="switch-line">
               <input id="prefer-gpu" type="checkbox" checked />
               <span>支援時使用 WebGPU 加速</span>
             </label>
@@ -230,6 +235,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <script src="./format-compat.js"></script>
+  <script src="./speech-enhancer.js"></script>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./capture.js"></script>
   <script type="module" src="./traditional.js"></script>
