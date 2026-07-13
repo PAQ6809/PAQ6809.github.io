@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedAt": "2026-07-13",
   "policy": {
     "defaultExecution": "on-device",
@@ -33,7 +33,7 @@
       "license": "Apache-2.0",
       "targets": ["ios", "android"],
       "status": "production-candidate",
-      "notes": "Candidate runtime for SenseVoice, VAD, diarization, enhancement and source separation. Pin a release and verify every included model license before shipping."
+      "notes": "Candidate runtime for SenseVoice, FunASR Nano, Omnilingual ASR, VAD, diarization, enhancement and source separation. Pin a release and verify every included model license before shipping."
     },
     {
       "id": "moonshine-native",
@@ -155,6 +155,38 @@
         "url": null,
         "sha256": null,
         "integrityStatus": "not-approved-for-store-build"
+      }
+    },
+    {
+      "id": "funasr-nano-2512",
+      "displayName": "Fun-ASR Nano 2512",
+      "engine": "sherpa-onnx",
+      "languages": ["zh", "yue", "en", "ja", "ko", "vi", "id", "th", "ms", "tl", "ar", "hi"],
+      "license": "Apache-2.0-model-card-review-required",
+      "deployment": "on-device-candidate",
+      "deviceTier": "high",
+      "recommendedFor": ["chinese-dialects", "singing", "streaming", "timestamps", "hotwords"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "runtime-license-benchmark-required"
+      }
+    },
+    {
+      "id": "omnilingual-asr-300m-int8",
+      "displayName": "Omnilingual ASR 300M INT8",
+      "engine": "sherpa-onnx",
+      "languages": ["1600-plus-languages"],
+      "license": "verify-model-card-before-release",
+      "deployment": "optional-on-device-language-pack-candidate",
+      "deviceTier": "high",
+      "recommendedFor": ["long-tail-languages", "language-expansion"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "not-approved-for-default-install"
       }
     },
     {
