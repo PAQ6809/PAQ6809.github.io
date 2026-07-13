@@ -23,6 +23,11 @@ import {
   type TranscriptionResult,
 } from './native/NativeReelScribeEngine';
 import {resolvePublicLink} from './services/publicResolver';
+import {
+  copyTranscript,
+  shareSubtitle,
+  type SubtitleFormat,
+} from './services/subtitleExport';
 
 type SelectedMedia = {
   uri: string;
@@ -41,9 +46,12 @@ const LANGUAGES = [
 
 function formatTime(milliseconds: number): string {
   const seconds = Math.max(0, Math.floor(milliseconds / 1000));
-  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
   const remainder = seconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+  return hours > 0
+    ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
+    : `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
 }
 
 function AppContent(): React.JSX.Element {
@@ -53,9 +61,11 @@ function AppContent(): React.JSX.Element {
   const [link, setLink] = useState('');
   const [media, setMedia] = useState<SelectedMedia | null>(null);
   const [result, setResult] = useState<TranscriptionResult | null>(null);
+  const [resultName, setResultName] = useState('ReelScribe-subtitles');
   const [status, setStatus] = useState('所有本機檔案預設只在手機處理。');
   const [progress, setProgress] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [enhanceSpeech, setEnhanceSpeech] = useState(true);
   const [ocrAssist, setOcrAssist] = useState(true);
 
@@ -85,6 +95,7 @@ function AppContent(): React.JSX.Element {
     return () => {
       removeModel();
       removeTask();
+      ReelScribeEngine.releaseIdleModel().catch(() => undefined);
     };
   }, []);
 
@@ -101,7 +112,9 @@ function AppContent(): React.JSX.Element {
       });
       const first = files[0];
       if (!first) return;
-      setMedia({uri: first.uri, name: first.name || 'media', size: first.size});
+      const name = first.name || 'media';
+      setMedia({uri: first.uri, name, size: first.size});
+      setResultName(name);
       setResult(null);
       setStatus('檔案已選取；按下開始後才會載入模型。');
     } catch (error) {
@@ -110,9 +123,10 @@ function AppContent(): React.JSX.Element {
     }
   }
 
-  async function transcribeUri(uri: string): Promise<void> {
+  async function transcribeUri(uri: string, sourceName?: string): Promise<void> {
     setBusy(true);
     setResult(null);
+    if (sourceName) setResultName(sourceName);
     setProgress('檢查模型完整性…');
     try {
       await ReelScribeEngine.ensureModel(modelId);
@@ -139,7 +153,7 @@ function AppContent(): React.JSX.Element {
       Alert.alert('尚未選擇影片', '請先選擇影片或音訊檔。');
       return;
     }
-    await transcribeUri(media.uri);
+    await transcribeUri(media.uri, media.name);
   }
 
   async function resolveLink(): Promise<void> {
@@ -149,6 +163,8 @@ function AppContent(): React.JSX.Element {
     setResult(null);
     try {
       const resolved = await resolvePublicLink(link, language);
+      const sourceName = resolved.title || 'ReelScribe-public-video';
+      setResultName(sourceName);
       if (resolved.kind === 'captions') {
         const durationMs = resolved.segments.reduce((max, segment) => Math.max(max, segment.endMs), 0);
         setResult({
@@ -160,9 +176,11 @@ function AppContent(): React.JSX.Element {
           resumedFromCheckpoint: false,
         });
         setStatus('已取得平台公開字幕，不需下載 AI 模型。');
+        setBusy(false);
+        setProgress('');
       } else {
         setStatus('已取得短效公開媒體；接著在手機本機辨識。');
-        await transcribeUri(resolved.mediaUri);
+        await transcribeUri(resolved.mediaUri, sourceName);
       }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
@@ -174,7 +192,7 @@ function AppContent(): React.JSX.Element {
   async function cancel(): Promise<void> {
     try {
       await ReelScribeEngine.cancel();
-      setStatus('已停止目前工作；已完成的分段檢查點會保留。');
+      setStatus('已停止目前工作；已完成的文字仍會保留。');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
     } finally {
@@ -182,6 +200,41 @@ function AppContent(): React.JSX.Element {
       setProgress('');
     }
   }
+
+  function updateTranscript(text: string): void {
+    setResult(current => current ? {...current, text} : current);
+  }
+
+  function copyResult(): void {
+    if (!result) return;
+    try {
+      copyTranscript(result.text);
+      setStatus('已複製完整字幕。');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function exportResult(format: SubtitleFormat): Promise<void> {
+    if (!result || sharing) return;
+    setSharing(true);
+    setStatus(`正在準備 ${format.toUpperCase()} 字幕檔…`);
+    try {
+      await shareSubtitle({
+        format,
+        transcript: result.text,
+        segments: result.segments,
+        sourceName: resultName,
+      });
+      setStatus(`${format.toUpperCase()} 已交給系統分享／儲存選單。`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  const controlsDisabled = busy || sharing;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -211,14 +264,14 @@ function AppContent(): React.JSX.Element {
             placeholderTextColor="#8792a8"
             style={styles.input}
           />
-          <Pressable style={[styles.primaryButton, busy && styles.disabled]} disabled={busy} onPress={resolveLink}>
+          <Pressable style={[styles.primaryButton, controlsDisabled && styles.disabled]} disabled={controlsDisabled} onPress={resolveLink}>
             <Text style={styles.primaryButtonText}>取得字幕</Text>
           </Pressable>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>本機檔案</Text>
-          <Pressable style={styles.secondaryButton} onPress={chooseMedia} disabled={busy}>
+          <Pressable style={[styles.secondaryButton, controlsDisabled && styles.disabled]} onPress={chooseMedia} disabled={controlsDisabled}>
             <Text style={styles.secondaryButtonText}>{media ? '更換影片或音訊' : '選擇影片或音訊'}</Text>
           </Pressable>
           {media ? (
@@ -237,7 +290,7 @@ function AppContent(): React.JSX.Element {
             return (
               <Pressable
                 key={model.id}
-                disabled={busy || unavailable}
+                disabled={controlsDisabled || unavailable}
                 onPress={() => setModelId(model.id)}
                 style={[styles.option, selected && styles.optionSelected, unavailable && styles.optionDisabled]}>
                 <View style={styles.optionHeader}>
@@ -258,21 +311,21 @@ function AppContent(): React.JSX.Element {
               <Pressable
                 key={value}
                 onPress={() => setLanguage(value)}
-                disabled={busy}
+                disabled={controlsDisabled}
                 style={[styles.chip, language === value && styles.chipSelected]}>
                 <Text style={[styles.chipText, language === value && styles.chipTextSelected]}>{label}</Text>
               </Pressable>
             ))}
           </View>
-          <Pressable style={styles.toggle} onPress={() => setEnhanceSpeech(value => !value)} disabled={busy}>
+          <Pressable style={styles.toggle} onPress={() => setEnhanceSpeech(value => !value)} disabled={controlsDisabled}>
             <Text style={styles.toggleMark}>{enhanceSpeech ? '✓' : ''}</Text>
             <Text style={styles.toggleText}>抑制背景音樂並強化人聲</Text>
           </Pressable>
-          <Pressable style={styles.toggle} onPress={() => setOcrAssist(value => !value)} disabled={busy}>
+          <Pressable style={styles.toggle} onPress={() => setOcrAssist(value => !value)} disabled={controlsDisabled}>
             <Text style={styles.toggleMark}>{ocrAssist ? '✓' : ''}</Text>
             <Text style={styles.toggleText}>以手機原生 OCR 輔助讀取畫面字幕</Text>
           </Pressable>
-          <Pressable style={[styles.primaryButton, (!media || busy) && styles.disabled]} disabled={!media || busy} onPress={startLocal}>
+          <Pressable style={[styles.primaryButton, (!media || controlsDisabled) && styles.disabled]} disabled={!media || controlsDisabled} onPress={startLocal}>
             <Text style={styles.primaryButtonText}>開始本機辨識</Text>
           </Pressable>
           {busy ? (
@@ -287,15 +340,52 @@ function AppContent(): React.JSX.Element {
 
         {result ? (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>完整字幕</Text>
-            <TextInput value={result.text} multiline editable style={styles.transcript} />
-            <Text style={styles.resultMeta}>{result.segments.length} 段 · {formatTime(result.durationMs)}</Text>
+            <View style={styles.resultTitleRow}>
+              <View style={styles.resultTitleCopy}>
+                <Text style={styles.sectionTitle}>完整字幕</Text>
+                <Text style={styles.resultMeta}>{result.segments.length} 段 · {formatTime(result.durationMs)}</Text>
+              </View>
+              <Pressable style={styles.copyButton} onPress={copyResult} disabled={sharing}>
+                <Text style={styles.copyButtonText}>複製全文</Text>
+              </Pressable>
+            </View>
+
+            <TextInput
+              value={result.text}
+              onChangeText={updateTranscript}
+              multiline
+              editable={!sharing}
+              spellCheck
+              style={styles.transcript}
+              accessibilityLabel="可編輯完整字幕"
+            />
+
+            <View style={styles.exportRow}>
+              {(['txt', 'srt', 'vtt'] as const).map(format => {
+                const timelineRequired = format !== 'txt';
+                const disabled = sharing || (timelineRequired && result.segments.length === 0);
+                return (
+                  <Pressable
+                    key={format}
+                    disabled={disabled}
+                    onPress={() => exportResult(format)}
+                    style={[styles.exportButton, disabled && styles.disabled]}>
+                    <Text style={styles.exportButtonText}>{format.toUpperCase()}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.exportHint}>TXT 使用目前編輯後全文；SRT、VTT 使用目前時間軸。分享完成後暫存檔會刪除。</Text>
+
             {result.segments.slice(0, 20).map((segment: TranscriptSegment, index) => (
               <View key={`${segment.startMs}-${index}`} style={styles.segment}>
                 <Text style={styles.segmentTime}>{formatTime(segment.startMs)}</Text>
                 <Text style={styles.segmentText}>{segment.text}</Text>
               </View>
             ))}
+            {result.segments.length > 20 ? (
+              <Text style={styles.policyText}>畫面先顯示前 20 段；匯出檔仍包含完整時間軸。</Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -352,10 +442,18 @@ const styles = StyleSheet.create({
   progressText: {flex: 1, color: '#556177', fontSize: 14},
   cancelText: {color: '#b42318', fontWeight: '800'},
   status: {fontSize: 14, lineHeight: 21, color: '#64748b'},
+  resultTitleRow: {flexDirection: 'row', alignItems: 'center', gap: 12},
+  resultTitleCopy: {flex: 1, gap: 4},
+  copyButton: {minHeight: 44, borderRadius: 12, backgroundColor: '#2463eb', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14},
+  copyButtonText: {fontSize: 14, fontWeight: '800', color: '#fff'},
   transcript: {minHeight: 180, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 14, padding: 14, color: '#111827', fontSize: 16, lineHeight: 25, textAlignVertical: 'top'},
   resultMeta: {fontSize: 14, color: '#64748b'},
+  exportRow: {flexDirection: 'row', gap: 10},
+  exportButton: {flex: 1, minHeight: 48, borderRadius: 13, borderWidth: 1, borderColor: '#bfc9da', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff'},
+  exportButtonText: {fontSize: 16, color: '#1f2937', fontWeight: '800'},
+  exportHint: {fontSize: 12, lineHeight: 18, color: '#728096'},
   segment: {flexDirection: 'row', gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#d9e0ea'},
-  segmentTime: {width: 54, color: '#2463eb', fontWeight: '800'},
+  segmentTime: {width: 62, color: '#2463eb', fontWeight: '800'},
   segmentText: {flex: 1, color: '#1f2937', fontSize: 15, lineHeight: 22},
   footer: {textAlign: 'center', fontSize: 13, color: '#7b879a', paddingTop: 10},
 });

@@ -42,13 +42,21 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate JSON and model policy
+      - name: Validate JSON, scripts, model policy, exports and store metadata
         run: |
           set -euo pipefail
           python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
           python -m json.tool reelscribe-mobile/package.json >/dev/null
           python -m json.tool reelscribe-mobile/app.json >/dev/null
+          node --check reelscribe-mobile/scripts/audit-model-catalog.mjs
+          node --check reelscribe-mobile/scripts/audit-native-manager.mjs
+          node --check reelscribe-mobile/scripts/audit-store-metadata.mjs
+          node --check reelscribe-mobile/scripts/audit-subtitle-export.mjs
+          node --check reelscribe-mobile/scripts/install-native-manager.mjs
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
+          node reelscribe-mobile/scripts/audit-native-manager.mjs
+          node reelscribe-mobile/scripts/audit-store-metadata.mjs
+          node reelscribe-mobile/scripts/audit-subtitle-export.mjs
 
       - name: Install pinned JavaScript dependencies without lifecycle scripts
         working-directory: reelscribe-mobile
@@ -80,25 +88,58 @@ jobs:
         working-directory: reelscribe-mobile
         run: test "$(cat typecheck.exit)" = "0"
 
-      - name: Check app, privacy and store files
+      - name: Check app, native, privacy and store files
         run: |
           set -euo pipefail
           test -s reelscribe-mobile/src/App.tsx
           test -s reelscribe-mobile/src/modelCatalog.ts
           test -s reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           test -s reelscribe-mobile/src/services/publicResolver.ts
+          test -s reelscribe-mobile/src/services/subtitleExport.ts
           test -s reelscribe-mobile/native/IMPLEMENTATION.md
+          test -s reelscribe-mobile/native/STATUS.md
+          test -s reelscribe-mobile/native/ios/ReelScribeManager.swift
+          test -s reelscribe-mobile/native/ios/ReelScribeManagerBridge.m
+          test -s reelscribe-mobile/native/ios/ReelScribeManager.podspec
+          test -s reelscribe-mobile/native/android/ReelScribeManagerModule.kt
+          test -s reelscribe-mobile/native/android/ReelScribeManagerPackage.kt
+          test -s reelscribe-mobile/scripts/install-native-manager.mjs
+          test -s reelscribe-mobile/scripts/audit-native-manager.mjs
+          test -s reelscribe-mobile/scripts/audit-store-metadata.mjs
+          test -s reelscribe-mobile/scripts/audit-subtitle-export.mjs
           test -s reelscribe-mobile/MODEL-RESEARCH.md
           test -s reelscribe-mobile/STORE-LAUNCH.md
           test -s reelscribe-mobile/PRIVACY.md
+          test -s reelscribe-mobile/.do-not-ship
+          test -s reelscribe-mobile/store/ios/zh-Hant/name.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/subtitle.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/promotional_text.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/description.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/keywords.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/release_notes.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/privacy_url.txt
+          test -s reelscribe-mobile/store/ios/zh-Hant/support_url.txt
+          test -s reelscribe-mobile/store/android/zh-TW/title.txt
+          test -s reelscribe-mobile/store/android/zh-TW/short_description.txt
+          test -s reelscribe-mobile/store/android/zh-TW/full_description.txt
+          test -s reelscribe-mobile/store/REVIEW-NOTES.md
+          test -s reelscribe-mobile/store/SCREENSHOT-PLAN.md
           test -s reelscribe/privacy.html
           test -s reelscribe/terms.html
           grep -q 'io.github.paq6809.reelscribe' reelscribe-mobile/README.md
           grep -q 'React Native 0.86' reelscribe-mobile/README.md
           grep -q 'whisper.rn.*0.6.0' reelscribe-mobile/README.md
           grep -q 'whisper.rn' reelscribe-mobile/package.json
+          grep -q '@react-native-clipboard/clipboard' reelscribe-mobile/package.json
+          grep -q 'react-native-share' reelscribe-mobile/package.json
           grep -q 'initWhisper' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           grep -q 'ReelScribeManager' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+          grep -q 'copyTranscript' reelscribe-mobile/src/App.tsx
+          grep -q 'shareSubtitle' reelscribe-mobile/src/App.tsx
+          grep -q 'WEBVTT' reelscribe-mobile/src/services/subtitleExport.ts
+          grep -q 'willPerformHTTPRedirection' reelscribe-mobile/native/ios/ReelScribeManager.swift
+          grep -q 'instanceFollowRedirects = false' reelscribe-mobile/native/android/ReelScribeManagerModule.kt
+          grep -q 'ReelScribeManagerPackage()' reelscribe-mobile/scripts/install-native-manager.mjs
           grep -q 'SHA-256' reelscribe-mobile/native/IMPLEMENTATION.md
           grep -q 'Qwen3-ASR' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'SenseVoice' reelscribe-mobile/MODEL-RESEARCH.md
@@ -115,17 +156,29 @@ jobs:
           import json
           import re
 
-          source = '\n'.join(path.read_text(encoding='utf-8') for path in Path('reelscribe-mobile/src').rglob('*') if path.suffix in {'.ts', '.tsx'})
-          assert 'document.cookie' not in source
-          assert 'new Function(' not in source
-          assert not re.search(r'(^|[^\w])eval\s*\(', source)
-          assert "credentials: 'omit'" in source
-          assert "'Cache-Control': 'no-store, max-age=0'" in source
-          assert "referrerPolicy: 'no-referrer'" in source
-          assert 'initWhisper' in source
-          assert 'releaseAllWhisper' in source
-          assert 'model.sha256' in source
-          assert 'prepareMedia' in source
+          app_source = '\n'.join(path.read_text(encoding='utf-8') for path in Path('reelscribe-mobile/src').rglob('*') if path.suffix in {'.ts', '.tsx'})
+          native_source = '\n'.join(path.read_text(encoding='utf-8') for path in Path('reelscribe-mobile/native').rglob('*') if path.suffix in {'.swift', '.m', '.kt'})
+          combined = app_source + '\n' + native_source
+
+          assert 'document.cookie' not in combined
+          assert 'new Function(' not in combined
+          assert not re.search(r'(^|[^\w])eval\s*\(', combined)
+          assert "credentials: 'omit'" in app_source
+          assert "'Cache-Control': 'no-store, max-age=0'" in app_source
+          assert "referrerPolicy: 'no-referrer'" in app_source
+          assert 'initWhisper' in app_source
+          assert 'releaseAllWhisper' in app_source
+          assert 'model.sha256' in app_source
+          assert 'prepareMedia' in app_source
+          assert 'Clipboard.setString' in app_source
+          assert 'useInternalStorage: true' in app_source
+          assert 'RNFS.unlink' in app_source
+          assert 'httpCookieStorage = nil' in native_source
+          assert 'httpShouldSetCookies = false' in native_source
+          assert 'instanceFollowRedirects = false' in native_source
+          assert 'RELEASE_SHA256: Map<String, String> = emptyMap()' in native_source
+          assert 'releaseSHA256: [String: String] = [:]' in native_source
+          assert 'Data(contentsOf: source' not in native_source
 
           catalog = json.loads(Path('reelscribe/models/mobile-model-catalog.json').read_text(encoding='utf-8'))
           by_id = {item['id']: item for item in catalog['models']}
@@ -133,6 +186,15 @@ jobs:
           assert 'server' in by_id['qwen3-asr-0.6b']['deployment']
           assert by_id['whisper-tiny']['deployment'] == 'on-device'
           PY
+
+      - name: Confirm release remains blocked without model hashes and device evidence
+        run: |
+          set -euo pipefail
+          if RELEASE_BUILD=1 node reelscribe-mobile/scripts/audit-model-catalog.mjs; then
+            echo 'Release audit unexpectedly passed.' >&2
+            exit 1
+          fi
+          grep -q 'must not be submitted' reelscribe-mobile/.do-not-ship
 
       - name: Check current upstream model records
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -145,7 +207,7 @@ jobs:
             https://api.github.com/repos/mybigday/whisper.rn/releases/latest \
             | python -m json.tool >/dev/null
           curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://huggingface.co/Qwen/Qwen3-ASR-0.6B/raw/main/README.md \
+            https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/raw/main/README.md \
             | grep -q 'Qwen3-ASR'
           curl --fail --silent --show-error --location --retry 3 --max-time 30 \
             https://raw.githubusercontent.com/FunAudioLLM/SenseVoice/main/README.md \

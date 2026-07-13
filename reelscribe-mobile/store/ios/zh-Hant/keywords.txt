@@ -1,0 +1,1 @@
+字幕,影片轉文字,逐字稿,SRT,VTT,Whisper,OCR,Instagram,YouTube,離線辨識

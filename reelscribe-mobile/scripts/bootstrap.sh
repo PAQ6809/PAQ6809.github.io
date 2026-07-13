@@ -25,12 +25,17 @@ cp -R "$TEMPLATE_DIR/ios" "$PROJECT_DIR/ios"
 cp -R "$TEMPLATE_DIR/android" "$PROJECT_DIR/android"
 rm -rf "$TEMPLATE_DIR"
 
-npm install
+echo "Installing ReelScribe native model/media manager..."
+node scripts/install-native-manager.mjs
+
+echo "Installing pinned JavaScript dependencies without lifecycle scripts..."
+npm install --ignore-scripts --no-audit --no-fund --silent
 
 cat <<'EOF'
 Bootstrap complete.
-1. On macOS: cd ios && pod install
-2. Implement native/IMPLEMENTATION.md as ReelScribeEngine.
-3. Confirm the bundle/application identifier is available.
-4. Run npm run check.
+1. Run npm run check before compiling.
+2. On macOS: cd ios && pod install, then compile on a physical iPhone with Xcode.
+3. Android: npm run android for a debug-device build.
+4. Confirm the bundle/application identifier is available.
+5. Never submit while .do-not-ship exists.
 EOF

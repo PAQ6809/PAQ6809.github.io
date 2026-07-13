@@ -4,7 +4,7 @@ ReelScribe Mobile is the native iOS/Android product track for the existing ReelS
 
 ## Current status
 
-This directory now contains the React Native application layer, the installed `whisper.rn` native binding, the secure native model/media manager contract, model policy, public-link resolver client, store metadata, privacy documents, CI checks and bootstrap scripts.
+This directory contains the React Native application layer, the installed `whisper.rn` native binding, iOS and Android model/media managers, model policy, public-link resolver client, store metadata, privacy documents, CI checks and bootstrap scripts.
 
 The provisional application identifier is:
 
@@ -14,16 +14,20 @@ io.github.paq6809.reelscribe
 
 It is **not yet registered** in App Store Connect or Google Play Console. Confirm availability before signing a release.
 
+The native managers are source-complete enough for the first Debug compilation attempt, but they have not yet been compiled on Xcode/Android Gradle or tested on physical devices. OCR frame sampling, durable checkpoint resume and final release-model hashes intentionally remain disabled. `.do-not-ship` must remain in the repository.
+
 ## Architecture
 
 - React Native 0.86 + React 19.2 for the shared app UI and task orchestration.
-- `whisper.rn` 0.6.0 is installed and provides the React Native binding to `whisper.cpp` for native iOS/Android ASR.
-- `NativeReelScribeEngine.ts` calls `whisper.rn` directly for local transcription, cancellation, progress and timestamped segments.
-- A small Swift/Kotlin native module named `ReelScribeManager` remains responsible for resumable model download, SHA-256 verification, media-to-local-audio preparation, checkpoint persistence and platform OCR.
+- `whisper.rn` 0.6.0 provides the reviewed React Native binding to `whisper.cpp` for native iOS/Android ASR.
+- `NativeReelScribeEngine.ts` calls `whisper.rn` for local transcription, cancellation, progress and timestamped segments.
+- `ReelScribeManager.swift` and `ReelScribeManagerModule.kt` manage allowlisted downloads, local media import, 16 kHz mono WAV conversion, storage/thermal capability reporting and temporary-file cleanup.
+- Release builds fail closed while exact SHA-256 model values are absent.
+- iOS downloads use an ephemeral cookie-free URLSession and validate every redirect host; Android disables automatic redirects and validates each redirect before resuming a partial model file.
 - `whisper.cpp` 1.9.1 is the pinned production engine target in the release catalog.
-- Optional `sherpa-onnx` integration for SenseVoice, VAD, source separation, diarization and enhancement remains a candidate until model-license and device testing pass.
-- Apple Vision text recognition on iOS and ML Kit Text Recognition v2 on Android provide on-device burned-in subtitle OCR.
-- The existing public link resolver remains a public text/metadata service; local media and transcripts stay on the device unless the user explicitly enables a future self-hosted server mode.
+- Optional `sherpa-onnx` integration for SenseVoice, VAD, source separation, diarization and enhancement remains a candidate until model-license and physical-device testing pass.
+- Apple Vision text recognition on iOS and ML Kit Text Recognition v2 on Android remain the planned on-device OCR implementations; the current native methods return no OCR output rather than unvalidated text.
+- The existing public-link resolver remains a public text/metadata service; local media and transcripts stay on the device unless the user explicitly enables a future self-hosted server mode.
 
 ## Model policy
 
@@ -58,32 +62,53 @@ macOS/Linux:
 ./scripts/bootstrap.sh
 ```
 
-The scripts create the native `ios/` and `android/` projects through the pinned React Native community CLI, then copy the maintained ReelScribe source files into the generated project. A macOS machine with Xcode is required to produce and sign an iOS build.
+The scripts create `ios/` and `android/` through the pinned React Native community CLI. `install-native-manager.mjs` then registers the local iOS pod, copies the Android Kotlin sources and inserts `ReelScribeManagerPackage()` into `MainApplication.kt`. A macOS machine with Xcode is required to compile and sign iOS.
 
-After bootstrap, native autolinking connects `whisper.rn`; the project still must implement `ReelScribeManager` according to `native/IMPLEMENTATION.md` before model download, media conversion and OCR work in a signed build.
+A project that already has `ios/` and `android/` can run:
+
+```bash
+npm run install:native-manager
+```
+
+The installer fails rather than modifying an unexpected package identifier or unrecognized project structure.
 
 ## Native implementation gates
 
 The store build is blocked until all of these pass:
 
-- `ReelScribeManager` implements model download, exact-size and SHA-256 verification, media preparation, cancellation, checkpoints, resume and one-model-at-a-time memory rules.
-- iOS uses background asset delivery or a reviewed Application Support download location; Android uses Play Asset Delivery or verified app-private storage.
+- Tiny and Base artifacts have independently verified exact sizes and SHA-256 values in the release catalog and native maps.
+- Xcode and Android Gradle Debug builds compile from a clean checkout.
+- Apple Vision and ML Kit OCR frame sampling pass script/language, random-symbol and adjacent-frame quality tests.
+- Checkpoints include media fingerprint, model hash and processing settings and resume atomically.
 - App stays responsive during model download, OCR and long transcription.
 - 15-minute, 60-minute and 3-hour regression files complete without process termination on the supported device matrix.
 - Airplane-mode transcription works after the selected model is installed.
 - No audio, video frame, transcript, cookie, session or device identifier leaves the device in local mode.
 - App Privacy and Google Data Safety declarations match every shipped SDK.
+- Account owner completes identifiers, signing, agreements, legal verification and final store submission.
 
-## Release commands
+## Validation commands
 
-After the native projects exist:
+Before native projects exist:
 
 ```bash
-npm ci
-npm run typecheck
-npm run audit:catalog
-npm run ios
+npm install --ignore-scripts
+npm run check
+```
+
+After bootstrap:
+
+```bash
+npm run install:native-manager
+npm run check
 npm run android
 ```
 
-Store signing and submission steps are in `STORE-LAUNCH.md`.
+On macOS:
+
+```bash
+cd ios && pod install && cd ..
+npm run ios
+```
+
+Static CI proves the TypeScript, catalog policy and source security invariants. It does not prove Swift/Kotlin compilation, App Store signing or physical-device stability. Store signing and submission steps are in `STORE-LAUNCH.md`.
