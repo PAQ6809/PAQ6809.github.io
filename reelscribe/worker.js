@@ -7,11 +7,24 @@ const SAMPLE_RATE = 16000;
 const FAST_MODEL = "onnx-community/whisper-tiny";
 const BALANCED_MODEL = "onnx-community/whisper-base";
 const ACCURATE_MODEL = "onnx-community/whisper-small";
+const FLAGSHIP_MODEL = "onnx-community/whisper-large-v3-turbo";
+
+const WEBGPU_MIXED_DTYPE = Object.freeze({
+  encoder_model: "fp16",
+  decoder_model_merged: "q4f16",
+});
+const TURBO_WEBGPU_DTYPE = Object.freeze({
+  encoder_model: "q4f16",
+  decoder_model_merged: "q4f16",
+});
 
 let transcriber = null;
 let loadedKey = "";
 let activeDevice = "wasm";
 let activeModel = FAST_MODEL;
+let activeDtype = "q8";
+let preparingKey = "";
+let preparingPromise = null;
 
 function postStatus(title, detail, progress, note = "") {
   self.postMessage({ type: "status", title, detail, progress, note });
@@ -29,6 +42,7 @@ function progressCallback(info) {
 }
 
 function modelLabel(model) {
+  if (model === FLAGSHIP_MODEL) return "Whisper Large-v3-turbo 旗艦模型";
   if (model === ACCURATE_MODEL) return "Whisper Small 精準模型";
   if (model === BALANCED_MODEL) return "Whisper Base 平衡模型";
   return "Whisper Tiny 極速模型";
@@ -36,19 +50,35 @@ function modelLabel(model) {
 
 function deviceProfile(preferGpu) {
   const userAgent = String(self.navigator?.userAgent || "");
-  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)
+    || (/Macintosh/i.test(userAgent) && Number(self.navigator?.maxTouchPoints) > 1);
   const memory = Number(self.navigator?.deviceMemory) || 0;
   const cores = Number(self.navigator?.hardwareConcurrency) || 2;
   const gpuAvailable = Boolean(preferGpu && self.navigator?.gpu);
-  return { mobile, memory, cores, gpuAvailable };
+  const connection = self.navigator?.connection || self.navigator?.mozConnection || self.navigator?.webkitConnection;
+  const saveData = Boolean(connection?.saveData);
+  const effectiveType = String(connection?.effectiveType || "");
+  const slowNetwork = /(^|-)2g$/.test(effectiveType) || effectiveType === "slow-2g";
+  return { mobile, memory, cores, gpuAvailable, saveData, slowNetwork };
 }
 
 function selectModel(requested, duration, preferGpu) {
   if (requested && requested !== "smart") return requested;
   const profile = deviceProfile(preferGpu);
 
-  // Whisper Small is reserved for capable desktop-class WebGPU devices because
-  // its multilingual accuracy is better but its browser download and memory use are much larger.
+  // Large-v3-turbo uses a compact mixed-q4f16 WebGPU build, but remains a large
+  // first-time download. Keep it to capable desktop-class devices and short clips.
+  if (
+    profile.gpuAvailable
+    && !profile.mobile
+    && !profile.saveData
+    && !profile.slowNetwork
+    && duration <= 8 * 60
+    && (profile.memory >= 12 || profile.cores >= 12)
+  ) {
+    return FLAGSHIP_MODEL;
+  }
+
   if (
     profile.gpuAvailable
     && !profile.mobile
@@ -58,15 +88,21 @@ function selectModel(requested, duration, preferGpu) {
     return ACCURATE_MODEL;
   }
 
-  if (profile.gpuAvailable && duration <= 15 * 60) return BALANCED_MODEL;
+  if (profile.gpuAvailable && duration <= 15 * 60 && !profile.saveData) return BALANCED_MODEL;
   if (!profile.mobile && profile.memory >= 8 && duration <= 5 * 60) return BALANCED_MODEL;
   return FAST_MODEL;
 }
 
 function modelFallbacks(model) {
+  if (model === FLAGSHIP_MODEL) return [FLAGSHIP_MODEL, ACCURATE_MODEL, BALANCED_MODEL, FAST_MODEL];
   if (model === ACCURATE_MODEL) return [ACCURATE_MODEL, BALANCED_MODEL, FAST_MODEL];
   if (model === BALANCED_MODEL) return [BALANCED_MODEL, FAST_MODEL];
   return [FAST_MODEL];
+}
+
+function dtypeKey(dtype) {
+  if (typeof dtype === "string") return dtype;
+  return Object.entries(dtype).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}:${value}`).join(",");
 }
 
 function loadPlans(model, preferGpu) {
@@ -75,17 +111,38 @@ function loadPlans(model, preferGpu) {
 
   if (profile.gpuAvailable) {
     for (const candidate of modelFallbacks(model)) {
-      plans.push({ model: candidate, device: "webgpu", dtype: "fp16" });
+      const dtype = candidate === FLAGSHIP_MODEL ? TURBO_WEBGPU_DTYPE : WEBGPU_MIXED_DTYPE;
+      plans.push({ model: candidate, device: "webgpu", dtype });
+      // Some browser/driver combinations do not support every mixed-precision graph.
+      if (candidate !== FLAGSHIP_MODEL) plans.push({ model: candidate, device: "webgpu", dtype: "fp16" });
     }
   }
 
-  // Running Whisper Small in WASM is generally too slow and memory-heavy for a browser.
+  // Large-v3-turbo and Small are intentionally not loaded through WASM: they are
+  // too memory-heavy for a reliable phone/CPU browser experience.
   const wasmModels = model === FAST_MODEL ? [FAST_MODEL] : [BALANCED_MODEL, FAST_MODEL];
-  for (const candidate of wasmModels) {
-    plans.push({ model: candidate, device: "wasm", dtype: "q8" });
-  }
+  for (const candidate of wasmModels) plans.push({ model: candidate, device: "wasm", dtype: "q8" });
 
-  return plans;
+  const seen = new Set();
+  return plans.filter((plan) => {
+    const key = `${plan.model}:${plan.device}:${dtypeKey(plan.dtype)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function disposeTranscriber() {
+  const current = transcriber;
+  transcriber = null;
+  loadedKey = "";
+  if (current?.dispose) {
+    try {
+      await current.dispose();
+    } catch (error) {
+      console.warn("Unable to dispose previous Whisper pipeline", error);
+    }
+  }
 }
 
 async function loadPipeline(model, preferGpu) {
@@ -94,8 +151,9 @@ async function loadPipeline(model, preferGpu) {
 
   for (let index = 0; index < plans.length; index += 1) {
     const plan = plans[index];
-    const key = `${plan.model}:${plan.device}:${plan.dtype}`;
+    const key = `${plan.model}:${plan.device}:${dtypeKey(plan.dtype)}`;
     if (transcriber && loadedKey === key) return transcriber;
+    if (preparingPromise && preparingKey === key) return preparingPromise;
 
     const fallback = index > 0;
     postStatus(
@@ -103,25 +161,44 @@ async function loadPipeline(model, preferGpu) {
       `${modelLabel(plan.model)} · ${plan.device === "webgpu" ? "WebGPU" : "WASM／CPU"}`,
       fallback ? 14 : 10,
       fallback
-        ? "較大型模型無法穩定啟動，系統正自動降級，不需要重新操作。"
-        : "第一次使用需下載模型；之後會由瀏覽器快取。",
+        ? "較大型或混合精度模型無法穩定啟動，系統正自動降級，不需要重新操作。"
+        : "模型與音訊會平行準備；首次下載後由瀏覽器快取。",
     );
 
-    try {
-      transcriber = await pipeline("automatic-speech-recognition", plan.model, {
+    preparingKey = key;
+    preparingPromise = (async () => {
+      if (transcriber && loadedKey !== key) await disposeTranscriber();
+      const next = await pipeline("automatic-speech-recognition", plan.model, {
         device: plan.device,
         dtype: plan.dtype,
         progress_callback: progressCallback,
       });
+      transcriber = next;
       activeDevice = plan.device;
       activeModel = plan.model;
+      activeDtype = plan.dtype;
       loadedKey = key;
-      return transcriber;
+      return next;
+    })();
+
+    try {
+      const ready = await preparingPromise;
+      self.postMessage({
+        type: "ready",
+        model: activeModel,
+        modelLabel: modelLabel(activeModel),
+        device: activeDevice,
+      });
+      return ready;
     } catch (error) {
       console.warn(`Whisper load failed: ${key}`, error);
       lastError = error;
-      transcriber = null;
-      loadedKey = "";
+      if (loadedKey === key) await disposeTranscriber();
+    } finally {
+      if (preparingKey === key) {
+        preparingKey = "";
+        preparingPromise = null;
+      }
     }
   }
 
@@ -146,9 +223,14 @@ function isMostlySilent(audio) {
 
 function normalizeText(value) {
   return String(value || "")
+    .normalize("NFKC")
     .replace(/\s+/g, " ")
     .replace(/([。！？!?])\1+/g, "$1")
     .trim();
+}
+
+function compactCharacters(value) {
+  return Array.from(normalizeText(value).replace(/\s/gu, ""));
 }
 
 function meaningfulCharacters(value) {
@@ -170,39 +252,69 @@ function longestCharacterRun(characters) {
   return longest;
 }
 
+function smallestRepeatingUnit(text, maxUnit = 12) {
+  const compact = compactCharacters(text).join("");
+  if (compact.length < 12) return "";
+  const limit = Math.min(maxUnit, Math.floor(compact.length / 3));
+  for (let size = 1; size <= limit; size += 1) {
+    const unit = compact.slice(0, size);
+    let matched = 0;
+    for (let index = 0; index < compact.length; index += 1) {
+      if (compact[index] === unit[index % size]) matched += 1;
+    }
+    if (matched / compact.length >= 0.9) return unit;
+  }
+  return "";
+}
+
 function textRepetitionMetrics(value) {
-  const characters = meaningfulCharacters(value);
-  const length = characters.length;
+  const compact = compactCharacters(value);
+  const meaningful = meaningfulCharacters(value);
+  const length = compact.length;
   if (!length) {
-    return { length: 0, dominantRatio: 0, longestRun: 0, bigramDiversity: 1 };
+    return {
+      length: 0,
+      meaningfulLength: 0,
+      dominantRatio: 0,
+      longestRun: 0,
+      bigramDiversity: 1,
+      uniqueRatio: 1,
+      symbolRatio: 0,
+      repeatingUnit: "",
+    };
   }
 
   const frequency = new Map();
-  for (const character of characters) {
-    frequency.set(character, (frequency.get(character) || 0) + 1);
-  }
+  for (const character of compact) frequency.set(character, (frequency.get(character) || 0) + 1);
   const dominant = Math.max(...frequency.values());
-
   const bigrams = [];
-  for (let index = 0; index < characters.length - 1; index += 1) {
-    bigrams.push(`${characters[index]}${characters[index + 1]}`);
+  for (let index = 0; index < compact.length - 1; index += 1) {
+    bigrams.push(`${compact[index]}${compact[index + 1]}`);
   }
   const bigramDiversity = bigrams.length ? new Set(bigrams).size / bigrams.length : 1;
 
   return {
     length,
+    meaningfulLength: meaningful.length,
     dominantRatio: dominant / length,
-    longestRun: longestCharacterRun(characters),
+    longestRun: longestCharacterRun(compact),
     bigramDiversity,
+    uniqueRatio: frequency.size / length,
+    symbolRatio: (length - meaningful.length) / length,
+    repeatingUnit: smallestRepeatingUnit(value),
   };
 }
 
 function isHallucinatedText(value) {
   const metrics = textRepetitionMetrics(value);
-  if (metrics.length < 12) return metrics.longestRun >= 10;
+  if (!metrics.length) return false;
+  if (metrics.length >= 12 && metrics.meaningfulLength === 0) return true;
   if (metrics.longestRun >= 8) return true;
+  if (metrics.length >= 16 && metrics.uniqueRatio <= 0.08) return true;
   if (metrics.length >= 20 && metrics.dominantRatio >= 0.55) return true;
+  if (metrics.length >= 24 && metrics.repeatingUnit) return true;
   if (metrics.length >= 30 && metrics.bigramDiversity <= 0.1) return true;
+  if (metrics.length >= 30 && metrics.symbolRatio >= 0.8 && metrics.uniqueRatio <= 0.15) return true;
   return false;
 }
 
@@ -233,7 +345,7 @@ function chunksFromOutput(output, offset, fallbackDuration) {
         text: normalizeText(chunk.text),
       };
     })
-    .filter((item) => item.text);
+    .filter((item) => item.text && !isHallucinatedText(item.text));
 }
 
 function overlapLength(left, right, maxLength = 80) {
@@ -256,7 +368,7 @@ function mergeSegments(existing, incoming) {
 
     const previousText = normalizeText(previous.text);
     let currentText = normalizeText(segment.text);
-    if (!currentText) continue;
+    if (!currentText || isHallucinatedText(currentText)) continue;
 
     if (currentText === previousText && segment.start <= previous.end + 1.5) {
       previous.end = Math.max(previous.end, segment.end);
@@ -278,6 +390,7 @@ function mergeSegments(existing, incoming) {
 }
 
 function pipelineOptions(language, fastMode) {
+  const flagshipMode = activeModel === FLAGSHIP_MODEL;
   const accurateMode = activeModel === ACCURATE_MODEL;
   const options = {
     task: "transcribe",
@@ -285,8 +398,8 @@ function pipelineOptions(language, fastMode) {
     stride_length_s: fastMode ? 3 : 5,
     return_timestamps: true,
     do_sample: false,
-    num_beams: accurateMode ? 2 : 1,
-    max_new_tokens: accurateMode ? 320 : 256,
+    num_beams: flagshipMode ? 2 : (accurateMode ? 2 : 1),
+    max_new_tokens: flagshipMode ? 384 : (accurateMode ? 320 : 256),
   };
   if (language && language !== "auto") options.language = language;
   return options;
@@ -297,7 +410,7 @@ function guardedPipelineOptions(language, fastMode, duration) {
     ...pipelineOptions(language, fastMode),
     chunk_length_s: fastMode ? 15 : 20,
     stride_length_s: fastMode ? 2 : 3,
-    repetition_penalty: 1.18,
+    repetition_penalty: 1.2,
     no_repeat_ngram_size: 3,
     max_new_tokens: Math.min(256, Math.max(32, Math.ceil(Math.max(1, duration) * 6))),
   };
@@ -311,13 +424,13 @@ async function transcribeWithHallucinationGuard(pipe, audio, duration, language,
     "偵測到重複字幕",
     "正在自動重新辨識",
     progress,
-    "系統已攔截低可信度的重複文字，不會直接輸出錯誤字幕。",
+    "系統已攔截低可信度的重複符號或文字，不會直接輸出錯誤字幕。",
   );
 
   const retry = await pipe(audio, guardedPipelineOptions(language, fastMode, duration));
   if (!isHallucinatedOutput(retry)) return retry;
 
-  throw new Error("偵測到模型持續產生大量重複文字，已停止輸出低可信度字幕。請確認影片內有清楚人聲，並指定正確語言後重試。");
+  throw new Error("偵測到模型持續產生大量重複符號或文字，已停止輸出低可信度字幕。請確認影片內有清楚人聲、開啟語音強化並指定正確語言後重試。");
 }
 
 async function transcribeAdaptive(pipe, audio, duration, language) {
@@ -388,18 +501,18 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
         "正在處理長影片",
         `已略過低可信度區段 ${index + 1} / ${totalWindows}`,
         percent,
-        "重複或無清楚人聲的區段不會被寫入字幕。",
+        "重複、純音樂或無清楚人聲的區段不會被寫入字幕。",
       );
     }
   }
 
   if (!merged.length) {
-    throw new Error("沒有取得可信的語音字幕。請確認音量、人聲與語言設定，或改用較清楚的音訊檔。");
+    throw new Error("沒有取得可信的語音字幕。請確認音量、人聲與語言設定，或開啟語音強化後重試。");
   }
 
   const text = merged.map((item) => item.text).join(" ").replace(/\s+/g, " ").trim();
   if (isHallucinatedText(text)) {
-    throw new Error("合併後字幕仍出現大量重複文字，已停止輸出低可信度結果。");
+    throw new Error("合併後字幕仍出現大量重複符號或文字，已停止輸出低可信度結果。");
   }
 
   return {
@@ -412,13 +525,32 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
   };
 }
 
+async function prepareModel(message) {
+  const duration = Number(message.duration) || 60;
+  const model = selectModel(message.model, duration, message.preferGpu);
+  await loadPipeline(model, message.preferGpu);
+}
+
 self.addEventListener("message", async (event) => {
   const message = event.data || {};
+
+  if (message.type === "prepare") {
+    try {
+      await prepareModel(message);
+    } catch (error) {
+      console.warn("Background model preparation failed; transcribe will retry", error);
+    }
+    return;
+  }
+
   if (message.type !== "transcribe") return;
 
   try {
     const audio = new Float32Array(message.audioBuffer);
     if (!audio.length) throw new Error("音訊內容是空的。");
+    if (message.enhancementMeta?.reason === "no-speech-regions") {
+      throw new Error("語音偵測沒有找到清楚人聲。這段內容可能只有音樂或環境聲，已停止產生猜測字幕。");
+    }
     if (isMostlySilent(audio)) throw new Error("沒有偵測到足夠清楚的人聲，請確認影片音量或改用其他音訊來源。");
 
     const duration = Number(message.duration) || audio.length / SAMPLE_RATE;
@@ -427,7 +559,7 @@ self.addEventListener("message", async (event) => {
     const output = await transcribeAdaptive(pipe, audio, duration, message.language);
 
     if (isHallucinatedOutput(output)) {
-      throw new Error("偵測到大量重複文字，已阻止低可信度字幕輸出。");
+      throw new Error("偵測到大量重複符號或文字，已阻止低可信度字幕輸出。");
     }
 
     self.postMessage({
@@ -437,6 +569,8 @@ self.addEventListener("message", async (event) => {
       device: activeDevice,
       model: activeModel,
       modelLabel: modelLabel(activeModel),
+      dtype: activeDtype,
+      enhancementMeta: message.enhancementMeta || null,
     });
   } catch (error) {
     console.error(error);
