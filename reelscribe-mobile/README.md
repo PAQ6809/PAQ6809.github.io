@@ -1,6 +1,6 @@
 # ReelScribe Mobile
 
-ReelScribe Mobile is the native iOS/Android product track for the existing ReelScribe web service.
+ReelScribe Mobile is the canonical native iOS/Android product track for the existing ReelScribe web service.
 
 ## Current status
 
@@ -11,8 +11,10 @@ This directory contains:
 - a local autolinkable Swift/Kotlin package named `@reelscribe/native-manager`;
 - public YouTube/Instagram resolver integration;
 - on-device media preparation, native OCR, checkpoints and cleanup implementations;
+- native TXT/SRT/VTT serialization and operating-system share flow;
 - a curated 2026 ASR model/service registry;
-- store metadata, privacy/data-safety drafts, support pages and CI/preflight checks.
+- store metadata, privacy/data-safety drafts, support pages and CI/preflight checks;
+- unsigned Android and iOS simulator build verification workflows.
 
 The provisional application identifier is:
 
@@ -20,7 +22,7 @@ The provisional application identifier is:
 io.github.paq6809.reelscribe
 ```
 
-It is **not yet registered** in App Store Connect or Google Play Console. The repository is now a release-engineering candidate, not a signed or store-approved app.
+It is **not yet registered** in App Store Connect or Google Play Console. The repository is a release-engineering candidate, not a signed or store-approved app.
 
 ## Architecture
 
@@ -28,11 +30,11 @@ It is **not yet registered** in App Store Connect or Google Play Console. The re
 - `whisper.rn` 0.6.0 for native local ASR on iOS and Android.
 - `NativeReelScribeEngine.ts` for model verification, one-context-at-a-time inference, cancellation, progress, timestamps and OCR fusion.
 - `@reelscribe/native-manager` for device capabilities, media-to-mono-16-kHz-WAV preparation, temporary-file cleanup, checkpoints and platform OCR.
-- iOS uses AVFoundation and Apple Vision.
-- Android uses MediaExtractor/MediaCodec and bundled Google ML Kit Text Recognition v2 models.
+- iOS uses AVFoundation and Apple Vision. Audio conversion streams decoded PCM directly into a WAV file instead of holding the full soundtrack in memory.
+- Android uses MediaExtractor/MediaCodec streaming decode and bundled Google ML Kit Text Recognition v2 models.
 - The public resolver receives only a public URL and language preference; local media and transcripts stay on the device in local mode.
 
-The native package is source-complete enough for compilation review, but has not yet been compiled, signed or tested on physical devices in this environment.
+The native package is source-complete enough for compilation review, but physical-device signing and store acceptance have not been completed in this environment.
 
 ## Model policy
 
@@ -55,6 +57,8 @@ Candidates, not first-release defaults:
 
 - WhisperKit/Core ML on supported iPhones.
 - SenseVoice Small through a pinned mobile runtime after license/device review.
+- Fun-ASR Nano for Chinese dialect, singing, streaming and hotword benchmarks.
+- Omnilingual ASR as an optional long-tail language pack.
 - Moonshine English models for low-latency English after runtime-size review.
 - Qwen3-ASR and NVIDIA Nemotron/Parakeet only as explicit, self-hosted server modes with separate consent and privacy disclosures.
 
@@ -95,6 +99,10 @@ npm run preflight:release
 ```
 
 `preflight:release` is expected to fail until every production model has an exact locked SHA-256. This is intentional.
+
+A manual GitHub workflow named `ReelScribe model integrity` downloads only the explicitly selected approved Whisper artifacts, calculates exact bytes and SHA-256 and uploads a review-only report. It never modifies the production catalog automatically.
+
+The `ReelScribe native build` workflow generates the pinned React Native projects, validates native-module autolinking, builds an unsigned Android debug APK and compiles an unsigned iOS simulator application. Passing these jobs is necessary but does not replace signed physical-device tests.
 
 After bootstrap and native dependency installation:
 
