@@ -1,136 +1,146 @@
-# ReelScribe UI Optimization Contract
+# ReelScribe Optimization Contract
 
 ## Goal
 
-Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usable on desktop browsers without paid core dependencies.
+Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, and usable without paid core dependencies.
 
 ## Interface rules
 
 1. The first screen focuses on one task: paste a link and get subtitles.
-2. The main input and primary action remain visible on common phone screens without horizontal scrolling.
-3. Upload, local Whisper, tab capture, and microphone recording stay inside the collapsed fallback section.
-4. Light theme remains the default; use white surfaces, subtle borders, restrained shadows, and one blue primary color.
-5. Avoid decorative gradients, excessive badges, oversized typography, repeated feature lists, repeated safety explanations, and unnecessary animation.
-6. Touch targets are at least 44 CSS pixels high.
-7. Widths 320, 375, 390, 430, 768, and 1280 pixels must remain usable without horizontal overflow.
-8. Copy is the primary result action; TXT, SRT, and VTT are secondary.
-9. Platform and format details belong on `supported-platforms.html`, not repeated on the landing screen.
-10. On phone widths, the header is not sticky because it must not cover the hero title, status text, or Safari-restored scroll position.
-11. Provider status chips wrap inside the card; they must never extend beyond the viewport or require horizontal scrolling.
+2. The input and primary action remain visible on common phone screens without horizontal scrolling.
+3. Upload, local Whisper, tab capture, microphone, model and enhancement controls stay in the collapsed fallback section.
+4. Light theme remains the default; avoid decorative gradients, excessive badges, repeated feature lists and unnecessary animation.
+5. Touch targets are at least 44 CSS pixels high.
+6. Widths 320, 375, 390, 430, 768 and 1280 pixels remain usable.
+7. Copy remains the primary result action; TXT, SRT and VTT are secondary.
+8. On phone widths the header is not sticky, and provider chips wrap inside their card.
+9. The music-suppression control is enabled by default and clearly notes that song/lyric transcription may require disabling it.
 
 ## Instagram direct-link rules
 
-- `instagram-direct.js` must load before `universal-link.js` so Instagram receives the dedicated path first.
-- The fast resolver `/api/instagram-resolve` runs first; `/api/instagram-yt` is the compatibility fallback.
-- The compatibility resolver pins yt-dlp and curl_cffi versions and is updated only after a real public Reel regression test.
-- Both backends are public-only and must never accept passwords, browser cookies, session IDs, private tokens, or login bypass instructions.
-- Media proxy URLs must be HMAC-signed, short-lived, HTTPS-only, limited to Instagram/Facebook CDN hosts, and capped at 300 MB.
-- Backend responses and media are `no-store`; the backend does not persist media or captions.
-- The frontend uses `credentials: omit`, `no-referrer`, request timeouts, streaming size checks, and local Whisper.
-- Instagram media is handed to the local engine through `window.ReelScribeApp.setFile()` first; `DataTransfer` is only a legacy fallback because iPhone Safari support can be inconsistent.
-- The local transcription starts through `window.ReelScribeApp.startTranscription()` when available, rather than depending on a synthetic button click.
-- A failed anonymous extraction must display a short truthful fallback message instead of claiming success.
-- Private, login-only, age-restricted, region-restricted, removed, DRM, or platform-blocked content is not bypassed.
+- `instagram-direct.js` loads before `universal-link.js`.
+- `/api/instagram-resolve` runs first; `/api/instagram-yt` is the compatibility fallback.
+- Backends never accept passwords, cookies, sessions, private tokens or login bypass instructions.
+- Media URLs are short-lived, HMAC-signed, HTTPS-only, limited to Instagram/Facebook CDN hosts and capped at 300 MB.
+- Backend responses are `no-store`; media and captions are not persisted.
+- The frontend uses `credentials: omit`, `no-referrer`, timeouts and streaming size checks.
+- iPhone Safari uses `window.ReelScribeApp.setFile()` and `startTranscription()`; `DataTransfer` is legacy fallback only.
+- Private, login-only, age/region restricted, removed, DRM or platform-blocked content is not bypassed.
 
-## PWA freshness rules
+## Speech enhancement rules
 
-- HTML, JavaScript, CSS, workers, and the manifest use a network-first Service Worker path so a stale App Shell cannot hide a newly deployed resolver or quality fix.
-- Static icons and other non-critical assets may remain cache-first.
-- Every breaking resolver, model-worker, or interface update increments the Service Worker cache version.
-- Service Worker registration uses `updateViaCache: "none"` and explicitly calls `registration.update()`.
-- A new controller may reload the page once per build through a session-scoped guard; it must not enter a reload loop.
-- Critical production-integrity checks include `index.html`, `app.js`, `ui.js`, `ui-polish.css`, `instagram-direct.js`, `universal-link.js`, `worker.js`, and `sw.js`.
+- `speech-enhancer.js` loads before `app.js` and remains dependency-free at build time.
+- ONNX Runtime Web and `@ricky0123/vad-web` are lazy-loaded only when local speech enhancement is used.
+- External runtime versions remain pinned and are checked by scheduled CI.
+- Silero VAD v5 uses `NonRealTimeVAD` on the already-decoded 16 kHz Float32Array.
+- Stereo input may use Mid/Side analysis to emphasize center-panned speech; mono input remains unchanged before filtering.
+- The lightweight speech band uses a low-frequency high-pass, a restrained presence boost and a high-frequency low-pass.
+- VAD speech regions receive short pre/post padding and are merged across small gaps to prevent clipped words.
+- Non-speech regions are strongly attenuated with fades, not abruptly deleted, so timestamps remain aligned to the source video.
+- Speech gain normalization is bounded to prevent clipping and pumping.
+- When VAD finds no speech, the worker rejects transcription instead of asking Whisper to guess from music.
+- If VAD assets fail to load, use DSP fallback and keep the app usable; do not silently upload audio to a cloud service.
+- Song and lyric recognition may bypass VAD/music suppression because singing is not equivalent to ordinary speech.
 
-## Format and platform rules
+## Model architecture rules
 
-- Accept every public HTTPS page as a candidate source.
-- Platform-specific success is never universally guaranteed.
-- Keep generic handling for platforms that do not expose captions or public media anonymously.
-- Accept common video and audio extensions through `format-compat.js` and normalize missing MIME types.
-- Browser and operating-system codec support remains the final decoder boundary.
+- The local stack contains four multilingual tiers:
+  - Tiny: phone, long video, low resources and WASM.
+  - Base: normal clips and mobile WebGPU.
+  - Small: desktop WebGPU precision.
+  - Large-v3-turbo: capable desktop WebGPU flagship mode.
+- Smart mode considers duration, WebGPU, mobile detection, memory, CPU cores, Data Saver and network type.
+- Large-v3-turbo is never forced on a phone and is not used on slow/data-saving connections.
+- Large-v3-turbo WebGPU uses per-module q4f16 for encoder and merged decoder to reduce first load and memory.
+- Small/Base/Tiny WebGPU prefer encoder fp16 and merged decoder q4f16, then fall back to full fp16 if required by the browser/driver.
+- WASM uses q8 and never loads Large-v3-turbo or Small.
+- The fallback chain is `Turbo → Small → Base → Tiny → WASM Base/Tiny`.
+- Model switching disposes the previous pipeline when practical to reduce GPU/CPU memory pressure.
+- A `prepare` message starts model loading while media decode and VAD run; the actual transcription reuses the same in-flight or cached pipeline.
+- Models remain lazy-loaded; page load must not download Whisper or VAD weights.
+- Browser cache and persistent-storage requests are used, but failure to grant persistence must not break the app.
+- Model download progress, selected model and fallback state remain visible and truthful.
 
-## Adaptive model rules
+## Accuracy and hallucination rules
 
-- The supported multilingual browser models are `onnx-community/whisper-tiny`, `onnx-community/whisper-base`, and `onnx-community/whisper-small`.
-- Smart mode uses Small only on desktop-class WebGPU devices, for clips no longer than 20 minutes, when memory or CPU-core signals indicate sufficient resources.
-- Smart mode uses Base on general WebGPU devices for clips no longer than 15 minutes.
-- Smart mode uses Tiny for long videos, mobile devices, low-memory devices, or when larger models fail.
-- The runtime fallback order is Small → Base → Tiny on WebGPU, followed by Base → Tiny on quantized WASM.
-- Whisper Small is exposed only as an explicit desktop WebGPU option; mobile UI disables that manual choice.
-- Large-v3-turbo is not a default browser tier because its ONNX download and memory footprint are too large for reliable phone and general-browser use.
-- Accurate Small mode may use two-beam decoding; Tiny and Base stay single-beam for latency.
-- Every model change must preserve automatic fallback and must be regression-tested on desktop and mobile profiles.
+- `smart` is the default mode.
+- Long recordings use bounded windows, overlap, silence skipping, duplicate removal, low-confidence rejection and timestamps.
+- Hallucination detection includes:
+  - longest repeated character run;
+  - dominant-character ratio;
+  - unique-character ratio;
+  - bigram diversity;
+  - repeating short pattern detection;
+  - symbol-only and high-symbol-ratio output.
+- `>>`, repeated punctuation, repeated single characters and repeated phrases must be rejected.
+- Suspicious output gets one retry with shorter chunks, repetition penalty, n-gram blocking and bounded output length.
+- A second suspicious result is rejected, never displayed as completed subtitles.
+- Long-form processing may skip the rejected window and continue with trustworthy windows.
+- Cached repetitive garbage is removed before restoration.
+- Do not silently rewrite low-confidence output into guessed sentences.
+- Do not promise perfect accuracy, real-time completion or identical performance across devices and audio conditions.
 
-## Long-video and accuracy rules
+## PWA freshness and loading rules
 
-- `smart` mode is the default.
-- Short clips on capable desktop devices may use Small; general WebGPU devices use Base; long clips and constrained devices use Tiny.
-- Long recordings use bounded windows with overlap, silence skipping, duplicate removal, low-confidence rejection, and timestamps.
-- Detect Whisper repetition hallucinations using at least longest character run, dominant-character ratio, and n-gram diversity.
-- When a transcript is suspicious, retry once using shorter chunks, a repetition penalty, an n-gram repetition block, and a bounded output length.
-- A second suspicious result must be rejected, not displayed as a completed transcript.
-- Long-form processing may skip only the rejected low-confidence window and continue combining trustworthy windows.
-- The UI must remove previously cached repetitive garbage transcripts and clearly explain why they were blocked.
-- Do not silently rewrite suspicious repeated text into guessed sentences.
-- Do not promise real-time completion or identical accuracy across devices, languages, accents, noise, or codecs.
-- Do not raise file-size limits without measured memory-safety review because `decodeAudioData` loads media into memory.
+- HTML, JavaScript, CSS, workers and manifest use network-first caching.
+- Static icons may remain cache-first.
+- Every model-worker, enhancement or breaking interface update increments the Service Worker cache version.
+- Service Worker registration uses `updateViaCache: "none"`, calls `registration.update()` and permits one reload per build.
+- Critical production comparison includes `index.html`, `app.js`, `ui.js`, `ui-polish.css`, `speech-enhancer.js`, `instagram-direct.js`, `universal-link.js`, `worker.js` and `sw.js`.
+- Model loading overlaps media decode and VAD; avoid artificial waits and duplicate pipeline loads.
 
 ## Performance rules
 
-- Do not add a UI framework or preload Whisper models.
-- Keep model inference in a Web Worker and App Shell caching in the Service Worker.
-- Keep free subtitle providers parallel, timed out, and independently degradable.
-- Cache successful text results locally, but do not persist proxied Instagram media.
-- A quality retry runs only after the first result fails the repetition-confidence checks.
-- Large models are lazy-loaded only after a user selects media and begins transcription.
-- Do not add third-party analytics or advertising scripts without explicit approval and privacy review.
+- Do not add a UI framework or preload AI models.
+- Keep Whisper in a Web Worker and page caching in the Service Worker.
+- Keep provider requests parallel, timed out and independently degradable.
+- Cache successful text locally but never persist proxied Instagram media.
+- Run the expensive retry only after confidence checks fail.
+- Avoid copying multi-hour PCM arrays unnecessarily; file-size and memory limits remain conservative.
+- Do not add analytics or advertising scripts without explicit approval and privacy review.
 
 ## Security rules
 
-- Keep restrictive CSP and `no-referrer` in the main page.
+- Keep restrictive CSP and `no-referrer`.
 - Never access `document.cookie`, use `eval`, or construct dynamic functions.
-- GitHub Actions use read-only permissions, full-SHA pinned actions, and disabled checkout credentials.
-- Maintain `SECURITY.md`, `.github/CODEOWNERS`, `.github/dependabot.yml`, and `reelscribe/SECURITY-HARDENING.md`.
-- Production integrity checks compare deployed core assets with repository files.
-- Branch rules, signed commits, owner review, force-push blocking, secret scanning, and account 2FA are enabled by the repository owner.
-- Vercel resolver signing secrets remain private and are never exposed in the GitHub Pages repository or client JavaScript.
+- GitHub Actions use read-only permissions, full-SHA-pinned actions and disabled checkout credentials.
+- Maintain `SECURITY.md`, `.github/CODEOWNERS`, `.github/dependabot.yml` and `reelscribe/SECURITY-HARDENING.md`.
+- Production integrity checks compare deployed assets with repository files.
+- Vercel signing secrets stay private and never enter client JavaScript.
+- Repository owner enables 2FA/passkey, branch rules, signed commits, owner review, force-push blocking, secret scanning and push protection.
 
 ## Required regression checks
 
-- Instagram URL normalization, script order, fast resolver, yt-dlp fallback, signed proxy handoff, and Vercel health endpoint.
-- iPhone Safari file handoff through `ReelScribeApp`, with DataTransfer as fallback only.
-- Resolver privacy controls: no cookies, no credentials, no-referrer, CDN allowlist, expiry, rate limit, timeout, and size cap.
-- Service Worker network-first strategy, cache-version bump, `updateViaCache: none`, controller-change reload guard, and stale App Shell recovery.
-- Link resolver, provider status, metadata, and local cache.
-- VTT/SRT fixtures, YouTube and generic URL normalization.
-- Broad format MIME normalization for chooser and drag-and-drop.
-- Smart Small／Base／Tiny selection for desktop WebGPU, mobile WebGPU, CPU/WASM, short clips and long clips.
-- Model load fallback, model labels, Small two-beam decoding, and mobile manual-option disabling.
-- Silence detection, segmentation, overlap deduplication, repeated-character hallucination detection, guarded retry, and rejection after a second failure.
-- Old repetitive subtitles in local storage are removed and not restored into the results panel.
-- Copy, TXT, SRT, VTT, local file selection, local Whisper, WebGPU/WASM, tab capture, microphone, PWA sharing.
-- SEO, sitemap, robots, IndexNow, safe-area spacing, 16px mobile form sizing, focus order, no duplicate IDs, and no repeated notes section.
-- Mobile header must not overlap the hero and provider chips must remain inside the card.
+- Instagram URL normalization, resolver order, fallback, signed media handoff and health endpoint.
+- iPhone Safari file handoff and transcription start.
+- No cookies, no credentials, no-referrer, size/timeout limits and CDN allowlist.
+- V12-or-newer Service Worker freshness and stale App Shell recovery.
+- Tiny/Base/Small/Turbo device selection and fallback plans.
+- Per-module q4f16/fp16 mappings, prepare-message reuse and model disposal.
+- Silero VAD v5 loading, speech-region merging, non-speech mask, DSP fallback and no-speech rejection.
+- `>>`, repeated CJK character, repeated phrase and normal Traditional Chinese fixtures.
+- VTT/SRT fixtures, public-link normalization and broad MIME handling.
+- Copy, TXT, SRT, VTT, local file, Whisper, WebGPU/WASM, tab capture, microphone and PWA sharing.
+- Mobile layout, safe area, 16 px form sizing, focus order, no duplicate IDs, SEO, sitemap, robots and IndexNow.
 
 ## Promotion rules
 
-- Keep launch copy and UTM conventions in `reelscribe/PROMOTION.md`.
-- Promotion may state that public Instagram Reels and video posts have a direct best-effort path, but must disclose that Instagram can block anonymous access and that private/restricted posts are unsupported.
-- Never claim every Instagram link, social platform, codec, or video is guaranteed to return subtitles.
-- Never describe blocked low-confidence output as a successful transcription.
-- Do not claim that Small or any larger model guarantees perfect accuracy.
-- Do not auto-post, buy ads, connect ad accounts, fabricate testimonials, force sharing, or use intrusive banners.
+- Public copy may state that speech enhancement reduces background-music interference, not that it perfectly separates every vocal track.
+- Public copy may state that Large-v3-turbo is available on capable desktop WebGPU, not that every phone uses it.
+- Never claim every Instagram link, codec, platform or video is guaranteed.
+- Never describe rejected low-confidence output as successful transcription.
+- Do not auto-post, fabricate reviews, buy fake traffic or connect paid ad accounts without explicit authorization.
 
 ## Automation rule
 
-Every future UI, resolver, Instagram backend, format, performance, long-video, model, accuracy, hallucination protection, privacy, security, SEO, testing, sharing, or promotion optimization updates all applicable items:
+Every future UI, resolver, backend, format, model, music suppression, performance, long-video, accuracy, privacy, security, SEO, testing, sharing or promotion change updates all applicable items:
 
 1. `.github/workflows/reelscribe-check.yml`
 2. `tests/reelscribe-audit.mjs`
 3. `reelscribe/README.md`
 4. `reelscribe/OPTIMIZATION.md`
-5. `reelscribe/PROMOTION.md` when public positioning changes
+5. `reelscribe/PROMOTION.md` when positioning changes
 6. `reelscribe/SECURITY-HARDENING.md` when protection changes
 7. The `ReelScribe 自動維護` scheduled task
 
-Automated maintenance applies only small, testable, non-destructive fixes. It must not add paid core dependencies, cookie extraction, login bypass, private scraping, unverified public proxy services, tracking, or unauthorized advertising.
+Automated maintenance applies only small, testable, non-destructive fixes. It must not add paid core dependencies, cookie extraction, login bypass, private scraping, unverified proxy services, tracking or unauthorized advertising.
