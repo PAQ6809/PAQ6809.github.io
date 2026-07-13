@@ -145,7 +145,7 @@ jobs:
           grep -q 'Content-Security-Policy' reelscribe/index.html
           grep -q 'supported-platforms.html' reelscribe/index.html
           grep -q 'instagram-direct.js' reelscribe/sw.js
-          grep -q 'reelscribe-shell-v9' reelscribe/sw.js
+          grep -q 'reelscribe-shell-v10' reelscribe/sw.js
           grep -q 'async function networkFirst' reelscribe/sw.js
           grep -q 'format-compat.js' reelscribe/sw.js
           grep -q 'supported-platforms.html' reelscribe/sw.js
@@ -156,6 +156,12 @@ jobs:
           grep -q 'selectModel' reelscribe/worker.js
           grep -q 'transcribeAdaptive' reelscribe/worker.js
           grep -q 'isMostlySilent' reelscribe/worker.js
+          grep -q 'isHallucinatedText' reelscribe/worker.js
+          grep -q 'transcribeWithHallucinationGuard' reelscribe/worker.js
+          grep -q 'repetition_penalty' reelscribe/worker.js
+          grep -q 'no_repeat_ngram_size' reelscribe/worker.js
+          grep -q 'ReelScribeQualityGuard' reelscribe/ui.js
+          grep -q 'clearBadSavedResult' reelscribe/ui.js
           grep -q '/api/instagram-resolve' reelscribe/instagram-direct.js
           grep -q '/api/instagram-yt' reelscribe/instagram-direct.js
           grep -q 'credentials: "omit"' reelscribe/instagram-direct.js
@@ -231,7 +237,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          files=(index.html app.js ui-polish.css format-compat.js instagram-direct.js worker.js universal-link.js sw.js supported-platforms.html)
+          files=(index.html app.js ui.js ui-polish.css format-compat.js instagram-direct.js worker.js universal-link.js sw.js supported-platforms.html)
           for attempt in {1..12}; do
             all_match=true
             for file in "${files[@]}"; do
