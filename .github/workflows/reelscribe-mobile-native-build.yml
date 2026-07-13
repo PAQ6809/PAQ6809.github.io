@@ -1,0 +1,113 @@
+name: ReelScribe mobile native build
+
+on:
+  pull_request:
+    paths:
+      - "reelscribe-mobile/**"
+      - ".github/workflows/reelscribe-mobile-native-build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: reelscribe-mobile-native-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Confirm build environment
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          java -version
+          test -n "${ANDROID_HOME:-}"
+
+      - name: Bootstrap native projects
+        working-directory: reelscribe-mobile
+        run: bash scripts/bootstrap.sh
+
+      - name: Compile Android Debug APK
+        working-directory: reelscribe-mobile/android
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload Android Debug APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reelscribe-android-debug
+          path: reelscribe-mobile/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 3
+
+  ios-simulator-debug:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Confirm Xcode environment
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          ruby --version
+          pod --version
+
+      - name: Bootstrap native projects
+        working-directory: reelscribe-mobile
+        run: bash scripts/bootstrap.sh
+
+      - name: Install CocoaPods
+        working-directory: reelscribe-mobile/ios
+        run: pod install --repo-update
+
+      - name: Compile iOS Simulator Debug app
+        working-directory: reelscribe-mobile/ios
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -workspace ReelScribeMobile.xcworkspace \
+            -scheme ReelScribeMobile \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build
+
+      - name: Archive iOS build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reelscribe-ios-derived-data-diagnostics
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/Logs/Build
+            reelscribe-mobile/ios/Podfile.lock
+          if-no-files-found: ignore
+          retention-days: 3
