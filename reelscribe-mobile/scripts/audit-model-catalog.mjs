@@ -33,22 +33,36 @@ for (const model of catalog.models || []) {
     }
   }
 
-  const moonshineLanguages = Array.isArray(model.languages) ? model.languages.map(String) : [];
-  const isEnglishOnlyMoonshine = model.id.includes('moonshine')
-    && moonshineLanguages.length === 1
-    && moonshineLanguages[0] === 'en'
-    && String(model.license).toUpperCase() === 'MIT';
-  if (model.id.includes('moonshine') && model.deployment !== 'excluded' && !isEnglishOnlyMoonshine) {
-    errors.push(`${model.id}: only English MIT Moonshine candidates may remain outside the excluded tier.`);
+  if (model.id === 'moonshine-v2-multilingual' && model.deployment !== 'excluded') {
+    errors.push(`${model.id}: non-commercial multilingual Moonshine models are not approved for store distribution.`);
   }
-
+  if (model.id === 'moonshine-english-family' && model.license !== 'MIT') {
+    errors.push(`${model.id}: English Moonshine candidate must retain the MIT license gate.`);
+  }
   if (model.id.startsWith('qwen3-asr') && !String(model.deployment).includes('server')) {
     errors.push(`${model.id}: Qwen3-ASR is server-only in the mobile product policy.`);
   }
+  if (model.id === 'funasr-nano-2512' && model.status !== 'research-candidate') {
+    errors.push(`${model.id}: Fun-ASR Nano remains a research candidate until native mobile benchmarks pass.`);
+  }
+  if (model.id === 'omnilingual-asr-300m-int8' && model.status !== 'research-candidate') {
+    errors.push(`${model.id}: Omnilingual ASR remains an optional research language-pack candidate.`);
+  }
+  if (model.id === 'breeze-asr-25' && model.status !== 'research-candidate') {
+    errors.push(`${model.id}: Breeze ASR remains a research candidate until a reproducible mobile artifact passes device benchmarks.`);
+  }
 }
 
-for (const required of ['whisper-tiny', 'whisper-base', 'whisper-small', 'whisper-large-v3-turbo', 'breeze-asr-25']) {
-  if (!ids.has(required)) errors.push(`Missing required model registry entry: ${required}`);
+for (const required of [
+  'whisper-tiny',
+  'whisper-base',
+  'whisper-small',
+  'whisper-large-v3-turbo',
+  'breeze-asr-25',
+  'funasr-nano-2512',
+  'omnilingual-asr-300m-int8',
+]) {
+  if (!ids.has(required)) errors.push(`Missing required registry entry: ${required}`);
 }
 
 if (errors.length) {
