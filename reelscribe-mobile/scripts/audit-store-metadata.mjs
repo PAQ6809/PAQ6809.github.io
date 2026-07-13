@@ -57,7 +57,19 @@ for (const [label, value] of [
   }
 }
 
-const claims = [iosPromotional, iosDescription, androidShort, androidFull, reviewNotes, screenshotPlan].join('\n');
+// Only user-visible store copy is checked for prohibited claims. Internal guardrail documents
+// intentionally contain examples of wording that must never be published.
+const publicClaims = [
+  iosName,
+  iosSubtitle,
+  iosPromotional,
+  iosDescription,
+  iosKeywords,
+  iosReleaseNotes,
+  androidTitle,
+  androidShort,
+  androidFull,
+].join('\n');
 const forbiddenClaims = [
   /100\s*%\s*(準確|正確|成功)/i,
   /所有(影片|連結|平台).*(都|皆).*(支援|成功)/i,
@@ -66,7 +78,7 @@ const forbiddenClaims = [
   /保證.*(準確|成功|可用)/i,
 ];
 for (const pattern of forbiddenClaims) {
-  if (pattern.test(claims)) errors.push(`Forbidden marketing claim matched: ${pattern}`);
+  if (pattern.test(publicClaims)) errors.push(`Forbidden marketing claim matched: ${pattern}`);
 }
 
 if (!iosDescription.includes('不繞過平台存取控制')) errors.push('iOS description must disclose platform-access limits.');
