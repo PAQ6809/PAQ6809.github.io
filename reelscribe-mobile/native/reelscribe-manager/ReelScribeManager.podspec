@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => '16.0' }
   s.source       = { :path => '.' }
   s.source_files = 'ios/**/*.{h,m,mm,swift}'
-  s.frameworks   = 'AVFoundation', 'Vision', 'CryptoKit'
+  s.frameworks   = 'AVFoundation', 'Vision'
   s.dependency 'React-Core'
   s.swift_version = '5.10'
 end
