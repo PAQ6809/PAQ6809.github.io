@@ -29,7 +29,9 @@ function safeFileName(modelId: ModelId): string {
 function approvedUrl(value: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'huggingface.co' && url.pathname.startsWith('/ggerganov/whisper.cpp/resolve/');
+    return url.protocol === 'https:'
+      && url.hostname === 'huggingface.co'
+      && url.pathname.startsWith('/ggerganov/whisper.cpp/resolve/');
   } catch {
     return false;
   }
@@ -112,25 +114,31 @@ async function downloadModel(
     },
   });
 
-  const response = await task.promise;
-  if (response.statusCode < 200 || response.statusCode >= 400) {
-    await RNFS.unlink(partialPath).catch(() => undefined);
-    throw new Error(`模型下載失敗：HTTP ${response.statusCode}`);
-  }
+  const active = DOWNLOADS.get(modelId);
+  if (active) active.jobId = task.jobId;
 
-  const stat = await RNFS.stat(partialPath);
-  const sha256 = await RNFS.hash(partialPath, 'sha256');
-  if (definition.expectedSha256 && sha256.toLowerCase() !== definition.expectedSha256.toLowerCase()) {
-    await RNFS.unlink(partialPath).catch(() => undefined);
-    throw new Error('模型 SHA-256 不一致，已刪除可能損壞或遭竄改的檔案。');
-  }
-  if (!definition.expectedSha256 && __DEV__) {
-    console.warn(`[ReelScribe] Development-only unpinned model ${modelId}: ${sha256}`);
-  }
+  try {
+    const response = await task.promise;
+    if (response.statusCode < 200 || response.statusCode >= 400) {
+      throw new Error(`模型下載失敗：HTTP ${response.statusCode}`);
+    }
 
-  await RNFS.unlink(finalPath).catch(() => undefined);
-  await RNFS.moveFile(partialPath, finalPath);
-  return {path: finalPath, sha256, sizeBytes: Number(stat.size)};
+    const stat = await RNFS.stat(partialPath);
+    const sha256 = await RNFS.hash(partialPath, 'sha256');
+    if (definition.expectedSha256 && sha256.toLowerCase() !== definition.expectedSha256.toLowerCase()) {
+      throw new Error('模型 SHA-256 不一致，已刪除可能損壞或遭竄改的檔案。');
+    }
+    if (!definition.expectedSha256 && __DEV__) {
+      console.warn(`[ReelScribe] Development-only unpinned model ${modelId}: ${sha256}`);
+    }
+
+    await RNFS.unlink(finalPath).catch(() => undefined);
+    await RNFS.moveFile(partialPath, finalPath);
+    return {path: finalPath, sha256, sizeBytes: Number(stat.size)};
+  } catch (error) {
+    await RNFS.unlink(partialPath).catch(() => undefined);
+    throw error;
+  }
 }
 
 export const ModelManager = {
@@ -141,12 +149,13 @@ export const ModelManager = {
     const existingTask = DOWNLOADS.get(modelId);
     if (existingTask) return existingTask.promise;
 
-    let taskPromise!: Promise<ModelFile>;
-    const placeholder = {jobId: -1, promise: Promise.resolve({path: '', sha256: '', sizeBytes: 0})};
-    DOWNLOADS.set(modelId, placeholder);
-    taskPromise = downloadModel(modelId, onProgress).finally(() => DOWNLOADS.delete(modelId));
-    DOWNLOADS.set(modelId, {jobId: -1, promise: taskPromise});
-    return taskPromise;
+    const entry: {jobId: number; promise: Promise<ModelFile>} = {
+      jobId: -1,
+      promise: Promise.resolve({path: '', sha256: '', sizeBytes: 0}),
+    };
+    DOWNLOADS.set(modelId, entry);
+    entry.promise = downloadModel(modelId, onProgress).finally(() => DOWNLOADS.delete(modelId));
+    return entry.promise;
   },
 
   async remove(modelId: ModelId): Promise<void> {
