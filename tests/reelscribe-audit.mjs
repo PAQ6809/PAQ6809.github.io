@@ -92,7 +92,7 @@ assert.ok(jsonLd.featureList.some((item) => item.includes("背景模型")));
 assert.equal(manifest.share_target.action, "./");
 assert.match(sitemap, /https:\/\/paq6809\.github\.io\/reelscribe\//);
 assert.match(robots, /Sitemap: https:\/\/paq6809\.github\.io\/reelscribe\/sitemap\.xml/);
-assert.match(serviceWorker, /reelscribe-shell-v13/);
+assert.match(serviceWorker, /reelscribe-shell-v15/);
 assert.match(serviceWorker, /\.\/runtime\.css/);
 assert.match(serviceWorker, /\.\/runtime-optimizer\.js/);
 assert.match(serviceWorker, /\.\/screen-ocr\.js/);
@@ -163,7 +163,7 @@ assert.match(worker, /repetition_penalty:\s*1\.2/);
 assert.match(worker, /no_repeat_ngram_size:\s*3/);
 assert.match(worker, /enhancementMeta/);
 
-assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.7"/);
+assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.9"/);
 assert.match(ui, /onnx-community\/whisper-large-v3-turbo/);
 assert.match(ui, /此裝置不建議/);
 assert.match(ui, /smallestRepeatingUnit/);
