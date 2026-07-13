@@ -9,13 +9,14 @@
 
 1. 使用者貼上或從手機分享公開影片連結。
 2. Instagram Reel、影片貼文與 IGTV 先走專用雙層解析；成功後只回傳短效簽章串流，影片不落地儲存。
-3. 其他平台先查詢既有字幕、公開文字軌與本機快取。
-4. 沒有公開字幕時，瀏覽器可使用本機 Whisper、人聲強化，或讀取影片畫面上的燒錄字幕。
-5. 模型準備、音訊解碼與 Silero VAD 可平行執行，完成後提供全文、時間軸、TXT、SRT 與 VTT。
+3. YouTube 先走文字限定的公開字幕後端，取得人工字幕或自動字幕；失敗後再查 timed-text、Piped 與 Invidious。
+4. 其他平台查詢既有字幕、公開文字軌與本機快取。
+5. 沒有公開字幕時，瀏覽器可使用本機 Whisper、人聲強化，或讀取影片畫面上的燒錄字幕。
+6. 完成後提供全文、時間軸、TXT、SRT 與 VTT。
 
 ## 儲存空間感知與背景模型準備
 
-ReelScribe 不再假設每個瀏覽器都有足夠快取空間。`runtime-optimizer.js` 會在背景工作前檢查：
+ReelScribe 不假設每個瀏覽器都有足夠快取空間。`runtime-optimizer.js` 會在背景工作前檢查：
 
 - `navigator.storage.estimate()` 回報的使用量、配額與估算剩餘空間。
 - Persistent Storage 是否已取得。
@@ -31,20 +32,20 @@ ReelScribe 不再假設每個瀏覽器都有足夠快取空間。`runtime-optimi
 - 桌機 WebGPU 預先準備 Whisper Base。
 - Small 與 Large-v3-turbo 不會在首頁自動背景下載。
 
-這是 best-effort 加速，不保證瀏覽器一定永久保留模型。模型仍會在實際辨識時自動重試與降級。
+這是 best-effort 加速，不保證瀏覽器永久保留模型。模型仍會在實際辨識時自動重試與降級。
 
 ## 穩定更新與防止強制重新整理
 
-Service Worker v13 不再呼叫 `skipWaiting()` 或 `clients.claim()`，App 與 UI 也不再監聽 `controllerchange` 後強制 `window.location.reload()`。
+Service Worker v14 不呼叫 `skipWaiting()` 或 `clients.claim()`，App 與 UI 也不在 `controllerchange` 後強制 `window.location.reload()`。
 
 新版部署時：
 
 - 目前正在執行的模型下載、OCR 或長影片辨識不會被新版 Worker 中途接管。
-- 新版會等待既有分頁關閉，於下次開啟時自然套用。
-- 介面、Script、CSS、Worker 與 Manifest 仍採 network-first，避免長期停留在舊程式。
+- 新版等待既有分頁關閉，於下次開啟時自然套用。
+- 介面、Script、CSS、Worker 與 Manifest 採 network-first，避免長期停留在舊程式。
 - 舊 App Shell 只清除 `reelscribe-shell-*`，不誤刪模型或 OCR 快取。
 
-`runtime.css` 為進度區、模型狀態與 OCR 控制預留固定高度，模型下載期間停用不必要的動畫與 transition，降低文字跳動和 layout shift。
+`runtime.css` 為進度區、模型狀態與 OCR 控制預留固定高度，模型下載期間停用不必要動畫與 transition，降低文字跳動和 layout shift。
 
 ## 畫面字幕 OCR
 
@@ -52,7 +53,7 @@ Service Worker v13 不再呼叫 `skipWaiting()` 或 `clients.claim()`，App 與 
 
 - 只擷取影片下方 35%、45% 或 60% 的畫面區域。
 - 手機最多取樣 60 幀，桌機最多 120 幀，避免長影片耗盡記憶體。
-- 可選每 1、1.5 或 2.5 秒取樣一次，長片會自動拉大間隔。
+- 可選每 1、1.5 或 2.5 秒取樣，長片自動拉大間隔。
 - 先做灰階與有限對比增強，再辨識繁體中文、英文、日文或韓文。
 - 低於可信度門檻、純符號與重複幻覺會被拒絕。
 - 連續相同字幕自動合併，並可取代時間上重疊但較不可靠的語音字幕。
@@ -73,6 +74,20 @@ Instagram 專用流程由私有 Vercel 後端提供：
 後端不接受帳號密碼、登入 Cookie、私人 Token，不保存影片或字幕。私人、登入限定、地區／年齡限制、已刪除或被平台封鎖的內容不會繞過權限。
 
 iPhone Safari 優先透過 `window.ReelScribeApp.setFile()` 將暫時串流交給本機字幕引擎，再由 `startTranscription()` 啟動；`DataTransfer` 只作為舊版備援。
+
+## YouTube 公開字幕架構
+
+YouTube 連結會先呼叫 `api/youtube-captions`。此端點使用固定版本 yt-dlp 讀取公開字幕 metadata，只下載字幕文字，不下載或保存影片。
+
+- 支援 watch、Shorts、live、embed 與 youtu.be 連結。
+- 人工字幕優先，其次為自動字幕。
+- 字幕來源僅允許 HTTPS YouTube／Googlevideo 網域。
+- 單次字幕回應上限 4 MB，使用有限逾時。
+- 不接受 Cookie、登入狀態、密碼或私人 Token。
+- 前端使用 `credentials: omit`、`no-referrer`、`no-store` 與 45 秒逾時。
+- 專用後端失敗時仍會回退 timed-text、Piped 與 Invidious。
+
+成功後字幕直接進入既有編輯器，可複製與輸出 TXT、SRT、VTT。
 
 ## 語音強化與背景音樂抑制
 
@@ -105,9 +120,15 @@ ReelScribe 使用四層多語 Whisper ONNX 模型：
 
 ## 字幕重複與幻覺防護
 
-Whisper 在音樂、噪音、極小音量、錯誤語言或無人聲片段可能產生幻覺。防護包含最長連續字元、單一字元占比、唯一字元比例、bigram 多樣性、重複短週期與純符號比例。
+Whisper 在音樂、噪音、極小音量、錯誤語言或無人聲片段可能產生幻覺。防護現在同時分析：
 
-因此 `>> >> >>`、單一中文字重複及循環片語會被攔截。第一次可疑時用更短分段與防重複參數重試；第二次仍不可信便拒絕輸出。長影片只略過低可信區段，其餘可信區段繼續合併。
+- 最長連續字元、單一字元占比、唯一字元比例、bigram 多樣性與純符號比例。
+- 最常出現單字占比、單字多樣性、連續相同單字。
+- 重複的一至四個單字 n-gram 覆蓋率。
+
+因此 `>> >> >>`、單一中文字重複、反覆 `I'm`、重複 `Thank you for watching` 與循環片語都會被攔截。第一次可疑時用更短分段與防重複參數重試；第二次仍不可信便拒絕輸出。
+
+每次復原 localStorage 舊字幕時也會重新套用最新版品質檢查。錯誤結果會被刪除，不再以「已復原上次字幕」留在畫面。
 
 ## 平台、格式與長影片
 
@@ -124,6 +145,7 @@ ReelScribe 接受任何公開 HTTPS 頁面作為候選來源，並針對 YouTube
 
 - 不要求社群密碼、Cookie、私人 Token 或瀏覽器工作階段。
 - Instagram 使用短效簽章、CDN allowlist、`no-store`、`credentials: omit` 與 `no-referrer`。
+- YouTube 後端只讀取公開字幕，限制字幕網域、大小與逾時，不保存影片。
 - 本機 Whisper、DSP、VAD 與 OCR 均在使用者裝置執行。
 - OCR 不建立上傳請求或 FormData，不傳送影片幀。
 - 外部 runtime、VAD、模型與 OCR 套件固定版本，排程定期檢查公開來源健康狀態。
@@ -137,11 +159,13 @@ Repository 防護包含 `.github/CODEOWNERS`、`.github/dependabot.yml`、`SECUR
 GitHub Actions 在 push、Pull Request、每週一與週四執行：
 
 - JavaScript 語法與 dependency-free 功能測試。
-- 儲存配額、背景準備、Data Saver、無強制 reload 與 Service Worker v13 檢查。
+- 儲存配額、背景準備、Data Saver、無強制 reload 與 Service Worker v14 檢查。
 - Tesseract.js 7、OCR 取樣、可信度、去重、Worker 清理及本機合併檢查。
 - Silero VAD、語音遮罩、頻帶濾波及無人聲降級。
 - Turbo／Small／Base／Tiny 裝置分流、混合精度與模型降級。
 - Instagram 解析器、iPhone handoff 與 Vercel 健康檢查。
+- YouTube caption endpoint contract、公開字幕匯入與瀏覽器來源回退。
+- 重複英文單字、短句、中文字與符號幻覺測試。
 - HTML、CSS、Manifest、Sitemap、JSON-LD、CSP 與安全檔案。
 - Hugging Face 模型、Silero VAD、Tesseract CDN、Noembed、Invidious 與 Piped 健康檢查。
 - 正式站核心檔案與 repository 逐一比對，完成後提交 IndexNow。
