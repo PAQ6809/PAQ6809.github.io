@@ -8,7 +8,7 @@
 ## 處理順序
 
 1. 使用者貼上或從手機分享公開影片連結。
-2. Instagram Reel、影片貼文與 IGTV 先走專用雙層解析：輕量公開端點／頁面解析，失敗後再使用最新版 yt-dlp 與瀏覽器模擬相容層。
+2. Instagram Reel、影片貼文與 IGTV 先走專用雙層解析：輕量公開端點／頁面解析，失敗後再使用固定版本 yt-dlp 與瀏覽器模擬相容層。
 3. 成功時後端只回傳 10 分鐘有效的簽章串流網址，影片不落地儲存；瀏覽器暫時讀取後交給本機 Whisper。
 4. 其他平台先查詢平台既有字幕、公開文字軌與 30 天本機快取。
 5. YouTube 競速查詢公開 timed-text、Piped 與 Invidious；Vimeo、Bilibili、Dailymotion、PeerTube 與公開 VTT／SRT／TTML／XML／JSON 使用各自公開字幕介面。
@@ -25,6 +25,14 @@ Instagram 專用流程由私有 Vercel 後端提供：
 
 後端不接受帳號密碼、登入 Cookie、私人 Token，不保存影片或字幕。Instagram 隨時可能更改匿名存取方式，因此私人、登入限定、地區限制、年齡限制或被平台封鎖的內容仍會誠實降級，而不是繞過權限。
 
+iPhone Safari 會優先透過 `window.ReelScribeApp.setFile()` 將暫時串流交給本機字幕引擎，再由 `startTranscription()` 啟動；只有舊瀏覽器才退回 `DataTransfer` 模擬選檔，避免行動裝置因無法寫入 `input.files` 而中斷。
+
+## PWA 更新與舊快取修復
+
+Service Worker v9 對 HTML、JavaScript、CSS、Worker 與 Manifest 採 network-first；圖示等非關鍵靜態資產才採 cache-first。註冊時使用 `updateViaCache: "none"` 並主動檢查更新，新控制器每個 build 最多重新整理一次，避免舊 App Shell 持續顯示已被修正的 Instagram 舊流程。
+
+手機版在 680px 以下不使用 sticky header，避免 Safari 回復捲動位置時遮住主標題；解析來源標籤會在卡片內換行，不會再超出螢幕。
+
 ## 架構
 
 - GitHub Pages：靜態 HTML、CSS、JavaScript、PWA 與本機 Whisper。
@@ -32,7 +40,7 @@ Instagram 專用流程由私有 Vercel 後端提供：
 - 多來源字幕 resolver 與平行競速。
 - 30 天本機連結字幕快取。
 - Transformers.js + ONNX Whisper、Web Worker、WebGPU 優先與 WASM／CPU 降級。
-- Service Worker App Shell 快取與 PWA Share Target。
+- Network-first Service Worker App Shell 更新與 PWA Share Target。
 - 核心功能不需要使用者帳號或 API Key。
 
 ## 平台範圍
@@ -71,11 +79,12 @@ Repository 防護包含 `.github/CODEOWNERS`、`.github/dependabot.yml`、`SECUR
 GitHub Actions 在 push、Pull Request、每週一與週四執行：
 
 - 所有 JavaScript 語法與 dependency-free 功能測試。
-- Instagram 專用解析器、腳本順序、無 Cookie／no-referrer、300 MB 上限及 Vercel `/api/health`。
+- Instagram 專用解析器、腳本順序、iPhone App API handoff、無 Cookie／no-referrer、300 MB 上限及 Vercel `/api/health`。
+- Service Worker network-first、cache version、`updateViaCache: none` 與 reload-loop guard。
 - VTT／SRT、社群網址、智慧模型、靜音偵測、長影片重疊去重。
 - HTML、CSS、Manifest、Sitemap、JSON-LD、CSP 與安全檔案。
 - Noembed、Invidious、Piped 健康檢查。
-- 正式站核心檔案與 repository 逐一比對，完成後提交 IndexNow。
+- 正式站 `index.html`、`app.js`、`ui-polish.css`、Instagram resolver、Worker 與 Service Worker 逐一比對，完成後提交 IndexNow。
 
 第三方 GitHub Actions 固定至完整 commit SHA，checkout 不保留寫入憑證，workflow token 維持唯讀。
 
