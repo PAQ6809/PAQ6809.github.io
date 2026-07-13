@@ -1,0 +1,8 @@
+ReelScribe Mobile must not be submitted to App Store Connect or Google Play while this file exists.
+
+Remove only after:
+- iOS/Android native media manager is compiled;
+- Tiny/Base exact SHA-256 values are locked;
+- RELEASE_BUILD model audit passes;
+- physical-device matrix passes;
+- owner signing, privacy and store records are complete.
