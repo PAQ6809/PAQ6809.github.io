@@ -33,8 +33,13 @@ for (const model of catalog.models || []) {
     }
   }
 
-  if (model.id.includes('moonshine') && model.deployment !== 'excluded') {
-    errors.push(`${model.id}: multilingual Moonshine is not approved for commercial distribution.`);
+  const moonshineLanguages = Array.isArray(model.languages) ? model.languages.map(String) : [];
+  const isEnglishOnlyMoonshine = model.id.includes('moonshine')
+    && moonshineLanguages.length === 1
+    && moonshineLanguages[0] === 'en'
+    && String(model.license).toUpperCase() === 'MIT';
+  if (model.id.includes('moonshine') && model.deployment !== 'excluded' && !isEnglishOnlyMoonshine) {
+    errors.push(`${model.id}: only English MIT Moonshine candidates may remain outside the excluded tier.`);
   }
 
   if (model.id.startsWith('qwen3-asr') && !String(model.deployment).includes('server')) {
