@@ -12,6 +12,7 @@ on:
       - "reelscribe/sw.js"
       - "tests/reelscribe-stability-audit.mjs"
       - "tests/reelscribe-youtube-quality-audit.mjs"
+      - "tests/reelscribe-ocr-quality-audit.mjs"
       - ".github/workflows/reelscribe-stability-check.yml"
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - "reelscribe/sw.js"
       - "tests/reelscribe-stability-audit.mjs"
       - "tests/reelscribe-youtube-quality-audit.mjs"
+      - "tests/reelscribe-ocr-quality-audit.mjs"
       - ".github/workflows/reelscribe-stability-check.yml"
   schedule:
     - cron: "45 1 * * 1,4"
@@ -63,11 +65,13 @@ jobs:
           node --check reelscribe/sw.js
           node --check tests/reelscribe-stability-audit.mjs
           node --check tests/reelscribe-youtube-quality-audit.mjs
+          node --check tests/reelscribe-ocr-quality-audit.mjs
 
       - name: Run renderer stability audit
         run: |
           node tests/reelscribe-stability-audit.mjs
           node tests/reelscribe-youtube-quality-audit.mjs
+          node tests/reelscribe-ocr-quality-audit.mjs
 
       - name: Check YouTube captions endpoint contract
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
