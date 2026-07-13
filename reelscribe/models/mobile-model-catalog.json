@@ -7,7 +7,8 @@
     "downloadOnlyOnExplicitConsent": true,
     "neverBundleAllModels": true,
     "mobileMemoryRule": "Only one ASR engine and one model may be resident at a time.",
-    "privacyRule": "Local models must not upload audio, video frames, transcripts, cookies, account sessions or device identifiers."
+    "privacyRule": "Local models must not upload audio, video frames, transcripts, cookies, account sessions or device identifiers.",
+    "selectionRule": "Latest does not automatically mean shippable. License, device memory, artifact integrity, battery, thermal behavior and physical-device accuracy must pass before release."
   },
   "engines": [
     {
@@ -16,7 +17,15 @@
       "license": "MIT",
       "targets": ["ios", "android"],
       "status": "production-core",
-      "notes": "Primary offline multilingual engine. Native Swift/Kotlin bridge or a reviewed React Native binding is required."
+      "notes": "Primary offline multilingual engine through whisper.rn; one verified model is loaded at a time."
+    },
+    {
+      "id": "whisperkit-ios",
+      "version": "1.0.0-evaluate",
+      "license": "MIT",
+      "targets": ["ios"],
+      "status": "platform-candidate",
+      "notes": "Apple Silicon/Core ML candidate. It is not added beside whisper.cpp in the first release until binary size, memory and accuracy justify a second iOS engine."
     },
     {
       "id": "sherpa-onnx",
@@ -25,6 +34,30 @@
       "targets": ["ios", "android"],
       "status": "production-candidate",
       "notes": "Candidate runtime for SenseVoice, VAD, diarization, enhancement and source separation. Pin a release and verify every included model license before shipping."
+    },
+    {
+      "id": "moonshine-native",
+      "version": "0.0.68-evaluate",
+      "license": "MIT-code-mixed-model-licenses",
+      "targets": ["ios", "android"],
+      "status": "license-gated-candidate",
+      "notes": "English models may be evaluated; non-English models remain excluded from commercial distribution under their community license."
+    },
+    {
+      "id": "qwen-asr-vllm",
+      "version": "official-current",
+      "license": "Apache-2.0",
+      "targets": ["self-hosted-gpu"],
+      "status": "server-candidate",
+      "notes": "Optional explicit cloud mode only; not a phone model."
+    },
+    {
+      "id": "nemo-speech",
+      "version": "official-current",
+      "license": "verify-model-card",
+      "targets": ["self-hosted-gpu"],
+      "status": "server-candidate",
+      "notes": "NVIDIA streaming/offline ASR candidates require GPU infrastructure and model-card-specific licensing review."
     }
   ],
   "models": [
@@ -93,6 +126,22 @@
       }
     },
     {
+      "id": "whisperkit-large-v3-compressed-ios",
+      "displayName": "WhisperKit Large v3 compressed",
+      "engine": "whisperkit-ios",
+      "languages": ["multilingual"],
+      "license": "MIT",
+      "deployment": "ios-on-device-candidate",
+      "deviceTier": "flagship-apple",
+      "recommendedFor": ["ios-accuracy", "coreml"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "not-approved-for-first-store-build"
+      }
+    },
+    {
       "id": "sensevoice-small",
       "displayName": "SenseVoice Small",
       "engine": "sherpa-onnx",
@@ -109,6 +158,22 @@
       }
     },
     {
+      "id": "moonshine-english-family",
+      "displayName": "Moonshine English on-device models",
+      "engine": "moonshine-native",
+      "languages": ["en"],
+      "license": "MIT",
+      "deployment": "on-device-candidate",
+      "deviceTier": "all",
+      "recommendedFor": ["english-live-transcription", "low-latency"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "not-approved-for-first-store-build"
+      }
+    },
+    {
       "id": "qwen3-asr-0.6b",
       "displayName": "Qwen3-ASR 0.6B",
       "engine": "qwen-asr-vllm",
@@ -118,7 +183,7 @@
       "deviceTier": "server-gpu",
       "recommendedFor": ["songs-with-bgm", "chinese-dialects", "high-accuracy-cloud-mode"],
       "status": "server-candidate",
-      "privacy": "Disabled by default. Requires an explicit opt-in and a self-hosted privacy-reviewed endpoint."
+      "privacy": "Disabled by default. Requires explicit opt-in and a self-hosted privacy-reviewed endpoint."
     },
     {
       "id": "qwen3-asr-1.7b",
@@ -146,7 +211,7 @@
     {
       "id": "parakeet-tdt-0.6b-v3",
       "displayName": "NVIDIA Parakeet TDT 0.6B v3",
-      "engine": "nemo-server",
+      "engine": "nemo-speech",
       "languages": ["25-european-languages"],
       "license": "CC-BY-4.0",
       "deployment": "server-gpu",
@@ -155,12 +220,35 @@
       "status": "server-candidate"
     },
     {
+      "id": "parakeet-unified-en-0.6b",
+      "displayName": "NVIDIA Parakeet Unified EN 0.6B",
+      "engine": "nemo-speech",
+      "languages": ["en"],
+      "license": "verify-model-card-before-release",
+      "deployment": "server-gpu",
+      "deviceTier": "server-gpu",
+      "recommendedFor": ["english-streaming", "english-offline", "punctuation"],
+      "status": "server-research"
+    },
+    {
+      "id": "nemotron-3.5-asr-streaming-0.6b",
+      "displayName": "NVIDIA Nemotron 3.5 ASR Streaming 0.6B",
+      "engine": "nemo-speech",
+      "languages": ["40-languages"],
+      "license": "verify-model-card-before-release",
+      "deployment": "optional-self-hosted-server",
+      "deviceTier": "server-gpu",
+      "recommendedFor": ["multilingual-streaming", "controllable-latency", "high-concurrency"],
+      "status": "server-research",
+      "privacy": "Disabled by default. Requires explicit cloud-mode consent and controlled infrastructure."
+    },
+    {
       "id": "moonshine-v2-multilingual",
       "displayName": "Moonshine v2 multilingual models",
       "deployment": "excluded",
       "license": "non-commercial-community-license",
       "status": "do-not-ship-in-commercial-app",
-      "reason": "Multilingual model terms are not suitable for the planned commercial store distribution. English MIT variants may be re-evaluated separately."
+      "reason": "Non-English model terms are not suitable for the planned commercial store distribution. English MIT variants are evaluated separately."
     },
     {
       "id": "npusper",
