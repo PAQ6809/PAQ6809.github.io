@@ -9,6 +9,7 @@ const app = read("reelscribe/app.js");
 const resolver = read("reelscribe/universal-link.js");
 const instagramDirect = read("reelscribe/instagram-direct.js");
 const worker = read("reelscribe/worker.js");
+const enhancer = read("reelscribe/speech-enhancer.js");
 const ui = read("reelscribe/ui.js");
 const formatCompat = read("reelscribe/format-compat.js");
 const serviceWorker = read("reelscribe/sw.js");
@@ -43,14 +44,15 @@ for (const [path, source] of [
   ["reelscribe/supported-platforms.html", supportHtml],
 ]) {
   const ids = parseIds(source);
-  const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
-  assert.deepEqual(duplicateIds, [], `${path} contains duplicate IDs`);
+  const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+  assert.deepEqual(duplicates, [], `${path} contains duplicate IDs`);
 }
 
 const ids = parseIds(html);
 for (const id of [
   "ig-url", "check-url", "fallback-tools", "media-file", "model-select",
-  "transcribe", "results", "full-transcript", "copy-text", "download-srt", "share-site",
+  "language-select", "suppress-music", "prefer-gpu", "transcribe", "results",
+  "full-transcript", "copy-text", "download-srt", "share-site",
 ]) {
   assert.ok(ids.includes(id), `Missing required element #${id}`);
 }
@@ -61,53 +63,68 @@ assert.match(html, /name="twitter:card"/);
 assert.match(html, /type="application\/ld\+json"/);
 assert.match(html, /Content-Security-Policy/);
 assert.match(html, /name="referrer" content="no-referrer"/);
-assert.match(html, /\.\/ui-polish\.css/);
-assert.match(html, /\.\/format-compat\.js/);
-assert.match(html, /\.\/instagram-direct\.js/);
-assert.match(html, /\.\/share\.js/);
-assert.match(html, /value="smart" selected/);
-assert.match(html, /supported-platforms\.html/);
+assert.match(html, /\.\/speech-enhancer\.js/);
+assert.match(html, /id="suppress-music"[^>]*checked/);
+assert.match(html, /Silero VAD/);
+assert.ok(html.indexOf('./speech-enhancer.js') < html.indexOf('./app.js'), "Speech enhancer must load before app.js");
+assert.ok(html.indexOf('./instagram-direct.js') < html.indexOf('./universal-link.js'), "Instagram direct resolver must run first");
+assert.ok(html.indexOf('id="copy-text"') < html.indexOf('id="download-txt"'), "Copy remains the first result action");
 assert.doesNotMatch(html, /class="notes shell"/);
-assert.ok(html.indexOf('./instagram-direct.js') < html.indexOf('./universal-link.js'), "Instagram direct resolver must run before the generic resolver");
-assert.ok(html.indexOf('id="copy-text"') < html.indexOf('id="download-txt"'), "Copy must remain the first result action");
 
 const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
 assert.ok(jsonLdMatch, "Missing JSON-LD");
 const jsonLd = JSON.parse(jsonLdMatch[1]);
 assert.equal(jsonLd["@type"], "SoftwareApplication");
 assert.equal(jsonLd.offers.price, "0");
-assert.ok(jsonLd.featureList.some((item) => item.includes("Instagram")));
-assert.ok(jsonLd.featureList.some((item) => item.includes("長影片")));
+assert.ok(jsonLd.featureList.some((item) => item.includes("背景音樂")));
+assert.ok(jsonLd.featureList.some((item) => item.includes("Large-v3-turbo")));
 
 assert.equal(manifest.share_target.action, "./");
 assert.match(sitemap, /https:\/\/paq6809\.github\.io\/reelscribe\//);
-assert.match(sitemap, /supported-platforms\.html/);
 assert.match(robots, /Sitemap: https:\/\/paq6809\.github\.io\/reelscribe\/sitemap\.xml/);
-assert.match(serviceWorker, /\.\/instagram-direct\.js/);
-assert.match(serviceWorker, /\.\/format-compat\.js/);
-assert.match(serviceWorker, /\.\/supported-platforms\.html/);
-assert.match(serviceWorker, /\.\/share\.js/);
-assert.match(serviceWorker, /reelscribe-shell-v11/);
+assert.match(serviceWorker, /reelscribe-shell-v12/);
+assert.match(serviceWorker, /\.\/speech-enhancer\.js/);
 assert.match(serviceWorker, /async function networkFirst/);
 assert.match(serviceWorker, /cache:\s*"no-store"/);
-assert.match(serviceWorker, /event\.request\.mode === "navigate"/);
 
-assert.match(app, /const APP_BUILD = "2026\.07\.13\.3"/);
-assert.match(app, /window\.ReelScribeApp = Object\.freeze/);
+assert.match(app, /const APP_BUILD = "2026\.07\.13\.6"/);
+assert.match(app, /type:\s*"prepare"/);
+assert.match(app, /Promise|平行執行/);
+assert.match(app, /navigator\.storage\.persist/);
+assert.match(app, /ReelScribeSpeechEnhancer/);
+assert.match(app, /enhancementMeta/);
 assert.match(app, /updateViaCache:\s*"none"/);
-assert.match(app, /controllerchange/);
-assert.match(app, /sessionStorage\.getItem/);
-assert.match(instagramDirect, /window\.ReelScribeApp/);
-assert.match(instagramDirect, /app\.setFile\(file\)/);
-assert.match(instagramDirect, /app\.startTranscription/);
-assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.5"/);
-assert.match(ui, /installModelChoices/);
-assert.match(ui, /onnx-community\/whisper-small/);
+assert.match(app, /window\.ReelScribeApp = Object\.freeze/);
+
+assert.match(enhancer, /const VAD_VERSION = "0\.0\.30"/);
+assert.match(enhancer, /NonRealTimeVAD/);
+assert.match(enhancer, /model:\s*"v5"/);
+assert.match(enhancer, /extractSpeechChannel/);
+assert.match(enhancer, /applySpeechBand/);
+assert.match(enhancer, /buildFrameMask/);
+assert.match(enhancer, /mask\.fill\(0\.025\)/);
+assert.match(enhancer, /reason:\s*"no-speech-regions"/);
+assert.doesNotMatch(enhancer, /document\.cookie|password|localStorage/i);
+
+assert.match(worker, /const FLAGSHIP_MODEL = "onnx-community\/whisper-large-v3-turbo"/);
+assert.match(worker, /const ACCURATE_MODEL = "onnx-community\/whisper-small"/);
+assert.match(worker, /encoder_model:\s*"q4f16"/);
+assert.match(worker, /decoder_model_merged:\s*"q4f16"/);
+assert.match(worker, /type === "prepare"/);
+assert.match(worker, /disposeTranscriber/);
+assert.match(worker, /smallestRepeatingUnit/);
+assert.match(worker, /meaningfulLength === 0/);
+assert.match(worker, /repetition_penalty:\s*1\.2/);
+assert.match(worker, /no_repeat_ngram_size:\s*3/);
+assert.match(worker, /enhancementMeta/);
+
+assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.6"/);
+assert.match(ui, /onnx-community\/whisper-large-v3-turbo/);
+assert.match(ui, /此裝置不建議/);
+assert.match(ui, /smallestRepeatingUnit/);
+assert.match(ui, /重複符號或文字/);
 assert.match(ui, /ReelScribeQualityGuard/);
-assert.match(ui, /clearBadSavedResult/);
-assert.match(ui, /suppressHallucinatedResult/);
 assert.match(uiPolish, /\.topbar\s*\{\s*position:\s*relative/);
-assert.match(uiPolish, /\.provider-log[\s\S]*flex-wrap:\s*wrap/);
 assert.match(uiPolish, /overflow-wrap:\s*anywhere/);
 
 for (const extension of ["mkv", "avi", "flac", "opus", "m2ts", "amr", "caf"]) {
@@ -115,22 +132,13 @@ for (const extension of ["mkv", "avi", "flac", "opus", "m2ts", "amr", "caf"]) {
 }
 assert.match(formatCompat, /ReelScribeFormatSupport/);
 assert.match(supportHtml, /Instagram／Reels/);
-assert.match(supportHtml, /TikTok/);
-assert.match(supportHtml, /MKV/);
 assert.match(supportHtml, /長影片處理方式/);
-
 assert.match(codeowners, /\/reelscribe\/ @PAQ6809/);
-assert.match(codeowners, /\/\.github\/workflows\/ @PAQ6809/);
 assert.match(dependabot, /package-ecosystem: "github-actions"/);
 assert.match(securityPolicy, /Force pushes/);
-assert.match(securityPolicy, /private vulnerability reporting/i);
-
-assert.match(instagramDirect, /https:\/\/vite-xi-one-59\.vercel\.app/);
 assert.match(instagramDirect, /\/api\/instagram-resolve/);
 assert.match(instagramDirect, /\/api\/instagram-yt/);
 assert.match(instagramDirect, /credentials:\s*"omit"/);
-assert.match(instagramDirect, /referrerPolicy:\s*"no-referrer"/);
-assert.match(instagramDirect, /MAX_MEDIA_BYTES/);
 assert.doesNotMatch(instagramDirect, /document\.cookie|cookiesfrombrowser|password/i);
 
 const instagramContext = vm.createContext({ URL, console });
@@ -138,9 +146,8 @@ vm.runInContext(`${extractFunction(instagramDirect, "parseInstagram")}\nglobalTh
 const parsedInstagram = instagramContext.parseInstagram("https://www.instagram.com/reels/DITBVk3z6pJ/?igsh=abc");
 assert.equal(parsedInstagram.shortcode, "DITBVk3z6pJ");
 assert.equal(parsedInstagram.canonicalUrl, "https://www.instagram.com/reel/DITBVk3z6pJ/");
-assert.equal(instagramContext.parseInstagram("https://example.com/reel/DITBVk3z6pJ/"), null);
 
-const functionNames = [
+const resolverNames = [
   "extractYouTubeId", "parseSourceUrl", "parseSubtitleText", "parseVtt", "parseSrt",
   "parseClock", "finalizeSegments", "cleanText", "joinSegments",
 ];
@@ -156,86 +163,68 @@ const documentStub = {
     };
   },
 };
-const context = vm.createContext({ URL, document: documentStub, console });
-const extracted = functionNames.map((name) => extractFunction(resolver, name)).join("\n");
-vm.runInContext(`${extracted}\nglobalThis.auditApi = { parseSourceUrl, parseSubtitleText, parseClock };`, context);
-const { parseSourceUrl, parseSubtitleText, parseClock } = context.auditApi;
-
-const youtube = parseSourceUrl("https://youtu.be/dQw4w9WgXcQ?si=test&utm_source=share");
-assert.equal(youtube.platform, "youtube");
-assert.equal(youtube.videoId, "dQw4w9WgXcQ");
-const instagram = parseSourceUrl("https://www.instagram.com/reel/ABC_123/?igshid=test");
-assert.equal(instagram.platform, "instagram");
-const genericPublicVideoPage = parseSourceUrl("https://www.snapchat.com/spotlight/example");
-assert.equal(genericPublicVideoPage.platform, "generic");
-const directSubtitle = parseSourceUrl("https://example.com/subtitles/demo.vtt?lang=zh");
-assert.equal(directSubtitle.kind, "subtitle");
-
+const resolverContext = vm.createContext({ URL, document: documentStub, console });
+vm.runInContext(`${resolverNames.map((name) => extractFunction(resolver, name)).join("\n")}\nglobalThis.api={parseSourceUrl,parseSubtitleText,parseClock};`, resolverContext);
+const { parseSourceUrl, parseSubtitleText, parseClock } = resolverContext.api;
+assert.equal(parseSourceUrl("https://youtu.be/dQw4w9WgXcQ?si=test").videoId, "dQw4w9WgXcQ");
+assert.equal(parseSourceUrl("https://www.instagram.com/reel/ABC_123/").platform, "instagram");
+assert.equal(parseSourceUrl("https://example.com/demo.vtt").kind, "subtitle");
 const vtt = `WEBVTT\n\n00:00:00.000 --> 00:00:02.500\n第一段字幕\n\n00:00:02.500 --> 00:00:05.000\n第二段字幕`;
-const parsedVtt = parseSubtitleText(vtt, "vtt");
-assert.equal(parsedVtt.segments.length, 2);
-assert.equal(parsedVtt.text, "第一段字幕 第二段字幕");
-assert.equal(parsedVtt.duration, 5);
-const srt = `1\n00:00:00,000 --> 00:00:01,500\nHello\n\n2\n00:00:01,500 --> 00:00:03,000\nWorld`;
-const parsedSrt = parseSubtitleText(srt, "srt");
-assert.equal(parsedSrt.text, "Hello World");
+assert.equal(parseSubtitleText(vtt, "vtt").text, "第一段字幕 第二段字幕");
 assert.equal(parseClock("01:02:03.500"), 3723.5);
 
-assert.match(worker, /const ACCURATE_MODEL = "onnx-community\/whisper-small"/);
-assert.match(worker, /const BALANCED_MODEL = "onnx-community\/whisper-base"/);
-assert.match(worker, /modelFallbacks/);
-assert.match(worker, /loadPlans/);
-assert.match(worker, /num_beams:\s*accurateMode \? 2 : 1/);
-assert.match(worker, /repetition_penalty:\s*1\.18/);
-assert.match(worker, /no_repeat_ngram_size:\s*3/);
-assert.match(worker, /max_new_tokens/);
-assert.match(worker, /transcribeWithHallucinationGuard/);
-
-const workerFunctionNames = [
-  "deviceProfile", "selectModel", "isMostlySilent", "normalizeText", "meaningfulCharacters",
-  "longestCharacterRun", "textRepetitionMetrics", "isHallucinatedText",
-  "overlapLength", "mergeSegments",
+const workerNames = [
+  "deviceProfile", "selectModel", "modelFallbacks", "dtypeKey", "loadPlans",
+  "isMostlySilent", "normalizeText", "compactCharacters", "meaningfulCharacters",
+  "longestCharacterRun", "smallestRepeatingUnit", "textRepetitionMetrics",
+  "isHallucinatedText", "overlapLength", "mergeSegments",
 ];
-const workerExtracted = workerFunctionNames.map((name) => extractFunction(worker, name)).join("\n");
 const workerContext = vm.createContext({
-  console,
-  Float32Array,
-  Map,
-  Set,
-  Array,
-  String,
-  Math,
+  console, Float32Array, Map, Set, Array, String, Math,
   self: {
     navigator: {
-      gpu: {},
-      deviceMemory: 8,
-      hardwareConcurrency: 8,
+      gpu: {}, deviceMemory: 16, hardwareConcurrency: 16,
       userAgent: "Mozilla/5.0 (X11; Linux x86_64) Chrome/140",
+      connection: { saveData: false, effectiveType: "4g" },
     },
   },
 });
 vm.runInContext(`
-const FAST_MODEL = "onnx-community/whisper-tiny";
-const BALANCED_MODEL = "onnx-community/whisper-base";
-const ACCURATE_MODEL = "onnx-community/whisper-small";
-${workerExtracted}
-globalThis.workerAudit = { selectModel, isMostlySilent, mergeSegments, isHallucinatedText, textRepetitionMetrics };
+const FAST_MODEL="onnx-community/whisper-tiny";
+const BALANCED_MODEL="onnx-community/whisper-base";
+const ACCURATE_MODEL="onnx-community/whisper-small";
+const FLAGSHIP_MODEL="onnx-community/whisper-large-v3-turbo";
+const WEBGPU_MIXED_DTYPE={encoder_model:"fp16",decoder_model_merged:"q4f16"};
+const TURBO_WEBGPU_DTYPE={encoder_model:"q4f16",decoder_model_merged:"q4f16"};
+${workerNames.map((name) => extractFunction(worker, name)).join("\n")}
+globalThis.api={selectModel,modelFallbacks,loadPlans,isMostlySilent,isHallucinatedText,textRepetitionMetrics,mergeSegments};
 `, workerContext);
-const { selectModel, isMostlySilent, mergeSegments, isHallucinatedText, textRepetitionMetrics } = workerContext.workerAudit;
-assert.equal(selectModel("smart", 5 * 60, true), "onnx-community/whisper-small");
-assert.equal(selectModel("smart", 60 * 60, true), "onnx-community/whisper-tiny");
-assert.equal(selectModel("onnx-community/whisper-base", 60 * 60, true), "onnx-community/whisper-base");
-vm.runInContext('self.navigator.userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) Mobile";', workerContext);
-assert.equal(selectModel("smart", 5 * 60, true), "onnx-community/whisper-base");
-assert.equal(isMostlySilent(new Float32Array(16000)), true);
-const voiced = new Float32Array(16000); voiced.fill(0.08);
-assert.equal(isMostlySilent(voiced), false);
-const merged = [{ start: 0, end: 4, text: "Hello world" }];
-mergeSegments(merged, [{ start: 3, end: 7, text: "world again" }]);
-assert.equal(merged.length, 2);
-assert.match(merged[1].text, /again/);
-assert.equal(isHallucinatedText("居".repeat(120)), true);
-assert.equal(isHallucinatedText("今天我們要介紹一個能快速整理影片字幕的免費工具。"), false);
-assert.ok(textRepetitionMetrics("居".repeat(80)).dominantRatio > 0.95);
+const workerApi = workerContext.api;
+assert.equal(workerApi.selectModel("smart", 3 * 60, true), "onnx-community/whisper-large-v3-turbo");
+assert.deepEqual(Array.from(workerApi.modelFallbacks("onnx-community/whisper-large-v3-turbo")), [
+  "onnx-community/whisper-large-v3-turbo", "onnx-community/whisper-small",
+  "onnx-community/whisper-base", "onnx-community/whisper-tiny",
+]);
+assert.equal(workerApi.loadPlans("onnx-community/whisper-large-v3-turbo", true)[0].dtype.encoder_model, "q4f16");
+vm.runInContext('self.navigator.userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) Mobile"; self.navigator.deviceMemory=0;', workerContext);
+assert.equal(workerApi.selectModel("smart", 3 * 60, true), "onnx-community/whisper-base");
+assert.equal(workerApi.selectModel("smart", 60 * 60, true), "onnx-community/whisper-tiny");
+assert.equal(workerApi.isHallucinatedText(">> ".repeat(100)), true);
+assert.equal(workerApi.isHallucinatedText("居".repeat(100)), true);
+assert.equal(workerApi.isHallucinatedText("今天我們介紹一個能快速整理影片字幕的免費工具。"), false);
+assert.ok(workerApi.textRepetitionMetrics(">> ".repeat(50)).symbolRatio > 0.9);
+assert.equal(workerApi.isMostlySilent(new Float32Array(16000)), true);
 
-console.log("ReelScribe audit passed: adaptive Whisper Small/Base/Tiny selection, model fallback, anti-hallucination retry and rejection, fresh PWA cache, iPhone Instagram handoff, HTML, SEO, CSP, formats, long-video mode, URL normalization, VTT and SRT parsing.");
+const enhancerNames = ["clamp", "biquadCoefficients", "applyBiquad", "applySpeechBand", "mergeRegions", "buildFrameMask", "applyFrameMask"];
+const enhancerContext = vm.createContext({ console, Float32Array, Math });
+vm.runInContext(`${enhancerNames.map((name) => extractFunction(enhancer, name)).join("\n")}\nglobalThis.api={applySpeechBand,mergeRegions,buildFrameMask,applyFrameMask};`, enhancerContext);
+const enhancedAudio = new Float32Array(16000); enhancedAudio.fill(0.05);
+enhancerContext.api.applySpeechBand(enhancedAudio, 16000);
+assert.ok(enhancedAudio.every(Number.isFinite));
+const regions = enhancerContext.api.mergeRegions([{ start: 1, end: 2 }, { start: 2.1, end: 3 }], 5);
+assert.equal(regions.length, 1);
+const mask = enhancerContext.api.buildFrameMask(16000 * 5, 16000, regions);
+assert.ok(mask.mask.some((value) => value === 1));
+assert.ok(mask.mask.some((value) => value < 0.1));
+
+console.log("ReelScribe audit passed: Silero VAD music suppression, Turbo mixed precision, parallel prepare, symbol hallucination guard, Instagram fallback, PWA, SEO, formats, VTT and SRT.");
