@@ -1,5 +1,30 @@
 # ReelScribe Store Launch Workflow
 
+Last reviewed against official store documentation: 2026-07-13
+
+## Current engineering status
+
+Completed in the repository:
+
+- React Native iOS/Android application UI.
+- Native Whisper path through whisper.rn/whisper.cpp.
+- App-owned iOS AVFoundation/Vision and Android MediaCodec/ML Kit manager.
+- Streaming iOS/Android audio preparation rather than retaining a complete long soundtrack in memory.
+- Public YouTube/Instagram resolver integration with local fallback.
+- TXT, SRT and VTT serialization/share flow.
+- Privacy, support, terms, App Privacy and Google Data Safety drafts.
+- Store listing drafts in Traditional Chinese and English.
+- Model catalog, integrity-report workflow, source preflight, Android debug build and iOS simulator build workflows.
+
+Not completed and intentionally blocked:
+
+- signed iOS archive and signed Android App Bundle;
+- Tiny/Base final byte sizes and SHA-256 values in the production catalog;
+- physical-device 15/60/180-minute test evidence;
+- developer-account enrollment, identity verification and store app records;
+- final screenshots and reviewer demo;
+- App Store/Play submission and production rollout.
+
 ## Product decision
 
 First release:
@@ -10,7 +35,8 @@ First release:
 - No subscription or in-app purchase.
 - Local processing is the default.
 - Optional server ASR remains disabled.
-- Traditional Chinese is the primary store language; English metadata is prepared next.
+- Traditional Chinese is the primary store language; English metadata is prepared.
+- Tiny and Base are the initial mobile model set. Newer models stay candidate/server/research until the release gates pass.
 
 Provisional identifiers:
 
@@ -21,6 +47,22 @@ SKU: REELSCRIBE-IOS-001
 ```
 
 Confirm that the identifier is available before signing. Once a released identifier is used, changing it creates a different app.
+
+## Developer accounts and current costs
+
+### Apple
+
+- Apple Developer Program membership is currently USD 99 per membership year, with regional pricing and possible waivers for qualifying entities.
+- Individual enrollment requires legal identity and two-factor authentication; an organization also needs legal authority and normally a D-U-N-S Number.
+- The Account Holder must accept the agreement and make the purchase.
+
+### Google Play
+
+- Play Console registration currently has a USD 25 one-time fee.
+- The developer must accept the distribution agreement and complete identity verification.
+- New personal accounts can have device-verification and testing requirements before production distribution.
+
+These charges, account creation, identity checks and agreements cannot be completed by repository automation.
 
 ## Store listing draft
 
@@ -91,8 +133,8 @@ Target: 4+ / Everyone. Complete the platform questionnaires truthfully; the app 
 - iPad screenshots only if iPad distribution is enabled.
 - Android phone screenshots and feature graphic.
 - Optional 20–30 second preview showing link → local processing → editable subtitles.
-- Privacy policy URL.
-- Support URL.
+- Active privacy policy URL.
+- Active support URL.
 - Marketing URL.
 
 Recommended screenshot sequence:
@@ -104,23 +146,24 @@ Recommended screenshot sequence:
 5. Edit timeline and export SRT/VTT.
 6. Show on-device OCR for burned-in captions.
 
-Do not place unsupported claims such as "all links work" or "100% accurate" in images or metadata.
+Do not place unsupported claims such as “all links work,” “perfectly removes music” or “100% accurate” in images or metadata.
 
 ## iOS release flow
 
 1. Enroll in the Apple Developer Program.
-2. Confirm legal name, tax/contact details and the annual membership.
+2. Confirm legal name, tax/contact details, two-factor authentication and annual membership.
 3. Register the bundle ID.
 4. Create the App Store Connect app record.
-5. Configure signing, capabilities and privacy manifest.
-6. Build an archive with the release Xcode version.
-7. Run static analysis, unit tests and TestFlight internal testing.
-8. Test model downloads, airplane mode, low storage, memory warnings, background/foreground transitions and long-media resume on physical iPhones.
-9. Complete App Privacy answers for the app and every third-party SDK.
-10. Upload screenshots, description, support/privacy URLs and review notes.
-11. Explain in review notes that public-link resolution handles public content only and that local mode keeps media on device.
-12. Submit for review.
-13. Use phased release after approval.
+5. Configure signing, capabilities, minimum OS and privacy manifest.
+6. Lock model byte sizes/SHA-256 and run `npm run preflight:release`.
+7. Build an archive with the current supported Xcode release.
+8. Run static analysis, native-build CI and TestFlight internal testing.
+9. Test model downloads, airplane mode, low storage, memory warnings, background/foreground transitions and long-media resume on physical iPhones.
+10. Complete App Privacy answers for the binary, resolver and every third-party SDK.
+11. Upload screenshots, description, support/privacy URLs and review notes.
+12. Explain that public-link resolution handles public content only and local mode keeps selected media on device.
+13. Submit for App Review.
+14. Use phased release after approval.
 
 Review notes draft:
 
@@ -131,25 +174,29 @@ ReelScribe is an offline-first transcription utility. No login is required. Revi
 ## Android release flow
 
 1. Create and verify a Google Play developer account.
-2. Confirm the provisional application ID.
-3. Generate and securely back up the upload key; enable Play App Signing.
-4. Target the current required Android API level.
-5. Add app-private model storage or Play Asset Delivery packs.
-6. Build a signed Android App Bundle (`.aab`).
-7. Run unit tests, lint, dependency review and pre-launch report.
-8. Complete Data Safety, content rating, ads declaration, app access and privacy policy fields.
-9. Use internal testing, then closed testing when required for the account type.
-10. Verify low-memory devices, Android background restrictions, WorkManager resume and notification behavior.
-11. Upload store listing assets and release notes.
-12. Roll out in stages rather than immediately to 100%.
+2. Accept the distribution agreement and pay the one-time registration fee.
+3. Complete personal/organization identity requirements and any required device/closed-testing steps.
+4. Confirm the application ID.
+5. Generate and securely back up the upload key; enable Play App Signing.
+6. Re-check the target API requirement shown in Play Console at submission time.
+7. Lock model byte sizes/SHA-256 and run `npm run preflight:release`.
+8. Build a signed Android App Bundle (`.aab`).
+9. Run unit tests, lint, dependency review and the Play pre-launch report.
+10. Complete privacy policy, Data Safety, content rating, ads, target audience and app-access declarations.
+11. Use internal testing, then closed testing when required for the account type.
+12. Verify low-memory devices, Android background restrictions, checkpoint resume and notification behavior.
+13. Upload store listing assets and release notes.
+14. Roll out in stages rather than immediately to 100%.
 
 Data Safety draft for the planned first release:
 
-- Data collected: none by the app in local mode.
-- Data shared: none in local mode.
-- Public-link resolver: public URL is processed to deliver the requested feature; verify hosting logs and retention before final declaration.
+- Data collected by the local feature: none intentionally.
+- Data shared by the local feature: none intentionally.
+- Public-link resolver: public URL is processed to deliver the requested feature; hosting/CDN logs and retention must be checked before the final form.
 - Encryption in transit: yes for resolver/model downloads.
 - Account deletion: not applicable because the first release has no account.
+
+Google requires an active privacy policy and accurate App content declarations. The final answer must reflect the exact signed AAB and production logging configuration, not only this draft.
 
 ## Pre-submission release gates
 
@@ -159,8 +206,16 @@ Data Safety draft for the planned first release:
 - Native inference module works on both platforms.
 - Public resolver failures have clear fallbacks.
 - Copy, edit, TXT, SRT and VTT work.
-- Accessibility labels and Dynamic Type/font scaling are usable.
+- Accessibility labels and font scaling are usable.
 - Phone and tablet layouts do not clip controls.
+
+### Models
+
+- Tiny/Base URLs, exact byte sizes and SHA-256 are locked.
+- Optional Small/Turbo downloads are device-gated and explicitly accepted.
+- Fun-ASR Nano, SenseVoice, Omnilingual, Moonshine, Qwen3-ASR, Nemotron and Parakeet remain disabled until their own license/runtime/device gates pass.
+- A model-integrity report is reviewed by a human before catalog changes.
+- No phone downloads or retains every model.
 
 ### Accuracy
 
@@ -173,6 +228,7 @@ Data Safety draft for the planned first release:
 
 - 60-minute transcription completes on the minimum supported phone.
 - Three-hour task resumes from checkpoint after process termination.
+- iOS and Android audio preparation remain streaming/bounded.
 - Only one heavy model/OCR task runs at a time.
 - Low storage prevents optional model download.
 - Memory warning releases optional buffers without deleting transcript text.
@@ -183,12 +239,28 @@ Data Safety draft for the planned first release:
 - No unreviewed CDN, dynamic library or arbitrary model URL.
 - No social cookies or private tokens.
 - Temporary Instagram media is deleted.
-- Privacy policy, store declarations and actual SDK behavior match.
+- Privacy policy, store declarations and actual SDK/backend behavior match.
 - Software bill of materials and license notices are included.
+- Signing keys, provisioning profiles, upload keystores and store API credentials never enter Git.
 
 ## CI/CD plan
 
-The repository workflow validates TypeScript, the model catalog, prohibited model licenses, store documents and privacy/security requirements. Native builds are added when macOS and Android signing environments are connected.
+Automated now:
+
+- TypeScript, model catalog, prohibited-license and store-document checks.
+- App-owned native module and autolinking checks.
+- Android unsigned debug APK build.
+- iOS unsigned simulator build.
+- Manual model artifact byte/SHA-256 report.
+- Security checks for pinned Actions, read-only tokens and prohibited secrets.
+
+Human-controlled release stage:
+
+- App Store certificate/provisioning and signed archive.
+- Android upload keystore and signed AAB.
+- App Store Connect/Play Console API credentials.
+- Environment-protected production approval.
+- Final submission and staged/phased release.
 
 Release CI must use environment-protected secrets and must never print certificates, provisioning profiles, keystore passwords or API keys.
 
