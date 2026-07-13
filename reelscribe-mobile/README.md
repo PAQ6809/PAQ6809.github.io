@@ -51,8 +51,11 @@ First-release mobile tiers:
 3. Whisper Small — optional download for high-end devices after tests.
 4. Whisper Large-v3-turbo — explicit flagship-device download after tests.
 
+The official whisper.cpp Tiny, Base, Small and Large-v3-turbo artifacts now have pinned upstream SHA-256 values in both the native catalog and central registry. Tiny and Base remain the first-release defaults; locking an artifact does not by itself approve it for every device.
+
 Candidates, not first-release defaults:
 
+- Breeze ASR 25 for Taiwanese Mandarin, Traditional Chinese, Mandarin-English code-switching and caption alignment. The official model is reviewed, but no community mobile conversion is approved yet.
 - WhisperKit/Core ML on supported iPhones.
 - SenseVoice Small through a pinned mobile runtime after license/device review.
 - Moonshine English models for low-latency English after runtime-size review.
@@ -60,7 +63,7 @@ Candidates, not first-release defaults:
 
 Non-English Moonshine community-license models remain excluded from commercial store distribution.
 
-Every downloadable release artifact requires an approved HTTPS origin, exact byte size, SHA-256, license record and device eligibility rule. Release builds intentionally reject unpinned artifacts.
+Every downloadable release artifact requires an approved HTTPS origin, exact byte size, SHA-256, license record and device eligibility rule. Release builds reject unpinned artifacts, research models and arbitrary URLs.
 
 ## Bootstrap
 
@@ -94,7 +97,7 @@ Release-only integrity gate:
 npm run preflight:release
 ```
 
-`preflight:release` is expected to fail until every production model has an exact locked SHA-256. This is intentional.
+The model-catalog audit now passes in normal and `RELEASE_BUILD=1` modes with the locked official Whisper artifacts. A complete release still requires native compilation, signed binaries and physical-device validation.
 
 After bootstrap and native dependency installation:
 
@@ -108,7 +111,7 @@ npm run android
 The app must not be submitted until all of these pass:
 
 - iOS and Android native projects compile with no placeholder native methods.
-- Tiny/Base production models have exact byte sizes and SHA-256 values.
+- Production model downloads verify against the locked byte-size expectations and SHA-256 values.
 - Model tampering, interrupted download and low-storage tests pass.
 - 15-minute, 60-minute and 3-hour tasks complete/resume on the supported device matrix.
 - Airplane-mode transcription works after model installation.
