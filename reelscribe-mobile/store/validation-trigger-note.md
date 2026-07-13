@@ -1,0 +1,1 @@
+The validation branch contains only a trigger marker. It exists to run the mobile readiness workflow against the current main branch and should be closed without merge after the workflow result is reviewed.
