@@ -222,26 +222,58 @@ final class ReelScribeManager: RCTEventEmitter {
       throw reader.error ?? NSError(domain: "ReelScribeManager", code: 12, userInfo: [NSLocalizedDescriptionKey: "音訊解碼無法啟動。"])
     }
 
-    var pcm = Data()
-    while reader.status == .reading, let sample = output.copyNextSampleBuffer() {
-      guard let buffer = CMSampleBufferGetDataBuffer(sample) else { continue }
-      var length = 0
-      var pointer: UnsafeMutablePointer<Int8>?
-      let status = CMBlockBufferGetDataPointer(buffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &pointer)
-      if status == kCMBlockBufferNoErr, let pointer, length > 0 {
-        pcm.append(UnsafeBufferPointer(start: pointer, count: length))
+    guard fileManager.createFile(
+      atPath: outputURL.path,
+      contents: wavHeader(dataLength: 0, sampleRate: 16_000, channels: 1, bitsPerSample: 16)
+    ) else {
+      throw NSError(domain: "ReelScribeManager", code: 13, userInfo: [NSLocalizedDescriptionKey: "無法建立暫存音訊檔。"])
+    }
+
+    let handle = try FileHandle(forWritingTo: outputURL)
+    var dataLength = 0
+    do {
+      handle.seekToEndOfFile()
+      while reader.status == .reading, let sample = output.copyNextSampleBuffer() {
+        guard let buffer = CMSampleBufferGetDataBuffer(sample) else { continue }
+        let length = CMBlockBufferGetDataLength(buffer)
+        guard length > 0 else { continue }
+
+        var chunk = Data(count: length)
+        let copyStatus = chunk.withUnsafeMutableBytes { destination -> OSStatus in
+          guard let baseAddress = destination.baseAddress else { return kCMBlockBufferBadPointerParameterErr }
+          return CMBlockBufferCopyDataBytes(buffer, atOffset: 0, dataLength: length, destination: baseAddress)
+        }
+        guard copyStatus == kCMBlockBufferNoErr else {
+          throw NSError(domain: "ReelScribeManager", code: 14, userInfo: [NSLocalizedDescriptionKey: "音訊緩衝區讀取失敗。"])
+        }
+
+        handle.write(chunk)
+        dataLength += length
+        if dataLength > Int(UInt32.max) - 36 {
+          throw NSError(domain: "ReelScribeManager", code: 15, userInfo: [NSLocalizedDescriptionKey: "音訊長度超過 WAV 安全上限。"])
+        }
       }
+
+      if reader.status == .failed {
+        throw reader.error ?? NSError(domain: "ReelScribeManager", code: 16, userInfo: [NSLocalizedDescriptionKey: "音訊解碼失敗。"])
+      }
+      guard dataLength > 0 else {
+        throw NSError(domain: "ReelScribeManager", code: 17, userInfo: [NSLocalizedDescriptionKey: "音訊內容是空的。"])
+      }
+
+      handle.seek(toFileOffset: 0)
+      handle.write(wavHeader(dataLength: dataLength, sampleRate: 16_000, channels: 1, bitsPerSample: 16))
+      handle.synchronizeFile()
+      try handle.close()
+    } catch {
+      try? handle.close()
+      try? fileManager.removeItem(at: outputURL)
+      throw error
     }
-    if reader.status == .failed {
-      throw reader.error ?? NSError(domain: "ReelScribeManager", code: 13, userInfo: [NSLocalizedDescriptionKey: "音訊解碼失敗。"])
-    }
-    guard !pcm.isEmpty else {
-      throw NSError(domain: "ReelScribeManager", code: 14, userInfo: [NSLocalizedDescriptionKey: "音訊內容是空的。"])
-    }
-    var wave = wavHeader(dataLength: pcm.count, sampleRate: 16_000, channels: 1, bitsPerSample: 16)
-    wave.append(pcm)
-    try wave.write(to: outputURL, options: .atomic)
-    return asset.duration.seconds.isFinite ? asset.duration.seconds : Double(pcm.count) / 32_000.0
+
+    let decodedDuration = Double(dataLength) / 32_000.0
+    let assetDuration = asset.duration.seconds
+    return assetDuration.isFinite && assetDuration > 0 ? assetDuration : decodedDuration
   }
 
   private func wavHeader(dataLength: Int, sampleRate: Int, channels: Int, bitsPerSample: Int) -> Data {
