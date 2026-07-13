@@ -37,12 +37,13 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 
 - HTML, JavaScript, CSS, workers and manifest use network-first caching.
 - Static icons may remain cache-first.
-- Every model-worker, OCR, enhancement or breaking interface update increments the Service Worker cache version.
+- Every model-worker, OCR, enhancement, resolver or breaking interface update increments the Service Worker cache version.
 - Service Worker registration uses `updateViaCache: "none"` and may call `registration.update()`.
 - The Service Worker must not call `skipWaiting()` or `clients.claim()` while a previous version may have an open client.
 - App and UI scripts must not reload the page on `controllerchange` or call `window.location.reload()` for updates.
 - A waiting update is announced non-disruptively and applies after existing tabs close or on the next natural visit.
 - Cache cleanup only deletes ReelScribe App Shell caches by prefix; it does not broadly delete model, OCR or unrelated origin caches.
+- Service Worker v14 or newer is required for the repeated-token quality guard and YouTube captions fallback.
 - Critical production comparison includes `index.html`, `app.js`, `ui.js`, `styles.css`, `ui-polish.css`, `runtime.css`, `speech-enhancer.js`, `runtime-optimizer.js`, `screen-ocr.js`, `instagram-direct.js`, `universal-link.js`, `worker.js` and `sw.js`.
 
 ## Screen OCR rules
@@ -71,6 +72,17 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 - The frontend uses `credentials: omit`, `no-referrer`, timeouts and streaming size checks.
 - iPhone Safari uses `window.ReelScribeApp.setFile()` and `startTranscription()`; `DataTransfer` is legacy fallback only.
 - Private, login-only, age/region restricted, removed, DRM or platform-blocked content is not bypassed.
+
+## YouTube captions rules
+
+- A dedicated `/api/youtube-captions` endpoint is attempted before the browser-only timed-text, Piped and Invidious fallbacks.
+- The endpoint accepts only HTTPS YouTube watch, Shorts, live, embed or youtu.be links with a valid 11-character video ID.
+- It reads public manual captions first and public automatic captions second; it does not download or store video media.
+- It never accepts cookies, account sessions, passwords, private tokens or login bypass instructions.
+- Caption downloads are restricted to HTTPS YouTube and Googlevideo hosts, use finite timeouts and are capped at 4 MB.
+- The frontend uses `credentials: omit`, `no-referrer`, `cache: no-store` and a 45-second timeout.
+- A dedicated-backend failure must fall through to timed-text, Piped and Invidious rather than returning a false success.
+- Returned caption segments are imported into the existing editor and retain copy, TXT, SRT and VTT export.
 
 ## Speech enhancement rules
 
@@ -109,12 +121,13 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 
 - `smart` is the default mode.
 - Long recordings use bounded windows, overlap, silence skipping, duplicate removal, low-confidence rejection and timestamps.
-- Hallucination detection includes repeated character runs, dominant and unique character ratios, bigram diversity, repeating patterns and symbol-only output.
-- `>>`, repeated punctuation, repeated single characters and repeated phrases are rejected.
+- Hallucination detection includes repeated character runs, dominant and unique character ratios, bigram diversity, repeating character patterns, symbol-only output, repeated word dominance, word diversity, consecutive word runs and repeated one-to-four-word n-grams.
+- `>>`, repeated punctuation, repeated single characters, repeated `I'm`, repeated boilerplate and repeated phrases are rejected.
 - Suspicious output gets one retry with shorter chunks, repetition penalty, n-gram blocking and bounded output length.
 - A second suspicious result is rejected, never displayed as completed subtitles.
 - Long-form processing may skip the rejected window and continue with trustworthy windows.
-- Cached repetitive garbage is removed before restoration.
+- Every restored localStorage result is revalidated with the current quality guard.
+- Cached repetitive garbage is deleted before it can remain visible as an old restored transcript.
 - Do not silently rewrite low-confidence output into guessed sentences.
 - Do not promise perfect accuracy, real-time completion or identical performance across devices and audio conditions.
 
@@ -145,16 +158,17 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 ## Required regression checks
 
 - Instagram URL normalization, resolver order, fallback, signed media handoff and health endpoint.
+- YouTube URL normalization, dedicated captions endpoint contract, browser-provider fallback and segment import.
 - iPhone Safari file handoff and transcription start.
 - No cookies, credentials, screenshot uploads, login bypass, unsafe dynamic code or private media persistence.
-- V13-or-newer Service Worker has no `skipWaiting`, `clients.claim`, forced reload or controller-change reload.
+- V14-or-newer Service Worker has no `skipWaiting`, `clients.claim`, forced reload or controller-change reload.
 - Storage estimate, persistence request, threshold fallback, Data Saver handling, manual preparation and AI-cache cleanup.
 - Stable progress panel, static model options, reduced animation and no horizontal overflow.
 - Tesseract 7 loading, local frame crop, mobile/desktop frame caps, confidence rejection, OCR deduplication, timeline merge and worker termination.
 - Tiny/Base/Small/Turbo device selection and fallback plans.
 - Per-module q4f16/fp16 mappings, prepare-message reuse and model disposal.
 - Silero VAD v5 loading, speech-region merging, non-speech mask, DSP fallback and no-speech rejection.
-- `>>`, repeated CJK character, repeated phrase and normal Traditional Chinese fixtures.
+- `>>`, repeated CJK character, repeated English word, repeated phrase and normal Traditional Chinese fixtures.
 - VTT/SRT fixtures, public-link normalization and broad MIME handling.
 - Copy, TXT, SRT, VTT, local file, Whisper, WebGPU/WASM, tab capture, microphone and PWA sharing.
 - Mobile layout, safe area, 16 px form sizing, focus order, no duplicate IDs, SEO, sitemap, robots and IndexNow.
@@ -164,13 +178,14 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 - Public copy may state that speech enhancement reduces background-music interference, not that it perfectly separates every vocal track.
 - Public copy may state that OCR reads visible burned-in subtitles locally, not that it understands every frame or guarantees accuracy.
 - Public copy may state that background preparation can reduce later waiting when storage, battery and network permit, not that every browser keeps the model permanently.
+- Public copy may state that public YouTube manual or automatic captions use a text-only resolver, not that every YouTube video has captions.
 - Never claim every Instagram link, codec, platform or video is guaranteed.
 - Never describe rejected low-confidence output as successful transcription.
 - Do not auto-post, fabricate reviews, buy fake traffic or connect paid ad accounts without explicit authorization.
 
 ## Research-first automation rule
 
-Every scheduled maintenance run begins by checking current first-party or primary public sources relevant to the contemplated change, such as MDN/browser-vendor documentation, official Hugging Face model repositories and documentation, official package releases, upstream GitHub repositories and platform documentation.
+Every scheduled maintenance run begins by checking current first-party or primary public sources relevant to the contemplated change, such as MDN/browser-vendor documentation, official Hugging Face model repositories and documentation, official package releases, upstream GitHub repositories, yt-dlp upstream and platform documentation.
 
 Research does not grant automatic permission to install a feature. A candidate is applied only when it is:
 
@@ -184,11 +199,15 @@ Research does not grant automatic permission to install a feature. A candidate i
 Every future UI, resolver, backend, format, model, OCR, storage, Service Worker, music suppression, performance, long-video, accuracy, privacy, security, SEO, testing, sharing or promotion change updates all applicable items:
 
 1. `.github/workflows/reelscribe-check.yml`
-2. `tests/reelscribe-audit.mjs`
-3. `reelscribe/README.md`
-4. `reelscribe/OPTIMIZATION.md`
-5. `reelscribe/PROMOTION.md` when positioning changes
-6. `reelscribe/SECURITY-HARDENING.md` when protection changes
-7. The `ReelScribe 自動維護` scheduled task
+2. `.github/workflows/reelscribe-stability-check.yml`
+3. `tests/reelscribe-audit.mjs`
+4. `tests/reelscribe-stability-audit.mjs`
+5. `tests/reelscribe-youtube-quality-audit.mjs`
+6. `reelscribe/README.md`
+7. `reelscribe/OPTIMIZATION.md`
+8. `reelscribe/STABILITY.md`
+9. `reelscribe/PROMOTION.md` when positioning changes
+10. `reelscribe/SECURITY-HARDENING.md` when protection changes
+11. The `ReelScribe 自動維護` scheduled task
 
 Automated maintenance applies only small, testable, non-destructive fixes. It must not add paid core dependencies, cookie extraction, login bypass, private scraping, unverified proxy services, tracking, automatic third-party uploads or unauthorized advertising.
