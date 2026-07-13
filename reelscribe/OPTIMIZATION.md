@@ -34,12 +34,12 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 
 ## PWA freshness rules
 
-- HTML, JavaScript, CSS, workers, and the manifest use a network-first Service Worker path so a stale App Shell cannot hide a newly deployed resolver.
+- HTML, JavaScript, CSS, workers, and the manifest use a network-first Service Worker path so a stale App Shell cannot hide a newly deployed resolver or quality fix.
 - Static icons and other non-critical assets may remain cache-first.
-- Every breaking resolver or interface update increments the Service Worker cache version.
+- Every breaking resolver, model-worker, or interface update increments the Service Worker cache version.
 - Service Worker registration uses `updateViaCache: "none"` and explicitly calls `registration.update()`.
 - A new controller may reload the page once per build through a session-scoped guard; it must not enter a reload loop.
-- Critical production-integrity checks include `index.html`, `app.js`, `ui-polish.css`, `instagram-direct.js`, `universal-link.js`, `worker.js`, and `sw.js`.
+- Critical production-integrity checks include `index.html`, `app.js`, `ui.js`, `ui-polish.css`, `instagram-direct.js`, `universal-link.js`, `worker.js`, and `sw.js`.
 
 ## Format and platform rules
 
@@ -53,7 +53,13 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 
 - `smart` mode is the default.
 - Short clips on capable devices may use base; long clips and constrained devices use tiny for speed.
-- Long recordings use bounded windows with overlap, silence skipping, duplicate removal, and timestamps.
+- Long recordings use bounded windows with overlap, silence skipping, duplicate removal, low-confidence rejection, and timestamps.
+- Detect Whisper repetition hallucinations using at least longest character run, dominant-character ratio, and n-gram diversity.
+- When a transcript is suspicious, retry once using shorter chunks, a repetition penalty, an n-gram repetition block, and a bounded output length.
+- A second suspicious result must be rejected, not displayed as a completed transcript.
+- Long-form processing may skip only the rejected low-confidence window and continue combining trustworthy windows.
+- The UI must remove previously cached repetitive garbage transcripts and clearly explain why they were blocked.
+- Do not silently rewrite suspicious repeated text into guessed sentences.
 - Do not promise real-time completion or identical accuracy across devices, languages, accents, noise, or codecs.
 - Do not raise file-size limits without measured memory-safety review because `decodeAudioData` loads media into memory.
 
@@ -63,6 +69,7 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Keep model inference in a Web Worker and App Shell caching in the Service Worker.
 - Keep free subtitle providers parallel, timed out, and independently degradable.
 - Cache successful text results locally, but do not persist proxied Instagram media.
+- A quality retry runs only after the first result fails the repetition-confidence checks.
 - Do not add third-party analytics or advertising scripts without explicit approval and privacy review.
 
 ## Security rules
@@ -84,7 +91,8 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Link resolver, provider status, metadata, and local cache.
 - VTT/SRT fixtures, YouTube and generic URL normalization.
 - Broad format MIME normalization for chooser and drag-and-drop.
-- Smart model selection, silence detection, segmentation, and overlap deduplication.
+- Smart model selection, silence detection, segmentation, overlap deduplication, repeated-character hallucination detection, guarded retry, and rejection after a second failure.
+- Old repetitive subtitles in local storage are removed and not restored into the results panel.
 - Copy, TXT, SRT, VTT, local file selection, local Whisper, WebGPU/WASM, tab capture, microphone, PWA sharing.
 - SEO, sitemap, robots, IndexNow, safe-area spacing, 16px mobile form sizing, focus order, no duplicate IDs, and no repeated notes section.
 - Mobile header must not overlap the hero and provider chips must remain inside the card.
@@ -94,11 +102,12 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Keep launch copy and UTM conventions in `reelscribe/PROMOTION.md`.
 - Promotion may state that public Instagram Reels and video posts have a direct best-effort path, but must disclose that Instagram can block anonymous access and that private/restricted posts are unsupported.
 - Never claim every Instagram link, social platform, codec, or video is guaranteed to return subtitles.
+- Never describe blocked low-confidence output as a successful transcription.
 - Do not auto-post, buy ads, connect ad accounts, fabricate testimonials, force sharing, or use intrusive banners.
 
 ## Automation rule
 
-Every future UI, resolver, Instagram backend, format, performance, long-video, accuracy, privacy, security, SEO, testing, sharing, or promotion optimization updates all applicable items:
+Every future UI, resolver, Instagram backend, format, performance, long-video, accuracy, hallucination protection, privacy, security, SEO, testing, sharing, or promotion optimization updates all applicable items:
 
 1. `.github/workflows/reelscribe-check.yml`
 2. `tests/reelscribe-audit.mjs`
