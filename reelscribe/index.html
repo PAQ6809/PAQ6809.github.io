@@ -8,8 +8,8 @@
   <meta name="referrer" content="no-referrer" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' blob: https:; worker-src 'self' blob:; font-src 'self' data:; upgrade-insecure-requests" />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援背景音樂抑制、Silero 人聲偵測、Whisper Large-v3-turbo 與長影片本機智慧分段。" />
-  <meta name="keywords" content="影片轉字幕,YouTube字幕,Instagram字幕,Instagram Reel字幕,TikTok字幕,背景音樂抑制,人聲偵測,Whisper Large v3 Turbo,長影片字幕,免費字幕工具,SRT,VTT,繁體中文字幕" />
+  <meta name="description" content="ReelScribe 是免費社群影片字幕工具。支援公開 Instagram 影片、背景音樂抑制、Whisper 本機辨識、儲存空間感知的背景模型準備，以及影片畫面 OCR 字幕輔助。" />
+  <meta name="keywords" content="影片轉字幕,Instagram字幕,YouTube字幕,背景音樂抑制,畫面字幕OCR,燒錄字幕,Whisper,長影片字幕,免費字幕工具,SRT,VTT,繁體中文字幕" />
   <link rel="canonical" href="https://paq6809.github.io/reelscribe/" />
   <link rel="sitemap" type="application/xml" href="./sitemap.xml" />
 
@@ -17,14 +17,14 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ReelScribe" />
   <meta property="og:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta property="og:description" content="貼上公開 Instagram、YouTube 等影片連結取得字幕；支援人聲強化、背景音樂抑制與長影片本機 AI 分段辨識。" />
+  <meta property="og:description" content="貼上公開影片連結取得字幕；支援人聲強化、背景模型準備、畫面 OCR 與長影片本機 AI 分段辨識。" />
   <meta property="og:url" content="https://paq6809.github.io/reelscribe/" />
   <meta property="og:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
   <meta property="og:image:alt" content="ReelScribe 免費社群影片字幕工具" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ReelScribe｜免費社群影片字幕工具" />
-  <meta name="twitter:description" content="公開 Instagram 影片可直接解析；支援背景音樂抑制與長影片本機 AI 分段辨識。" />
+  <meta name="twitter:description" content="公開影片連結、背景音樂抑制、畫面 OCR 與長影片本機 AI 字幕。" />
   <meta name="twitter:image" content="https://paq6809.github.io/reelscribe/social-card.svg" />
 
   <title>ReelScribe｜Instagram、社群影片與長影片字幕工具</title>
@@ -36,6 +36,7 @@
   <link rel="preconnect" href="https://vite-xi-one-59.vercel.app" crossorigin />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./ui-polish.css" />
+  <link rel="stylesheet" href="./runtime.css" />
 
   <script type="application/ld+json">
   {
@@ -43,7 +44,7 @@
     "@type": "SoftwareApplication",
     "name": "ReelScribe",
     "url": "https://paq6809.github.io/reelscribe/",
-    "description": "免費社群影片字幕工具。可直接解析公開 Instagram Reel 與影片貼文，並支援背景音樂抑制、人聲偵測、常見影音格式與長影片本機 Whisper 分段辨識。",
+    "description": "免費社群影片字幕工具。支援公開影片連結、背景音樂抑制、儲存空間感知的背景模型準備、影片畫面 OCR 與本機 Whisper 分段辨識。",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Web",
     "inLanguage": "zh-Hant",
@@ -58,7 +59,8 @@
       "各類公開社群影片連結解析",
       "Silero VAD 人聲偵測與背景音樂抑制",
       "Whisper Tiny、Base、Small 與 Large-v3-turbo 自動分流",
-      "混合精度 WebGPU 與模型快取",
+      "儲存空間感知的背景模型準備與安全降級",
+      "本機影片畫面 OCR 燒錄字幕輔助",
       "長影片智慧分段、靜音跳過與低可信字幕攔截",
       "TXT、SRT、VTT 匯出",
       "手機 PWA 分享"
@@ -85,7 +87,7 @@
     <section class="hero shell">
       <div class="eyebrow">免費 · 免登入 · 無 API Key</div>
       <h1>貼上影片連結，<br /><span>取得可複製字幕。</span></h1>
-      <p class="hero-copy">公開 Instagram 影片可直接解析；其他平台優先讀取公開字幕，沒有字幕時再由本機 AI 處理。</p>
+      <p class="hero-copy">公開 Instagram 影片可直接解析；其他平台優先讀取公開字幕，沒有字幕時再由本機 AI 或畫面 OCR 處理。</p>
     </section>
 
     <section class="workspace shell" aria-label="影片字幕工作區">
@@ -113,7 +115,7 @@
         <summary>
           <span class="fallback-summary-copy">
             <span>沒有公開字幕？</span>
-            <small>使用本機影片、分頁音訊或麥克風</small>
+            <small>使用本機影片、畫面文字、分頁音訊或麥克風</small>
           </span>
         </summary>
 
@@ -149,9 +151,11 @@
             <label>
               <span>辨識模式</span>
               <select id="model-select">
-                <option value="smart" selected>智慧模式（自動平衡速度與精度）</option>
-                <option value="onnx-community/whisper-tiny">極速模式（長影片／手機）</option>
-                <option value="onnx-community/whisper-base">高品質模式（短片／較強裝置）</option>
+                <option value="smart" selected>智慧模式（依裝置自動選擇）</option>
+                <option value="onnx-community/whisper-tiny">極速模式 · Whisper Tiny</option>
+                <option value="onnx-community/whisper-base">平衡模式 · Whisper Base</option>
+                <option value="onnx-community/whisper-small">精準模式 · Whisper Small</option>
+                <option value="onnx-community/whisper-large-v3-turbo">旗艦模式 · Large-v3-turbo</option>
               </select>
             </label>
             <label>
@@ -184,10 +188,54 @@
             <div class="progress-track" aria-hidden="true"><div id="progress-bar"></div></div>
             <p id="progress-note" class="muted small"></p>
           </div>
+
+          <div id="model-cache-status" class="resource-status" role="status" aria-live="polite" data-state="idle">
+            <span id="model-cache-copy">正在檢查瀏覽器儲存空間；空間足夠時會在背景準備較小的字幕模型。</span>
+            <span class="resource-actions">
+              <button id="prepare-model" class="button ghost" type="button">立即準備</button>
+              <button id="clear-model-cache" class="button ghost" type="button">清除 AI 快取</button>
+            </span>
+          </div>
+
+          <details id="screen-ocr-tools" class="ocr-tools">
+            <summary>讀取影片畫面上的字幕（本機 OCR）</summary>
+            <div class="ocr-body">
+              <p class="muted small">適合影片內已燒錄文字，但語音受音樂干擾的情況。只讀取影片下方畫面，不上傳截圖。</p>
+              <div class="ocr-grid">
+                <label>
+                  <span>取樣間隔</span>
+                  <select id="ocr-interval">
+                    <option value="1">每 1 秒（較精細）</option>
+                    <option value="1.5" selected>每 1.5 秒（建議）</option>
+                    <option value="2.5">每 2.5 秒（較快速）</option>
+                  </select>
+                </label>
+                <label>
+                  <span>畫面讀取範圍</span>
+                  <select id="ocr-crop">
+                    <option value="0.35">下方 35%</option>
+                    <option value="0.45" selected>下方 45%</option>
+                    <option value="0.6">下方 60%</option>
+                  </select>
+                </label>
+              </div>
+              <label class="switch-line">
+                <input id="ocr-merge" type="checkbox" checked />
+                <span>與語音字幕合併；重疊時優先採用清楚的畫面文字</span>
+              </label>
+              <div class="ocr-actions">
+                <button id="start-screen-ocr" class="button secondary" type="button" disabled>讀取畫面字幕</button>
+                <button id="stop-screen-ocr" class="button ghost" type="button" hidden>停止</button>
+              </div>
+              <div id="ocr-status" class="ocr-status" role="status" aria-live="polite">
+                <span id="ocr-status-copy">選擇影片後即可使用；首次會按需下載 OCR 文字模型。</span>
+              </div>
+            </div>
+          </details>
         </article>
       </details>
 
-      <p class="compact-trust">Instagram 公開 Reel／影片貼文會以無 Cookie、暫存串流方式交給本機 AI；私人、登入限定或受限制內容不支援。</p>
+      <p class="compact-trust">公開影片以無 Cookie、暫存串流或本機檔案處理；AI 模型與 OCR 只在空間足夠時快取，私人或受限制內容不支援。</p>
     </section>
 
     <section id="results" class="results shell" hidden>
@@ -237,6 +285,8 @@
   <script src="./format-compat.js"></script>
   <script src="./speech-enhancer.js"></script>
   <script type="module" src="./app.js"></script>
+  <script type="module" src="./runtime-optimizer.js"></script>
+  <script type="module" src="./screen-ocr.js"></script>
   <script type="module" src="./capture.js"></script>
   <script type="module" src="./traditional.js"></script>
   <script type="module" src="./instagram-direct.js"></script>
