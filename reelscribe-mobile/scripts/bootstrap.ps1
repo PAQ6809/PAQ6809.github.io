@@ -52,6 +52,29 @@ Copy-Item (Join-Path $TemplateDir "ios") (Join-Path $ProjectDir "ios") -Recurse
 Copy-Item (Join-Path $TemplateDir "android") (Join-Path $ProjectDir "android") -Recurse
 Remove-Item $TemplateDir -Recurse -Force
 
+$AndroidAppGradle = Join-Path $ProjectDir "android/app/build.gradle"
+if (-not (Test-Path $AndroidAppGradle)) {
+  throw "找不到 Android app/build.gradle。"
+}
+$AndroidGradleText = Get-Content $AndroidAppGradle -Raw
+if ($AndroidGradleText -notmatch "coreLibraryDesugaringEnabled true") {
+  Add-Content -Path $AndroidAppGradle -Value @'
+
+// Required by the app-owned native manager for java.time support on Android 23-25.
+android {
+  compileOptions {
+    coreLibraryDesugaringEnabled true
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
+
+dependencies {
+  coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+}
+'@
+}
+
 Write-Host "安裝鎖定的 JavaScript 相依套件..."
 & npm install `
   --fetch-retries=3 `
