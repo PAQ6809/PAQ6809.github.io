@@ -1,0 +1,24 @@
+{
+  "locale": "zh-TW",
+  "name": "ReelScribe－影片轉字幕",
+  "subtitle": "貼連結或選影片，在手機本機產生可複製字幕",
+  "shortDescription": "公開字幕優先；沒有字幕時使用手機本機 AI 與畫面 OCR。支援時間軸、TXT、SRT、VTT，預設不外傳影片。",
+  "fullDescription": "ReelScribe 是一款離線優先的影片字幕工具。\n\n你可以貼上公開 YouTube 或 Instagram 連結，或直接選擇手機裡的影片與音訊。系統會先使用平台公開字幕；沒有可用字幕時，再使用手機本機語音辨識與畫面文字辨識。\n\n主要功能：\n・公開字幕與時間軸讀取\n・手機本機 Whisper 語音辨識\n・背景音樂抑制與人聲區段偵測\n・讀取影片畫面中已燒錄的字幕\n・長影片分段、進度保存與中斷續跑\n・可編輯全文與時間軸\n・匯出 TXT、SRT、VTT\n・多種模型依裝置能力選擇\n\n隱私設計：\n・本機模式不會上傳影片、音訊、畫面或字幕\n・不要求社群帳號密碼、Cookie 或私人 Token\n・不含廣告追蹤器\n・模型可由使用者管理與刪除\n\n部分社群平台或私人內容可能無法匿名解析。ReelScribe 不繞過登入、付費牆、地區限制或 DRM。",
+  "keywords": [
+    "字幕",
+    "影片轉文字",
+    "逐字稿",
+    "SRT",
+    "VTT",
+    "Whisper",
+    "OCR",
+    "Instagram",
+    "YouTube",
+    "離線辨識"
+  ],
+  "primaryCategory": "Productivity",
+  "secondaryCategory": "Photo & Video",
+  "privacyPolicyUrl": "https://paq6809.github.io/reelscribe/privacy.html",
+  "supportUrl": "https://paq6809.github.io/reelscribe/",
+  "marketingUrl": "https://paq6809.github.io/reelscribe/"
+}
