@@ -1,0 +1,136 @@
+name: ReelScribe mobile readiness
+
+on:
+  push:
+    paths:
+      - "reelscribe-mobile/**"
+      - "reelscribe/models/mobile-model-catalog.json"
+      - "reelscribe/privacy.html"
+      - "reelscribe/terms.html"
+      - ".github/workflows/reelscribe-mobile-check.yml"
+  pull_request:
+    paths:
+      - "reelscribe-mobile/**"
+      - "reelscribe/models/mobile-model-catalog.json"
+      - "reelscribe/privacy.html"
+      - "reelscribe/terms.html"
+      - ".github/workflows/reelscribe-mobile-check.yml"
+  schedule:
+    - cron: "30 2 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: reelscribe-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Validate JSON and model policy
+        run: |
+          set -euo pipefail
+          python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
+          python -m json.tool reelscribe-mobile/package.json >/dev/null
+          python -m json.tool reelscribe-mobile/app.json >/dev/null
+          node reelscribe-mobile/scripts/audit-model-catalog.mjs
+
+      - name: Install pinned JavaScript dependencies without lifecycle scripts
+        working-directory: reelscribe-mobile
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Type-check application layer
+        working-directory: reelscribe-mobile
+        run: npm run typecheck
+
+      - name: Check app, privacy and store files
+        run: |
+          set -euo pipefail
+          test -s reelscribe-mobile/src/App.tsx
+          test -s reelscribe-mobile/src/modelCatalog.ts
+          test -s reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+          test -s reelscribe-mobile/src/services/publicResolver.ts
+          test -s reelscribe-mobile/native/IMPLEMENTATION.md
+          test -s reelscribe-mobile/MODEL-RESEARCH.md
+          test -s reelscribe-mobile/STORE-LAUNCH.md
+          test -s reelscribe-mobile/PRIVACY.md
+          test -s reelscribe/privacy.html
+          test -s reelscribe/terms.html
+          grep -q 'io.github.paq6809.reelscribe' reelscribe-mobile/README.md
+          grep -q 'React Native 0.86' reelscribe-mobile/README.md
+          grep -q 'whisper.cpp.*1.9.1' reelscribe-mobile/README.md
+          grep -q 'SHA-256' reelscribe-mobile/native/IMPLEMENTATION.md
+          grep -q 'Qwen3-ASR' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'SenseVoice' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'Moonshine' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'Data Safety' reelscribe-mobile/STORE-LAUNCH.md
+          grep -q 'App Privacy' reelscribe-mobile/STORE-LAUNCH.md
+          grep -q '不包含跨 App 追蹤' reelscribe/privacy.html
+
+      - name: Enforce mobile privacy and security boundaries
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          source = '\n'.join(path.read_text(encoding='utf-8') for path in Path('reelscribe-mobile/src').rglob('*') if path.suffix in {'.ts', '.tsx'})
+          assert 'document.cookie' not in source
+          assert 'new Function(' not in source
+          assert not re.search(r'(^|[^\w])eval\s*\(', source)
+          assert "credentials: 'omit'" in source
+          assert "cache: 'no-store'" in source
+          assert "referrerPolicy: 'no-referrer'" in source
+
+          catalog = json.loads(Path('reelscribe/models/mobile-model-catalog.json').read_text(encoding='utf-8'))
+          by_id = {item['id']: item for item in catalog['models']}
+          assert by_id['moonshine-v2-multilingual']['deployment'] == 'excluded'
+          assert 'server' in by_id['qwen3-asr-0.6b']['deployment']
+          assert by_id['whisper-tiny']['deployment'] == 'on-device'
+          PY
+
+      - name: Check current upstream model records
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest \
+            | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://huggingface.co/Qwen/Qwen3-ASR-0.6B/raw/main/README.md \
+            | grep -q 'Qwen3-ASR'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://raw.githubusercontent.com/FunAudioLLM/SenseVoice/main/README.md \
+            | grep -q 'SenseVoice'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/latest \
+            | python -m json.tool >/dev/null
+
+      - name: Enforce read-only and pinned Actions
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          workflow = Path('.github/workflows/reelscribe-mobile-check.yml').read_text(encoding='utf-8')
+          assert re.search(r'^permissions:\s*\n\s+contents:\s+read\s*$', workflow, flags=re.M)
+          for value in re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M):
+              if value.startswith('./'):
+                  continue
+              assert re.search(r'@[0-9a-f]{40}$', value), value
+          PY
