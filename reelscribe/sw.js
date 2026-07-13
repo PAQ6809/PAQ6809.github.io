@@ -1,4 +1,4 @@
-const CACHE_NAME = "reelscribe-shell-v16";
+const CACHE_NAME = "reelscribe-shell-v15";
 const APP_SHELL = [
   "./",
   "./index.html",
