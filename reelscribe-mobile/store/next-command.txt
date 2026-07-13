@@ -1,0 +1,12 @@
+Windows PowerShell:
+cd C:\Users\peter6809\Documents\Codex\<your-repo>\reelscribe-mobile
+.\scripts\bootstrap.ps1
+npm run check
+
+macOS after cloning the same repository:
+cd reelscribe-mobile
+./scripts/bootstrap.sh
+cd ios && pod install && cd ..
+npm run check
+
+Do not run a store release while .do-not-ship exists.
