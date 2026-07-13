@@ -1,0 +1,16 @@
+case_id,platform,device_tier,input_length,language,audio_condition,ocr,model,expected
+IOS-MIN-001,iOS,minimum,30s,zh,clean,off,tiny,completes_without_upload
+IOS-MIN-002,iOS,minimum,15m,zh,street_noise,off,tiny,completes_or_checkpoints
+IOS-CUR-003,iOS,current,60m,en,music_under_speech,on,base,completes_with_readable_timeline
+IOS-CUR-004,iOS,current,3h,zh,multiple_speakers,off,base,resumes_after_termination
+AND-MID-005,Android,midrange,30s,ja,clean,off,tiny,completes_without_upload
+AND-MID-006,Android,midrange,15m,ko,street_noise,on,tiny,completes_or_checkpoints
+AND-HIGH-007,Android,flagship,60m,zh,music_under_speech,on,base,completes_with_readable_timeline
+AND-HIGH-008,Android,flagship,3h,en,multiple_speakers,off,base,resumes_after_termination
+QUALITY-009,both,all,30s,auto,music_only,off,tiny,rejects_false_transcript
+QUALITY-010,both,all,30s,zh,random_symbols,on,tiny,rejects_ocr_gibberish
+QUALITY-011,both,all,30s,en,repeated_phrase,off,base,rejects_repetition_hallucination
+STORAGE-012,both,all,30s,zh,clean,off,base,blocks_download_when_space_low
+SECURITY-013,both,all,30s,zh,clean,off,tiny,rejects_tampered_model_hash
+OFFLINE-014,both,all,15m,zh,clean,on,base,works_in_airplane_mode_after_model_install
+CANCEL-015,both,all,60m,zh,clean,off,base,cancels_without_losing_completed_segments
