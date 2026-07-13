@@ -49,10 +49,22 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Accept common video and audio extensions through `format-compat.js` and normalize missing MIME types.
 - Browser and operating-system codec support remains the final decoder boundary.
 
+## Adaptive model rules
+
+- The supported multilingual browser models are `onnx-community/whisper-tiny`, `onnx-community/whisper-base`, and `onnx-community/whisper-small`.
+- Smart mode uses Small only on desktop-class WebGPU devices, for clips no longer than 20 minutes, when memory or CPU-core signals indicate sufficient resources.
+- Smart mode uses Base on general WebGPU devices for clips no longer than 15 minutes.
+- Smart mode uses Tiny for long videos, mobile devices, low-memory devices, or when larger models fail.
+- The runtime fallback order is Small → Base → Tiny on WebGPU, followed by Base → Tiny on quantized WASM.
+- Whisper Small is exposed only as an explicit desktop WebGPU option; mobile UI disables that manual choice.
+- Large-v3-turbo is not a default browser tier because its ONNX download and memory footprint are too large for reliable phone and general-browser use.
+- Accurate Small mode may use two-beam decoding; Tiny and Base stay single-beam for latency.
+- Every model change must preserve automatic fallback and must be regression-tested on desktop and mobile profiles.
+
 ## Long-video and accuracy rules
 
 - `smart` mode is the default.
-- Short clips on capable devices may use base; long clips and constrained devices use tiny for speed.
+- Short clips on capable desktop devices may use Small; general WebGPU devices use Base; long clips and constrained devices use Tiny.
 - Long recordings use bounded windows with overlap, silence skipping, duplicate removal, low-confidence rejection, and timestamps.
 - Detect Whisper repetition hallucinations using at least longest character run, dominant-character ratio, and n-gram diversity.
 - When a transcript is suspicious, retry once using shorter chunks, a repetition penalty, an n-gram repetition block, and a bounded output length.
@@ -70,6 +82,7 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Keep free subtitle providers parallel, timed out, and independently degradable.
 - Cache successful text results locally, but do not persist proxied Instagram media.
 - A quality retry runs only after the first result fails the repetition-confidence checks.
+- Large models are lazy-loaded only after a user selects media and begins transcription.
 - Do not add third-party analytics or advertising scripts without explicit approval and privacy review.
 
 ## Security rules
@@ -91,7 +104,9 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Link resolver, provider status, metadata, and local cache.
 - VTT/SRT fixtures, YouTube and generic URL normalization.
 - Broad format MIME normalization for chooser and drag-and-drop.
-- Smart model selection, silence detection, segmentation, overlap deduplication, repeated-character hallucination detection, guarded retry, and rejection after a second failure.
+- Smart Small／Base／Tiny selection for desktop WebGPU, mobile WebGPU, CPU/WASM, short clips and long clips.
+- Model load fallback, model labels, Small two-beam decoding, and mobile manual-option disabling.
+- Silence detection, segmentation, overlap deduplication, repeated-character hallucination detection, guarded retry, and rejection after a second failure.
 - Old repetitive subtitles in local storage are removed and not restored into the results panel.
 - Copy, TXT, SRT, VTT, local file selection, local Whisper, WebGPU/WASM, tab capture, microphone, PWA sharing.
 - SEO, sitemap, robots, IndexNow, safe-area spacing, 16px mobile form sizing, focus order, no duplicate IDs, and no repeated notes section.
@@ -103,11 +118,12 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Promotion may state that public Instagram Reels and video posts have a direct best-effort path, but must disclose that Instagram can block anonymous access and that private/restricted posts are unsupported.
 - Never claim every Instagram link, social platform, codec, or video is guaranteed to return subtitles.
 - Never describe blocked low-confidence output as a successful transcription.
+- Do not claim that Small or any larger model guarantees perfect accuracy.
 - Do not auto-post, buy ads, connect ad accounts, fabricate testimonials, force sharing, or use intrusive banners.
 
 ## Automation rule
 
-Every future UI, resolver, Instagram backend, format, performance, long-video, accuracy, hallucination protection, privacy, security, SEO, testing, sharing, or promotion optimization updates all applicable items:
+Every future UI, resolver, Instagram backend, format, performance, long-video, model, accuracy, hallucination protection, privacy, security, SEO, testing, sharing, or promotion optimization updates all applicable items:
 
 1. `.github/workflows/reelscribe-check.yml`
 2. `tests/reelscribe-audit.mjs`
