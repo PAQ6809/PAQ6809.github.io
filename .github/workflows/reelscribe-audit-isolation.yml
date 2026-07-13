@@ -26,14 +26,31 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Run core audit
-        run: node tests/reelscribe-audit.mjs
+      - name: Run all audits and capture complete output
+        run: |
+          mkdir -p audit-output
+          set +e
+          node tests/reelscribe-audit.mjs >audit-output/core.log 2>&1; echo $? >audit-output/core.status
+          node tests/reelscribe-stability-audit.mjs >audit-output/stability.log 2>&1; echo $? >audit-output/stability.status
+          node tests/reelscribe-youtube-quality-audit.mjs >audit-output/youtube.log 2>&1; echo $? >audit-output/youtube.status
+          node tests/reelscribe-ocr-quality-audit.mjs >audit-output/ocr.log 2>&1; echo $? >audit-output/ocr.status
+          set -e
 
-      - name: Run stability audit
-        run: node tests/reelscribe-stability-audit.mjs
+      - name: Upload isolated audit output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reelscribe-audit-isolation
+          path: audit-output
+          if-no-files-found: error
+          retention-days: 1
 
-      - name: Run YouTube quality audit
-        run: node tests/reelscribe-youtube-quality-audit.mjs
-
-      - name: Run OCR quality audit
-        run: node tests/reelscribe-ocr-quality-audit.mjs
+      - name: Report failed audits
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          failed = [path.stem for path in sorted(Path('audit-output').glob('*.status')) if path.read_text().strip() != '0']
+          if failed:
+              raise SystemExit('Failed audits: ' + ', '.join(failed))
+          print('All isolated ReelScribe audits passed.')
+          PY
