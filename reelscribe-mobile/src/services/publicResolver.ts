@@ -35,7 +35,6 @@ async function postJson(path: string, body: Record<string, unknown>): Promise<Re
       body: JSON.stringify(body),
       signal: timeout.signal,
       credentials: 'omit',
-      referrerPolicy: 'no-referrer',
     });
     const payload = (await response.json().catch(() => ({}))) as Record<string, any>;
     if (!response.ok) {
