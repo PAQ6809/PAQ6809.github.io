@@ -6,12 +6,14 @@
   const MOBILE_PREFETCH_MIN = 220 * MB;
   const DESKTOP_PREFETCH_MIN = 420 * MB;
   const HARD_PRESSURE_RATIO = 0.86;
+  const PREPARE_TIMEOUT_MS = 5 * 60 * 1000;
   const status = document.querySelector("#model-cache-status");
   const statusCopy = document.querySelector("#model-cache-copy");
   const prepareButton = document.querySelector("#prepare-model");
   const clearButton = document.querySelector("#clear-model-cache");
   let preparing = false;
   let prepared = false;
+  let prepareTimeout = null;
 
   function setStatus(message, state = "idle") {
     if (statusCopy) statusCopy.textContent = message;
@@ -58,7 +60,7 @@
     const available = Math.max(0, quota - usage);
     const usageRatio = quota > 0 ? usage / quota : 0;
     const threshold = isMobile() ? MOBILE_PREFETCH_MIN : DESKTOP_PREFETCH_MIN;
-    const constrained = (quota > 0 && (available < threshold || usageRatio >= HARD_PRESSURE_RATIO));
+    const constrained = quota > 0 && (available < threshold || usageRatio >= HARD_PRESSURE_RATIO);
     return { usage, quota, available, usageRatio, persisted, constrained, threshold };
   }
 
@@ -100,6 +102,21 @@
     return state;
   }
 
+  function clearPrepareTimeout() {
+    if (prepareTimeout) clearTimeout(prepareTimeout);
+    prepareTimeout = null;
+  }
+
+  function startPrepareTimeout() {
+    clearPrepareTimeout();
+    prepareTimeout = setTimeout(() => {
+      if (!preparing) return;
+      preparing = false;
+      document.documentElement.classList.remove("model-loading");
+      setStatus("背景模型準備時間較長，已停止等待狀態；開始辨識時會接續使用或自動重試。", "warning");
+    }, PREPARE_TIMEOUT_MS);
+  }
+
   async function prepareModel({ force = false } = {}) {
     if (preparing || prepared) return false;
     const app = window.ReelScribeApp;
@@ -112,7 +129,7 @@
       return false;
     }
     if (!force && storage.constrained) {
-      setStatus(`瀏覽器可用空間約 ${formatBytes(storage.available)}，已停止背景下載並切換節省快取模式，避免頁面被系統重新整理。`, "warning");
+      setStatus(`瀏覽器可用空間約 ${formatBytes(storage.available)}，已停止背景下載並切換節省空間模式，避免增加頁面被系統回收的風險。`, "warning");
       return false;
     }
     if (!force && !(await batteryAllowsBackgroundWork())) {
@@ -135,8 +152,10 @@
         cacheAllowed: !storage.constrained,
       });
       if (!started) throw new Error("背景準備尚未啟動");
+      startPrepareTimeout();
       return true;
     } catch (error) {
+      clearPrepareTimeout();
       preparing = false;
       document.documentElement.classList.remove("model-loading");
       setStatus(`背景模型準備已略過：${error instanceof Error ? error.message : String(error)}`, "warning");
@@ -152,6 +171,7 @@
       return;
     }
     if (detail.type === "ready") {
+      clearPrepareTimeout();
       preparing = false;
       prepared = true;
       document.documentElement.classList.remove("model-loading");
@@ -159,6 +179,7 @@
       return;
     }
     if (detail.type === "error") {
+      clearPrepareTimeout();
       preparing = false;
       document.documentElement.classList.remove("model-loading");
       setStatus("背景模型未能完成，開始辨識時會自動重試並降級。", "warning");
@@ -167,7 +188,7 @@
 
   async function clearModelCaches() {
     if (!confirm("要清除 ReelScribe 的 AI 模型與 OCR 快取嗎？網站介面與字幕文字不會被刪除。")) return;
-    clearButton && (clearButton.disabled = true);
+    if (clearButton) clearButton.disabled = true;
     setStatus("正在清除 AI 模型快取…", "idle");
     let removed = 0;
     try {
@@ -179,13 +200,13 @@
           }
         }
       }
-      if (indexedDB?.databases) {
-        const databases = await indexedDB.databases();
+      if (window.indexedDB?.databases) {
+        const databases = await window.indexedDB.databases();
         for (const database of databases) {
           const name = String(database.name || "");
           if (!/transformers|huggingface|onnx|tesseract|model/i.test(name)) continue;
           await new Promise((resolve) => {
-            const request = indexedDB.deleteDatabase(name);
+            const request = window.indexedDB.deleteDatabase(name);
             request.onsuccess = request.onerror = request.onblocked = () => resolve();
           });
           removed += 1;
@@ -197,7 +218,7 @@
     } catch (error) {
       setStatus(`無法完整清除快取：${error instanceof Error ? error.message : String(error)}`, "warning");
     } finally {
-      clearButton && (clearButton.disabled = false);
+      if (clearButton) clearButton.disabled = false;
     }
   }
 
