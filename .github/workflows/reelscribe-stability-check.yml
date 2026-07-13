@@ -1,0 +1,77 @@
+name: ReelScribe stability check
+
+on:
+  push:
+    paths:
+      - "reelscribe/format-compat.js"
+      - "reelscribe/runtime-optimizer.js"
+      - "reelscribe/app.js"
+      - "reelscribe/ui.js"
+      - "reelscribe/screen-ocr.js"
+      - "reelscribe/sw.js"
+      - "tests/reelscribe-stability-audit.mjs"
+      - ".github/workflows/reelscribe-stability-check.yml"
+  pull_request:
+    paths:
+      - "reelscribe/format-compat.js"
+      - "reelscribe/runtime-optimizer.js"
+      - "reelscribe/app.js"
+      - "reelscribe/ui.js"
+      - "reelscribe/screen-ocr.js"
+      - "reelscribe/sw.js"
+      - "tests/reelscribe-stability-audit.mjs"
+      - ".github/workflows/reelscribe-stability-check.yml"
+  schedule:
+    - cron: "45 1 * * 1,4"
+  workflow_dispatch:
+
+concurrency:
+  group: reelscribe-stability-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  stability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Check runtime JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check reelscribe/format-compat.js
+          node --check reelscribe/runtime-optimizer.js
+          node --check reelscribe/app.js
+          node --check reelscribe/ui.js
+          node --check reelscribe/screen-ocr.js
+          node --check reelscribe/sw.js
+          node --check tests/reelscribe-stability-audit.mjs
+
+      - name: Run renderer stability audit
+        run: node tests/reelscribe-stability-audit.mjs
+
+      - name: Enforce read-only and pinned actions
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow = Path('.github/workflows/reelscribe-stability-check.yml').read_text(encoding='utf-8')
+          assert re.search(r'^permissions:\s*\n\s+contents:\s+read\s*$', workflow, flags=re.M)
+          for value in re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M):
+              if value.startswith('./'):
+                  continue
+              assert re.search(r'@[0-9a-f]{40}$', value), value
+          PY
