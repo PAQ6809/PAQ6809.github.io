@@ -86,7 +86,7 @@ assert.match(ui, /畫面 OCR 只取得混合符號/);
 assert.match(runtimeCss, /--mobile-browser-chrome-clearance/);
 assert.match(runtimeCss, /env\(safe-area-inset-bottom\)/);
 assert.match(runtimeCss, /scroll-margin-bottom:\s*var\(--mobile-browser-chrome-clearance\)/);
-assert.match(serviceWorker, /reelscribe-shell-v16/);
+assert.match(serviceWorker, /reelscribe-shell-v15/);
 assert.doesNotMatch(serviceWorker, /skipWaiting|clients\.claim|window\.location\.reload/);
 
 console.log("ReelScribe OCR quality audit passed: mixed-script gibberish rejection, language plausibility, temporal confirmation, preprocessing retry, saved-result purge, Safari toolbar clearance, and stable Service Worker update.");
