@@ -18,7 +18,7 @@ export type ModelDefinition = {
   languages: string;
 };
 
-export const MOBILE_MODELS: readonly ModelDefinition[] = [
+export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
   {
     id: 'whisper-tiny',
     name: 'Whisper Tiny',
@@ -69,7 +69,7 @@ export const MOBILE_MODELS: readonly ModelDefinition[] = [
     releaseStatus: 'research',
     languages: '中／粵／英／日／韓',
   },
-] as const;
+];
 
 export type DeviceCapabilities = {
   totalMemoryGb?: number;
