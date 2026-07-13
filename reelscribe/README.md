@@ -27,6 +27,24 @@ Instagram 專用流程由私有 Vercel 後端提供：
 
 iPhone Safari 會優先透過 `window.ReelScribeApp.setFile()` 將暫時串流交給本機字幕引擎，再由 `startTranscription()` 啟動；只有舊瀏覽器才退回 `DataTransfer` 模擬選檔，避免行動裝置因無法寫入 `input.files` 而中斷。
 
+## 自適應辨識模型
+
+ReelScribe 使用三層多語 Whisper ONNX 模型，全部可由 Transformers.js 在瀏覽器執行：
+
+- `whisper-tiny`：39M 參數，適合手機、長影片與 CPU／WASM。
+- `whisper-base`：74M 參數，適合一般短片與支援 WebGPU 的行動裝置。
+- `whisper-small`：244M 參數，適合高階桌機 WebGPU，優先提高中文與多語辨識品質。
+
+智慧模式依影片長度、WebGPU、行動裝置判斷、記憶體與 CPU 核心數選擇模型：
+
+- 高階桌機 WebGPU、20 分鐘以內：優先 Small。
+- 一般 WebGPU、15 分鐘以內：優先 Base。
+- 長影片、手機、資源較低或模型載入失敗：Tiny。
+
+模型載入具有自動降級鏈：Small → Base → Tiny；WebGPU 失敗後再切換到量化 WASM。精準模式使用 Small 時會採兩束搜尋，Tiny／Base 維持單束以控制延遲。
+
+研究時也評估 `whisper-large-v3-turbo`。它是 809M 參數的多語模型，品質較高且解碼層較少，但目前 ONNX 瀏覽器檔案與記憶體需求仍遠高於 Small，不適合作為手機或一般瀏覽器的預設核心，因此沒有強制載入。
+
 ## 字幕重複與幻覺防護
 
 Whisper 在音樂、噪音、極小音量、語言判斷錯誤或沒有清楚人聲時，可能產生大量重複字元。ReelScribe 現在加入雙層防護：
@@ -41,7 +59,7 @@ Whisper 在音樂、噪音、極小音量、語言判斷錯誤或沒有清楚人
 
 ## PWA 更新與舊快取修復
 
-Service Worker v10 對 HTML、JavaScript、CSS、Worker 與 Manifest 採 network-first；圖示等非關鍵靜態資產才採 cache-first。註冊時使用 `updateViaCache: "none"` 並主動檢查更新，新控制器每個 build 最多重新整理一次，避免舊 Worker 繼續輸出已修正的錯誤結果。
+Service Worker v11 對 HTML、JavaScript、CSS、Worker 與 Manifest 採 network-first；圖示等非關鍵靜態資產才採 cache-first。註冊時使用 `updateViaCache: "none"` 並主動檢查更新，新控制器每個 build 最多重新整理一次，避免舊 Worker 繼續執行已被替換的辨識模型流程。
 
 手機版在 680px 以下不使用 sticky header，避免 Safari 回復捲動位置時遮住主標題；解析來源標籤會在卡片內換行，不會再超出螢幕。
 
@@ -70,7 +88,7 @@ ReelScribe 接受任何公開 HTTPS 網頁作為候選影片來源，並針對 Y
 
 ## 智慧長影片處理
 
-預設 `smart` 模式會依影片長度、WebGPU 與裝置資源在 Whisper base 和 tiny 間選擇。長影片採有限視窗、重疊、靜音跳過、重複文字合併與低可信區段攔截，保留時間戳並輸出 TXT、SRT、VTT。
+預設 `smart` 模式會依影片長度、WebGPU 與裝置資源在 Whisper Small、Base 和 Tiny 間選擇。長影片採有限視窗、重疊、靜音跳過、重複文字合併與低可信區段攔截，保留時間戳並輸出 TXT、SRT、VTT。
 
 本機速度仍取決於影片長度、裝置記憶體、WebGPU、瀏覽器、音訊品質與語言。程式不承諾任意長度影片都能即時完成；大型檔案仍受 300 MB 與瀏覽器記憶體限制。
 
@@ -91,6 +109,7 @@ Repository 防護包含 `.github/CODEOWNERS`、`.github/dependabot.yml`、`SECUR
 GitHub Actions 在 push、Pull Request、每週一與週四執行：
 
 - 所有 JavaScript 語法與 dependency-free 功能測試。
+- Small／Base／Tiny 智慧選擇、桌機與手機差異、模型載入降級及 WebGPU／WASM 路徑。
 - Instagram 專用解析器、腳本順序、iPhone App API handoff、無 Cookie／no-referrer、300 MB 上限及 Vercel `/api/health`。
 - Service Worker network-first、cache version、`updateViaCache: none` 與 reload-loop guard。
 - Whisper 重複幻覺偵測、重試參數、低可信輸出拒絕與本機舊錯誤字幕清除。
