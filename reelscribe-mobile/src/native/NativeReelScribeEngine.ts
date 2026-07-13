@@ -1,6 +1,8 @@
 import {NativeEventEmitter, NativeModules, Platform} from 'react-native';
+import RNFS from 'react-native-fs';
 import {initWhisper, releaseAllWhisper, type WhisperContext} from 'whisper.rn';
 import type {ModelId} from '../modelCatalog';
+import {ModelManager, type ModelDownloadProgress} from '../services/modelManager';
 
 export type EngineCapabilities = {
   totalMemoryGb?: number;
@@ -55,8 +57,6 @@ type PreparedMedia = {
 
 type NativeManager = {
   getCapabilities(): Promise<EngineCapabilities>;
-  ensureModel(modelId: ModelId): Promise<{path: string; sha256: string}>;
-  removeModel(modelId: ModelId): Promise<void>;
   prepareMedia(input: {
     mediaUri: string;
     enhanceSpeech: boolean;
@@ -77,6 +77,7 @@ type NativeManager = {
 
 const nativeManager = NativeModules.ReelScribeManager as NativeManager | undefined;
 const emitter = nativeManager ? new NativeEventEmitter(NativeModules.ReelScribeManager) : null;
+const modelListeners = new Set<(progress: ModelProgress) => void>();
 
 let activeContext: WhisperContext | null = null;
 let activeContextModel: ModelId | null = null;
@@ -86,10 +87,14 @@ let lastCapabilities: EngineCapabilities = {};
 function requireManager(): NativeManager {
   if (!nativeManager) {
     throw new Error(
-      `ReelScribe 模型管理器尚未連結到 ${Platform.OS} build。whisper.rn 已安裝，但仍需完成 native/IMPLEMENTATION.md 的安全下載、媒體準備與 OCR 模組。`,
+      `ReelScribe 媒體處理器尚未連結到 ${Platform.OS} build。whisper.rn 與模型管理已安裝，但影片轉音訊、OCR 與檢查點仍需完成 native/IMPLEMENTATION.md。`,
     );
   }
   return nativeManager;
+}
+
+function emitModelProgress(progress: ModelProgress): void {
+  for (const listener of modelListeners) listener(progress);
 }
 
 function whisperLanguage(language: TranscriptionRequest['language']): string {
@@ -104,6 +109,26 @@ function threadCount(capabilities: EngineCapabilities): number {
   return 4;
 }
 
+async function ensureVerifiedModel(modelId: ModelId): Promise<{path: string; sha256: string}> {
+  emitModelProgress({modelId, phase: 'checking', message: '正在檢查模型完整性'});
+  try {
+    const model = await ModelManager.ensure(modelId, (progress: ModelDownloadProgress) => {
+      emitModelProgress({
+        modelId,
+        phase: 'downloading',
+        receivedBytes: progress.receivedBytes,
+        totalBytes: progress.totalBytes,
+        message: `正在下載模型 ${progress.percent}%`,
+      });
+    });
+    emitModelProgress({modelId, phase: 'ready', message: '模型已驗證'});
+    return {path: model.path, sha256: model.sha256};
+  } catch (error) {
+    emitModelProgress({modelId, phase: 'failed', message: error instanceof Error ? error.message : String(error)});
+    throw error;
+  }
+}
+
 async function contextFor(modelId: ModelId): Promise<WhisperContext> {
   if (activeContext && activeContextModel === modelId) return activeContext;
 
@@ -113,7 +138,7 @@ async function contextFor(modelId: ModelId): Promise<WhisperContext> {
     activeContextModel = null;
   }
 
-  const model = await requireManager().ensureModel(modelId);
+  const model = await ensureVerifiedModel(modelId);
   if (!model.path || !/^[a-f0-9]{64}$/i.test(model.sha256)) {
     throw new Error('模型尚未通過 SHA-256 完整性驗證，已拒絕載入。');
   }
@@ -133,7 +158,6 @@ function normalizeSpeechSegments(
 ): TranscriptSegment[] {
   return segments
     .map(segment => ({
-      // whisper.cpp timestamps use 10 ms units.
       startMs: Math.max(0, Math.round(segment.t0 * 10)),
       endMs: Math.max(0, Math.round(segment.t1 * 10)),
       text: String(segment.text || '').trim(),
@@ -166,16 +190,26 @@ function mergeOcr(
 
 export const ReelScribeEngine = {
   isAvailable(): boolean {
-    return Boolean(nativeManager);
+    return Boolean(nativeManager && NativeModules.RNWhisper);
   },
 
   async getCapabilities(): Promise<EngineCapabilities> {
-    lastCapabilities = await requireManager().getCapabilities();
+    if (nativeManager) {
+      lastCapabilities = await nativeManager.getCapabilities();
+      return lastCapabilities;
+    }
+    const info = await RNFS.getFSInfo();
+    lastCapabilities = {
+      freeStorageMb: Number(info.freeSpace || 0) / 1024 / 1024,
+      supportsGpu: Platform.OS === 'ios',
+      supportsVisionOcr: Platform.OS === 'ios',
+      supportsMlKitOcr: Platform.OS === 'android',
+    };
     return lastCapabilities;
   },
 
   ensureModel(modelId: ModelId): Promise<{path: string; sha256: string}> {
-    return requireManager().ensureModel(modelId);
+    return ensureVerifiedModel(modelId);
   },
 
   async removeModel(modelId: ModelId): Promise<void> {
@@ -184,7 +218,7 @@ export const ReelScribeEngine = {
       activeContext = null;
       activeContextModel = null;
     }
-    await requireManager().removeModel(modelId);
+    await ModelManager.remove(modelId);
   },
 
   async transcribe(request: TranscriptionRequest): Promise<TranscriptionResult> {
@@ -271,9 +305,12 @@ export const ReelScribeEngine = {
   },
 
   onModelProgress(listener: (progress: ModelProgress) => void): () => void {
-    if (!emitter) return () => undefined;
-    const subscription = emitter.addListener('ReelScribeModelProgress', listener);
-    return () => subscription.remove();
+    modelListeners.add(listener);
+    const nativeSubscription = emitter?.addListener('ReelScribeModelProgress', listener);
+    return () => {
+      modelListeners.delete(listener);
+      nativeSubscription?.remove();
+    };
   },
 
   onTaskProgress(listener: (progress: {completed: number; total: number; message: string}) => void): () => void {
