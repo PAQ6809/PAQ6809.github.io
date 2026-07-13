@@ -1,0 +1,50 @@
+{
+  "updatedAt": "2026-07-13",
+  "product": "ReelScribe Mobile",
+  "version": "0.1.0",
+  "status": "pre-native-build",
+  "completed": [
+    "React Native application layer",
+    "whisper.rn integration layer",
+    "device-aware model policy",
+    "verified model download manager with release hash gate",
+    "public YouTube and Instagram resolver client",
+    "Traditional Chinese and English store metadata drafts",
+    "privacy policy and terms URLs",
+    "App Privacy and Data Safety worksheets",
+    "store release checklist and reviewer notes",
+    "mobile CI workflow and dependency checks",
+    "scheduled website and app maintenance"
+  ],
+  "blocked": [
+    {
+      "id": "native-media-manager",
+      "reason": "Swift/Kotlin bounded media decode, local OCR and checkpoint module is not yet compiled on physical devices."
+    },
+    {
+      "id": "model-release-hashes",
+      "reason": "Tiny/Base release artifacts require exact SHA-256 and byte-size locking before RELEASE_BUILD may load them."
+    },
+    {
+      "id": "physical-device-qa",
+      "reason": "Minimum iPhone, current iPhone, mid-range Android and flagship Android tests are not completed."
+    },
+    {
+      "id": "developer-accounts",
+      "reason": "Apple Developer and Google Play owner verification, agreements and fees require the account holder."
+    },
+    {
+      "id": "signing",
+      "reason": "iOS distribution signing and Android upload/Play signing keys have not been created."
+    },
+    {
+      "id": "store-records",
+      "reason": "Bundle ID/applicationId availability and store app records have not been reserved."
+    },
+    {
+      "id": "signed-builds",
+      "reason": "No signed IPA/AAB has been produced or uploaded."
+    }
+  ],
+  "nextMilestone": "Generate native projects, implement ReelScribeManager for iOS and Android, lock Tiny/Base hashes, then run internal TestFlight and Play testing."
+}
