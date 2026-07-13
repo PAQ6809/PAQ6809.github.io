@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const QUALITY_BUILD = "2026.07.13.8";
+  const QUALITY_BUILD = "2026.07.13.9";
 
   const fallback = document.querySelector("#fallback-tools");
   const focusUpload = document.querySelector("#focus-upload");
@@ -13,6 +13,7 @@
   const transcript = document.querySelector("#full-transcript");
   const segments = document.querySelector("#segments");
   const segmentCount = document.querySelector("#segment-count");
+  const resultStats = document.querySelector("#result-stats");
   const progressPanel = document.querySelector("#progress-panel");
   const progressTitle = document.querySelector("#progress-title");
   const progressDetail = document.querySelector("#progress-detail");
@@ -208,12 +209,56 @@
     return false;
   }
 
+  function fallbackOcrGarbageCheck(value) {
+    const text = String(value || "").normalize("NFKC").trim();
+    const characters = Array.from(text.replace(/\s/gu, ""));
+    if (characters.length < 2) return true;
+    let letters = 0;
+    let digits = 0;
+    let symbols = 0;
+    let oneLetterWords = 0;
+    for (const character of characters) {
+      if (/\p{Letter}/u.test(character)) letters += 1;
+      else if (/\p{Number}/u.test(character)) digits += 1;
+      else symbols += 1;
+    }
+    const latinWords = text.match(/[A-Za-z]+(?:['’][A-Za-z]+)?/g) || [];
+    oneLetterWords = latinWords.filter((word) => word.replace(/['’]/g, "").length <= 1).length;
+    const noiseRatio = (digits + symbols) / Math.max(1, characters.length);
+    const shortLatinRatio = latinWords.length ? oneLetterWords / latinWords.length : 0;
+    return letters < 2 || noiseRatio > 0.45 || (latinWords.length >= 4 && shortLatinRatio > 0.45);
+  }
+
+  function isBadOcrText(value, confidence = 100) {
+    const guard = window.ReelScribeScreenOcr;
+    if (guard?.isAcceptableText) return !guard.isAcceptableText(value, confidence, "auto");
+    return fallbackOcrGarbageCheck(value);
+  }
+
+  function resultContainsOcr(result) {
+    return /OCR/i.test(String(result?.externalSource || result?.modelLabel || ""))
+      || (Array.isArray(result?.segments) && result.segments.some((segment) => segment?.source === "ocr"));
+  }
+
+  function isBadSavedResult(saved) {
+    const result = saved?.result;
+    if (!result) return false;
+    if (isHallucinatedText(result.text)) return true;
+    if (!resultContainsOcr(result)) return false;
+    const ocrSegments = Array.isArray(result.segments) ? result.segments.filter((segment) => segment?.source === "ocr") : [];
+    if (ocrSegments.length) {
+      const valid = ocrSegments.filter((segment) => !isBadOcrText(segment.text, Number(segment.confidence) || 100));
+      if (!valid.length || valid.length / ocrSegments.length < 0.5) return true;
+    }
+    return isBadOcrText(result.text, 100);
+  }
+
   function clearBadSavedResult() {
     try {
       const raw = localStorage.getItem("reelscribe:last");
       if (!raw) return false;
       const saved = JSON.parse(raw);
-      if (!isHallucinatedText(saved?.result?.text)) return false;
+      if (!isBadSavedResult(saved)) return false;
       localStorage.removeItem("reelscribe:last");
       return true;
     } catch {
@@ -221,9 +266,11 @@
     }
   }
 
-  function suppressHallucinatedResult() {
+  function suppressLowConfidenceResult() {
     const value = transcript?.value || "";
-    if (!isHallucinatedText(value)) return false;
+    const ocrResult = /OCR/i.test(resultStats?.textContent || "");
+    const badOcr = ocrResult && isBadOcrText(value, 100);
+    if (!isHallucinatedText(value) && !badOcr) return false;
 
     try {
       localStorage.removeItem("reelscribe:last");
@@ -237,13 +284,19 @@
     if (results) results.hidden = true;
     if (status) {
       status.className = "inline-status error";
-      status.textContent = "偵測到重複單字、短句、符號或字元，已自動清除低可信字幕。請指定正確語言、開啟語音強化，或改用畫面 OCR。";
+      status.textContent = badOcr
+        ? "畫面 OCR 只取得混合符號、數字或不符合語言的低可信文字，已自動清除。請縮小讀取範圍或提高影片畫質。"
+        : "偵測到重複單字、短句、符號或字元，已自動清除低可信字幕。請指定正確語言、開啟語音強化，或改用畫面 OCR。";
     }
     if (progressPanel) progressPanel.hidden = false;
     if (progressTitle) progressTitle.textContent = "已攔截低可信字幕";
-    if (progressDetail) progressDetail.textContent = "偵測到模型反覆輸出相同單字或短句";
+    if (progressDetail) progressDetail.textContent = badOcr ? "OCR 輸出不符合所選語言" : "偵測到模型反覆輸出相同單字或短句";
     if (progressBar) progressBar.style.width = "0%";
-    if (progressNote) progressNote.textContent = "網站不會把 I'm、>>、單一中文字或重複片語當成完成字幕。";
+    if (progressNote) {
+      progressNote.textContent = badOcr
+        ? "網站不會把 x、數字、百分比與隨機符號混合內容當成畫面字幕。"
+        : "網站不會把 I'm、>>、單一中文字或重複片語當成完成字幕。";
+    }
     if (suppressMusic) suppressMusic.checked = true;
     openFallback();
     return true;
@@ -271,13 +324,13 @@
 
   if (results) {
     new MutationObserver(() => {
-      if (!results.hidden) queueMicrotask(suppressHallucinatedResult);
+      if (!results.hidden) queueMicrotask(suppressLowConfidenceResult);
     }).observe(results, { attributes: true, attributeFilter: ["hidden"] });
   }
 
   installModelChoices();
   clearBadSavedResult();
-  queueMicrotask(suppressHallucinatedResult);
+  queueMicrotask(suppressLowConfidenceResult);
 
   const viewport = window.visualViewport;
   if (viewport) {
@@ -290,6 +343,7 @@
 
   window.ReelScribeQualityGuard = Object.freeze({
     isHallucinatedText,
+    isBadOcrText,
     tokenRepetitionMetrics,
     browserProfile,
     build: QUALITY_BUILD,
