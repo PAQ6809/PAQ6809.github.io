@@ -1,0 +1,17 @@
+{
+  "name": "@reelscribe/native-manager",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "files": [
+    "src",
+    "ios",
+    "android",
+    "ReelScribeManager.podspec"
+  ],
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  }
+}
