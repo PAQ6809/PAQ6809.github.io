@@ -2,6 +2,7 @@ package io.github.paq6809.reelscribe
 
 import android.app.ActivityManager
 import android.content.Context
+import android.media.AudioFormat
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
@@ -27,6 +28,7 @@ import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
+import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.math.max
 
@@ -87,7 +89,6 @@ class ReelScribeManagerModule(
   private fun appDirectory(): File = File(reactContext.filesDir, "reelscribe").apply { mkdirs() }
   private fun modelDirectory(): File = File(appDirectory(), "models").apply { mkdirs() }
   private fun workingDirectory(): File = File(reactContext.cacheDir, "reelscribe-working").apply { mkdirs() }
-
   private fun freeStorageMb(): Long = StatFs(appDirectory().absolutePath).availableBytes / 1_048_576L
 
   private fun sha256(file: File): String {
@@ -297,7 +298,7 @@ class ReelScribeManagerModule(
     executor.execute {
       try {
         val value = input.getString("mediaUri") ?: throw IllegalArgumentException("缺少媒體位置。")
-        val job = File(workingDirectory(), java.util.UUID.randomUUID().toString()).apply { mkdirs() }
+        val job = File(workingDirectory(), UUID.randomUUID().toString()).apply { mkdirs() }
         val source = importMedia(value, job)
         val wav = File(job, "audio.wav")
         val durationMs = decodeToMono16kWav(source, wav)
@@ -317,9 +318,11 @@ class ReelScribeManagerModule(
     val destination = File(job, "source.media")
     when (uri.scheme?.lowercase()) {
       "file" -> File(uri.path ?: throw IllegalArgumentException("檔案路徑無效。"))
-        .inputStream().use { input -> destination.outputStream().use(input::copyTo) }
+        .inputStream().use { input ->
+          destination.outputStream().use { output -> input.copyTo(output) }
+        }
       "content" -> reactContext.contentResolver.openInputStream(uri)?.use { input ->
-        destination.outputStream().use(input::copyTo)
+        destination.outputStream().use { output -> input.copyTo(output) }
       } ?: throw IllegalArgumentException("無法開啟選取的媒體。")
       "https" -> {
         downloadWithResume(URL(value), destination, MEDIA_HOSTS) { written, _ ->
@@ -339,25 +342,26 @@ class ReelScribeManagerModule(
     val extractor = MediaExtractor()
     extractor.setDataSource(source.absolutePath)
     var trackIndex = -1
-    var format: MediaFormat? = null
+    var selectedFormat: MediaFormat? = null
     for (index in 0 until extractor.trackCount) {
       val candidate = extractor.getTrackFormat(index)
       val mime = candidate.getString(MediaFormat.KEY_MIME).orEmpty()
       if (mime.startsWith("audio/")) {
         trackIndex = index
-        format = candidate
+        selectedFormat = candidate
         break
       }
     }
-    if (trackIndex < 0 || format == null) {
+    val audioFormat = selectedFormat
+    if (trackIndex < 0 || audioFormat == null) {
       extractor.release()
       throw IllegalArgumentException("影片沒有可讀取的音訊軌。")
     }
 
     extractor.selectTrack(trackIndex)
-    val mime = format.getString(MediaFormat.KEY_MIME) ?: throw IllegalArgumentException("音訊格式無效。")
+    val mime = audioFormat.getString(MediaFormat.KEY_MIME) ?: throw IllegalArgumentException("音訊格式無效。")
     val codec = MediaCodec.createDecoderByType(mime)
-    codec.configure(format, null, null, 0)
+    codec.configure(audioFormat, null, null, 0)
     codec.start()
 
     destination.parentFile?.mkdirs()
@@ -365,12 +369,12 @@ class ReelScribeManagerModule(
     wav.setLength(0)
     wav.write(ByteArray(44))
 
-    var sampleRate = if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE)) format.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 16_000
-    var channels = if (format.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) format.getInteger(MediaFormat.KEY_CHANNEL_COUNT) else 1
+    var sampleRate = if (audioFormat.containsKey(MediaFormat.KEY_SAMPLE_RATE)) audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 16_000
+    var channels = if (audioFormat.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) audioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT) else 1
+    var pcmEncoding = AudioFormat.ENCODING_PCM_16BIT
     var outputBytes = 0L
     var sourceFramesSeen = 0L
     var nextOutputSourceFrame = 0.0
-    val step: () -> Double = { sampleRate.toDouble() / 16_000.0 }
     val info = MediaCodec.BufferInfo()
     var inputDone = false
     var outputDone = false
@@ -399,25 +403,37 @@ class ReelScribeManagerModule(
             if (buffer != null && info.size > 0) {
               buffer.position(info.offset)
               buffer.limit(info.offset + info.size)
-              val chunk = ByteArray(info.size)
-              buffer.get(chunk)
-              val shorts = ByteBuffer.wrap(chunk).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
-              val frameCount = shorts.remaining() / max(1, channels)
+              val frameCount = when (pcmEncoding) {
+                AudioFormat.ENCODING_PCM_FLOAT -> info.size / (4 * max(1, channels))
+                else -> info.size / (2 * max(1, channels))
+              }
               val mono = ShortArray(frameCount)
-              for (frame in 0 until frameCount) {
-                var sum = 0
-                for (channel in 0 until channels) sum += shorts.get().toInt()
-                mono[frame] = (sum / max(1, channels)).coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+              if (pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT) {
+                val floats = buffer.order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
+                for (frame in 0 until frameCount) {
+                  var sum = 0.0f
+                  for (channel in 0 until channels) sum += floats.get()
+                  val value = (sum / max(1, channels)).coerceIn(-1.0f, 1.0f)
+                  mono[frame] = (value * Short.MAX_VALUE).toInt().toShort()
+                }
+              } else {
+                val shorts = buffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                for (frame in 0 until frameCount) {
+                  var sum = 0
+                  for (channel in 0 until channels) sum += shorts.get().toInt()
+                  mono[frame] = (sum / max(1, channels)).coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                }
               }
 
               val globalEnd = sourceFramesSeen + frameCount
+              val sourceStep = sampleRate.toDouble() / 16_000.0
               while (nextOutputSourceFrame < globalEnd) {
                 val local = (nextOutputSourceFrame - sourceFramesSeen).toInt().coerceIn(0, max(0, frameCount - 1))
                 val sample = mono[local].toInt()
                 wav.write(sample and 0xff)
                 wav.write((sample ushr 8) and 0xff)
                 outputBytes += 2
-                nextOutputSourceFrame += step()
+                nextOutputSourceFrame += sourceStep
               }
               sourceFramesSeen = globalEnd
             }
@@ -428,12 +444,16 @@ class ReelScribeManagerModule(
             val outputFormat = codec.outputFormat
             if (outputFormat.containsKey(MediaFormat.KEY_SAMPLE_RATE)) sampleRate = outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
             if (outputFormat.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) channels = outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+            if (outputFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) pcmEncoding = outputFormat.getInteger(MediaFormat.KEY_PCM_ENCODING)
+            if (pcmEncoding != AudioFormat.ENCODING_PCM_16BIT && pcmEncoding != AudioFormat.ENCODING_PCM_FLOAT) {
+              throw IllegalArgumentException("此裝置回傳不支援的 PCM 編碼。")
+            }
           }
         }
       }
 
       writeWavHeader(wav, outputBytes, 16_000, 1, 16)
-      val durationUs = if (format.containsKey(MediaFormat.KEY_DURATION)) format.getLong(MediaFormat.KEY_DURATION) else 0L
+      val durationUs = if (audioFormat.containsKey(MediaFormat.KEY_DURATION)) audioFormat.getLong(MediaFormat.KEY_DURATION) else 0L
       return durationUs / 1_000L
     } finally {
       wav.close()
@@ -451,7 +471,7 @@ class ReelScribeManagerModule(
     header.putInt((36L + dataBytes).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
     header.put("WAVEfmt ".toByteArray(Charsets.US_ASCII))
     header.putInt(16)
-    header.putShort(1)
+    header.putShort(1.toShort())
     header.putShort(channels.toShort())
     header.putInt(sampleRate)
     header.putInt(byteRate)
@@ -465,7 +485,7 @@ class ReelScribeManagerModule(
 
   @ReactMethod
   fun runOcr(input: ReadableMap, promise: Promise) {
-    // Fail-safe placeholder. ML Kit frame sampling stays disabled until device tests reject random UI/road text reliably.
+    // Fail-safe placeholder. ML Kit frame sampling stays disabled until physical-device tests reject random UI and road text reliably.
     promise.resolve(Arguments.createArray())
   }
 
@@ -481,7 +501,7 @@ class ReelScribeManagerModule(
 
   @ReactMethod
   fun saveCheckpoint(input: ReadableMap, promise: Promise) {
-    // Disabled until model hash, media fingerprint and processing settings are persisted atomically.
+    // Disabled until model hash, media fingerprint and settings are persisted atomically.
     promise.resolve(null)
   }
 
