@@ -34,7 +34,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -52,6 +52,8 @@ jobs:
           node --check reelscribe/format-compat.js
           node --check reelscribe/speech-enhancer.js
           node --check reelscribe/app.js
+          node --check reelscribe/runtime-optimizer.js
+          node --check reelscribe/screen-ocr.js
           node --check reelscribe/capture.js
           node --check reelscribe/traditional.js
           node --check reelscribe/instagram-direct.js
@@ -82,8 +84,10 @@ jobs:
           assert match, "Missing JSON-LD"
           data = json.loads(match.group(1))
           assert data.get("@type") == "SoftwareApplication"
-          assert any("背景音樂" in item for item in data.get("featureList", []))
-          assert any("Large-v3-turbo" in item for item in data.get("featureList", []))
+          features = data.get("featureList", [])
+          assert any("背景音樂" in item for item in features)
+          assert any("OCR" in item for item in features)
+          assert any("背景模型" in item for item in features)
           PY
 
       - name: Validate HTML and CSS structure
@@ -103,65 +107,87 @@ jobs:
               ids = re.findall(r'\sid=["\']([^"\']+)["\']', html)
               assert len(ids) == len(set(ids)), f"Duplicate HTML ids: {path}"
 
-          for path in ["reelscribe/styles.css", "reelscribe/ui-polish.css"]:
+          for path in ["reelscribe/styles.css", "reelscribe/ui-polish.css", "reelscribe/runtime.css"]:
               css = Path(path).read_text(encoding="utf-8")
               assert css.count("{") == css.count("}"), f"Unbalanced CSS braces: {path}"
           PY
 
-      - name: Confirm app, model, enhancement and security wiring
+      - name: Confirm app, preload, OCR and security wiring
         run: |
           set -euo pipefail
           files=(
             reelscribe/index.html reelscribe/supported-platforms.html
-            reelscribe/styles.css reelscribe/ui-polish.css
+            reelscribe/styles.css reelscribe/ui-polish.css reelscribe/runtime.css
             reelscribe/OPTIMIZATION.md reelscribe/PROMOTION.md reelscribe/README.md
             reelscribe/sitemap.xml reelscribe/social-card.svg
             robots.txt SECURITY.md .github/CODEOWNERS .github/dependabot.yml
             reelscribe/format-compat.js reelscribe/speech-enhancer.js reelscribe/app.js
+            reelscribe/runtime-optimizer.js reelscribe/screen-ocr.js
             reelscribe/capture.js reelscribe/traditional.js reelscribe/instagram-direct.js
             reelscribe/universal-link.js reelscribe/ui.js reelscribe/share.js
             reelscribe/worker.js reelscribe/sw.js tests/reelscribe-audit.mjs
           )
           for file in "${files[@]}"; do test -s "$file"; done
 
-          grep -q './speech-enhancer.js' reelscribe/index.html
+          grep -q './runtime.css' reelscribe/index.html
+          grep -q './runtime-optimizer.js' reelscribe/index.html
+          grep -q './screen-ocr.js' reelscribe/index.html
+          grep -q 'id="model-cache-status"' reelscribe/index.html
+          grep -q 'id="start-screen-ocr"' reelscribe/index.html
           grep -q 'id="suppress-music"' reelscribe/index.html
-          grep -q './speech-enhancer.js' reelscribe/sw.js
-          grep -q 'reelscribe-shell-v12' reelscribe/sw.js
-          grep -q 'async function networkFirst' reelscribe/sw.js
-          grep -q 'APP_BUILD = "2026.07.13.6"' reelscribe/app.js
-          grep -q 'type: "prepare"' reelscribe/app.js
-          grep -q 'navigator.storage.persist' reelscribe/app.js
-          grep -q 'ReelScribeSpeechEnhancer' reelscribe/app.js
-          grep -q 'enhancementMeta' reelscribe/app.js
+
+          grep -q 'APP_BUILD = "2026.07.13.7"' reelscribe/app.js
+          grep -q 'function prepareModel' reelscribe/app.js
+          grep -q 'function setStoragePolicy' reelscribe/app.js
+          grep -q 'function mergeExternalSegments' reelscribe/app.js
+          grep -q 'cacheAllowed' reelscribe/app.js
+          grep -q 'registration.waiting' reelscribe/app.js
           grep -q 'updateViaCache: "none"' reelscribe/app.js
-          grep -q 'QUALITY_BUILD = "2026.07.13.6"' reelscribe/ui.js
-          grep -q 'onnx-community/whisper-large-v3-turbo' reelscribe/ui.js
-          grep -q 'smallestRepeatingUnit' reelscribe/ui.js
-          grep -q '重複符號或文字' reelscribe/ui.js
+          ! grep -q 'controllerchange' reelscribe/app.js
+          ! grep -q 'window.location.reload' reelscribe/app.js
+
+          grep -q 'navigator.storage.estimate' reelscribe/runtime-optimizer.js
+          grep -q 'navigator.storage.persist' reelscribe/runtime-optimizer.js
+          grep -q 'requestIdleCallback' reelscribe/runtime-optimizer.js
+          grep -q 'saveData' reelscribe/runtime-optimizer.js
+          grep -q 'clearModelCaches' reelscribe/runtime-optimizer.js
+          grep -q 'MOBILE_PREFETCH_MIN' reelscribe/runtime-optimizer.js
+          grep -q 'DESKTOP_PREFETCH_MIN' reelscribe/runtime-optimizer.js
+
+          grep -q 'TESSERACT_VERSION = "7.0.0"' reelscribe/screen-ocr.js
+          grep -q 'Tesseract.createWorker' reelscribe/screen-ocr.js
+          grep -q 'cacheMethod' reelscribe/screen-ocr.js
+          grep -q 'MAX_MOBILE_FRAMES = 60' reelscribe/screen-ocr.js
+          grep -q 'worker.recognize' reelscribe/screen-ocr.js
+          grep -q 'worker.terminate' reelscribe/screen-ocr.js
+          grep -q 'mergeExternalSegments' reelscribe/screen-ocr.js
+          grep -q 'chi_tra' reelscribe/screen-ocr.js
 
           grep -q 'VAD_VERSION = "0.0.30"' reelscribe/speech-enhancer.js
           grep -q 'NonRealTimeVAD' reelscribe/speech-enhancer.js
           grep -q 'model: "v5"' reelscribe/speech-enhancer.js
-          grep -q 'extractSpeechChannel' reelscribe/speech-enhancer.js
-          grep -q 'applySpeechBand' reelscribe/speech-enhancer.js
           grep -q 'buildFrameMask' reelscribe/speech-enhancer.js
-          grep -q 'no-speech-regions' reelscribe/speech-enhancer.js
 
           grep -q 'FLAGSHIP_MODEL = "onnx-community/whisper-large-v3-turbo"' reelscribe/worker.js
           grep -q 'ACCURATE_MODEL = "onnx-community/whisper-small"' reelscribe/worker.js
-          grep -q 'encoder_model: "q4f16"' reelscribe/worker.js
-          grep -q 'decoder_model_merged: "q4f16"' reelscribe/worker.js
           grep -q 'message.type === "prepare"' reelscribe/worker.js
-          grep -q 'disposeTranscriber' reelscribe/worker.js
           grep -q 'smallestRepeatingUnit' reelscribe/worker.js
-          grep -q 'meaningfulLength === 0' reelscribe/worker.js
           grep -q 'repetition_penalty: 1.2' reelscribe/worker.js
           grep -q 'no_repeat_ngram_size: 3' reelscribe/worker.js
 
-          grep -q './instagram-direct.js' reelscribe/index.html
-          grep -q './universal-link.js' reelscribe/index.html
-          grep -q 'window.ReelScribeApp' reelscribe/instagram-direct.js
+          grep -q 'QUALITY_BUILD = "2026.07.13.7"' reelscribe/ui.js
+          grep -q 'ReelScribeQualityGuard' reelscribe/ui.js
+          ! grep -q 'controllerchange' reelscribe/ui.js
+          ! grep -q 'window.location.reload' reelscribe/ui.js
+
+          grep -q 'reelscribe-shell-v13' reelscribe/sw.js
+          grep -q './runtime.css' reelscribe/sw.js
+          grep -q './runtime-optimizer.js' reelscribe/sw.js
+          grep -q './screen-ocr.js' reelscribe/sw.js
+          grep -q 'async function networkFirst' reelscribe/sw.js
+          ! grep -q 'skipWaiting' reelscribe/sw.js
+          ! grep -q 'clients.claim' reelscribe/sw.js
+
           grep -q '/api/instagram-resolve' reelscribe/instagram-direct.js
           grep -q '/api/instagram-yt' reelscribe/instagram-direct.js
           grep -q 'credentials: "omit"' reelscribe/instagram-direct.js
@@ -171,6 +197,8 @@ jobs:
           grep -q '@media (max-width: 680px)' reelscribe/styles.css
           grep -q 'prefers-reduced-motion' reelscribe/styles.css
           grep -q 'min-height: 46px' reelscribe/styles.css
+          grep -q 'html.model-loading' reelscribe/runtime.css
+          grep -q '.ocr-tools' reelscribe/runtime.css
           ! grep -q 'class="notes shell"' reelscribe/index.html
 
       - name: Audit workflow and client security controls
@@ -196,6 +224,7 @@ jobs:
           assert 'document.cookie' not in source
           assert 'new Function(' not in source
           assert not re.search(r'(^|[^\w])eval\s*\(', source)
+          assert 'FormData(' not in Path('reelscribe/screen-ocr.js').read_text(encoding='utf-8')
           PY
 
       - name: Check Instagram resolver service
@@ -211,7 +240,7 @@ jobs:
           assert data.get('mode') == 'public-only-no-cookies-no-storage'
           PY
 
-      - name: Check free model and provider health
+      - name: Check free model, OCR and provider health
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           set -euo pipefail
@@ -224,6 +253,10 @@ jobs:
             https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/silero_vad_v5.onnx \
             -o /tmp/silero-vad-v5.onnx
           test -s /tmp/silero-vad-v5.onnx
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js \
+            -o /tmp/tesseract.min.js
+          test -s /tmp/tesseract.min.js
           curl --fail --silent --show-error --location --retry 3 --max-time 20 \
             https://noembed.com/providers >/tmp/noembed-providers.json
           python -m json.tool /tmp/noembed-providers.json >/dev/null
@@ -238,8 +271,12 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          files=(index.html app.js ui.js ui-polish.css format-compat.js speech-enhancer.js instagram-direct.js worker.js universal-link.js sw.js supported-platforms.html)
-          for attempt in {1..15}; do
+          files=(
+            index.html app.js ui.js styles.css ui-polish.css runtime.css
+            format-compat.js speech-enhancer.js runtime-optimizer.js screen-ocr.js
+            instagram-direct.js worker.js universal-link.js sw.js supported-platforms.html
+          )
+          for attempt in {1..18}; do
             all_match=true
             for file in "${files[@]}"; do
               remote="/tmp/remote-${file//\//-}"
@@ -257,7 +294,7 @@ jobs:
               echo "Production files match this repository revision."
               exit 0
             fi
-            echo "GitHub Pages has not finished deploying; retrying in 20 seconds ($attempt/15)."
+            echo "GitHub Pages has not finished deploying; retrying in 20 seconds ($attempt/18)."
             sleep 20
           done
           echo "Production deployment did not match repository files within the verification window." >&2
