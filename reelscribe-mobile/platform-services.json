@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-13",
+  "principles": {
+    "defaultExecution": "on-device",
+    "noSilentCloudFallback": true,
+    "noCrossAppTracking": true,
+    "oneHeavyInferenceTaskAtATime": true
+  },
+  "services": [
+    {
+      "id": "whisper-rn",
+      "platforms": ["ios", "android"],
+      "version": "0.6.0",
+      "purpose": "Native whisper.cpp transcription binding",
+      "status": "installed-production-core",
+      "privacy": "Audio and transcripts remain on device in local mode."
+    },
+    {
+      "id": "apple-vision-text-recognition",
+      "platforms": ["ios"],
+      "version": "system-framework",
+      "purpose": "On-device burned-in subtitle OCR",
+      "status": "native-implementation-required",
+      "privacy": "Frames are processed locally and released after recognition."
+    },
+    {
+      "id": "apple-speech-analyzer",
+      "platforms": ["ios"],
+      "version": "system-availability-gated",
+      "purpose": "Optional Apple-native speech analysis fallback on supported OS versions",
+      "status": "evaluation-candidate",
+      "privacy": "Must remain on device and must not replace the offline core without device tests."
+    },
+    {
+      "id": "google-mlkit-text-recognition-v2",
+      "platforms": ["android"],
+      "version": "pin-during-native-build",
+      "purpose": "On-device Chinese, Japanese, Korean and Latin subtitle OCR",
+      "status": "native-implementation-required",
+      "privacy": "Use local frame recognition; no remote image analysis."
+    },
+    {
+      "id": "sensevoice-sherpa-onnx",
+      "platforms": ["ios", "android"],
+      "version": "release-must-be-pinned",
+      "purpose": "Low-latency Chinese/Cantonese/English/Japanese/Korean ASR and audio-event detection",
+      "status": "research-candidate",
+      "privacy": "On-device only; model license and store redistribution must be approved first."
+    },
+    {
+      "id": "moonshine-english",
+      "platforms": ["ios", "android"],
+      "version": "0.0.68-evaluate",
+      "purpose": "Low-latency English live transcription",
+      "status": "optional-license-reviewed-candidate",
+      "privacy": "On-device; English MIT model only. Non-English community-licensed models are excluded."
+    },
+    {
+      "id": "qwen3-asr-self-hosted",
+      "platforms": ["optional-server"],
+      "version": "0.6B-or-1.7B",
+      "purpose": "Opt-in high-accuracy multilingual, dialect, singing and background-music ASR",
+      "status": "disabled-server-candidate",
+      "privacy": "Requires explicit upload consent, a self-hosted endpoint, retention controls and store disclosure."
+    },
+    {
+      "id": "nvidia-nemotron-asr-server",
+      "platforms": ["optional-server"],
+      "version": "Nemotron-3.5-ASR-Streaming-0.6B",
+      "purpose": "Optional high-throughput multilingual streaming ASR",
+      "status": "disabled-server-candidate",
+      "privacy": "Not a phone-bundled model; requires GPU infrastructure and explicit cloud-mode consent."
+    }
+  ]
+}
