@@ -3,6 +3,10 @@ import type {TranscriptSegment} from '../native/NativeReelScribeEngine';
 const RESOLVER_ORIGIN = 'https://vite-xi-one-59.vercel.app';
 const REQUEST_TIMEOUT_MS = 45_000;
 
+// Browser fetch supports `referrerPolicy: 'no-referrer'`; React Native's RequestInit
+// does not expose that browser-only field. Native requests use an HTTPS-only fixed
+// origin, omit credentials and never attach a social-platform session or cookie.
+
 export type PublicResolution =
   | {
       kind: 'captions';
