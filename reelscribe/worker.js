@@ -5,7 +5,8 @@ env.useBrowserCache = true;
 
 const SAMPLE_RATE = 16000;
 const FAST_MODEL = "onnx-community/whisper-tiny";
-const QUALITY_MODEL = "onnx-community/whisper-base";
+const BALANCED_MODEL = "onnx-community/whisper-base";
+const ACCURATE_MODEL = "onnx-community/whisper-small";
 
 let transcriber = null;
 let loadedKey = "";
@@ -27,61 +28,104 @@ function progressCallback(info) {
   });
 }
 
-function selectModel(requested, duration, preferGpu) {
-  if (requested && requested !== "smart") return requested;
-  const memory = Number(self.navigator?.deviceMemory) || 0;
-  const gpuAvailable = Boolean(preferGpu && self.navigator?.gpu);
-  const shortEnoughForQuality = duration <= 12 * 60;
-  const capableDevice = gpuAvailable || memory >= 6;
-  return shortEnoughForQuality && capableDevice ? QUALITY_MODEL : FAST_MODEL;
+function modelLabel(model) {
+  if (model === ACCURATE_MODEL) return "Whisper Small 精準模型";
+  if (model === BALANCED_MODEL) return "Whisper Base 平衡模型";
+  return "Whisper Tiny 極速模型";
 }
 
-async function loadPipeline(model, preferGpu) {
-  const canUseGpu = Boolean(preferGpu && self.navigator?.gpu);
-  const requestedDevice = canUseGpu ? "webgpu" : "wasm";
-  const key = `${model}:${requestedDevice}`;
-  if (transcriber && loadedKey === key) return transcriber;
+function deviceProfile(preferGpu) {
+  const userAgent = String(self.navigator?.userAgent || "");
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+  const memory = Number(self.navigator?.deviceMemory) || 0;
+  const cores = Number(self.navigator?.hardwareConcurrency) || 2;
+  const gpuAvailable = Boolean(preferGpu && self.navigator?.gpu);
+  return { mobile, memory, cores, gpuAvailable };
+}
 
-  transcriber = null;
-  loadedKey = "";
-  postStatus(
-    "正在載入 AI 模型",
-    canUseGpu ? "嘗試使用 WebGPU" : "使用 WASM／CPU",
-    10,
-    "第一次使用需下載模型；之後會由瀏覽器快取。",
-  );
+function selectModel(requested, duration, preferGpu) {
+  if (requested && requested !== "smart") return requested;
+  const profile = deviceProfile(preferGpu);
 
-  if (canUseGpu) {
-    try {
-      transcriber = await pipeline("automatic-speech-recognition", model, {
-        device: "webgpu",
-        dtype: "fp16",
-        progress_callback: progressCallback,
-      });
-      activeDevice = "webgpu";
-      activeModel = model;
-      loadedKey = key;
-      return transcriber;
-    } catch (error) {
-      console.warn("WebGPU pipeline failed; falling back to WASM", error);
-      postStatus(
-        "WebGPU 無法啟動",
-        "自動切換到 CPU 模式",
-        14,
-        "速度可能較慢，但字幕功能仍可使用。",
-      );
+  // Whisper Small is reserved for capable desktop-class WebGPU devices because
+  // its multilingual accuracy is better but its browser download and memory use are much larger.
+  if (
+    profile.gpuAvailable
+    && !profile.mobile
+    && duration <= 20 * 60
+    && (profile.memory >= 8 || profile.cores >= 8)
+  ) {
+    return ACCURATE_MODEL;
+  }
+
+  if (profile.gpuAvailable && duration <= 15 * 60) return BALANCED_MODEL;
+  if (!profile.mobile && profile.memory >= 8 && duration <= 5 * 60) return BALANCED_MODEL;
+  return FAST_MODEL;
+}
+
+function modelFallbacks(model) {
+  if (model === ACCURATE_MODEL) return [ACCURATE_MODEL, BALANCED_MODEL, FAST_MODEL];
+  if (model === BALANCED_MODEL) return [BALANCED_MODEL, FAST_MODEL];
+  return [FAST_MODEL];
+}
+
+function loadPlans(model, preferGpu) {
+  const profile = deviceProfile(preferGpu);
+  const plans = [];
+
+  if (profile.gpuAvailable) {
+    for (const candidate of modelFallbacks(model)) {
+      plans.push({ model: candidate, device: "webgpu", dtype: "fp16" });
     }
   }
 
-  transcriber = await pipeline("automatic-speech-recognition", model, {
-    device: "wasm",
-    dtype: "q8",
-    progress_callback: progressCallback,
-  });
-  activeDevice = "wasm";
-  activeModel = model;
-  loadedKey = `${model}:wasm`;
-  return transcriber;
+  // Running Whisper Small in WASM is generally too slow and memory-heavy for a browser.
+  const wasmModels = model === FAST_MODEL ? [FAST_MODEL] : [BALANCED_MODEL, FAST_MODEL];
+  for (const candidate of wasmModels) {
+    plans.push({ model: candidate, device: "wasm", dtype: "q8" });
+  }
+
+  return plans;
+}
+
+async function loadPipeline(model, preferGpu) {
+  const plans = loadPlans(model, preferGpu);
+  let lastError = null;
+
+  for (let index = 0; index < plans.length; index += 1) {
+    const plan = plans[index];
+    const key = `${plan.model}:${plan.device}:${plan.dtype}`;
+    if (transcriber && loadedKey === key) return transcriber;
+
+    const fallback = index > 0;
+    postStatus(
+      fallback ? "正在切換相容模型" : "正在載入 AI 模型",
+      `${modelLabel(plan.model)} · ${plan.device === "webgpu" ? "WebGPU" : "WASM／CPU"}`,
+      fallback ? 14 : 10,
+      fallback
+        ? "較大型模型無法穩定啟動，系統正自動降級，不需要重新操作。"
+        : "第一次使用需下載模型；之後會由瀏覽器快取。",
+    );
+
+    try {
+      transcriber = await pipeline("automatic-speech-recognition", plan.model, {
+        device: plan.device,
+        dtype: plan.dtype,
+        progress_callback: progressCallback,
+      });
+      activeDevice = plan.device;
+      activeModel = plan.model;
+      loadedKey = key;
+      return transcriber;
+    } catch (error) {
+      console.warn(`Whisper load failed: ${key}`, error);
+      lastError = error;
+      transcriber = null;
+      loadedKey = "";
+    }
+  }
+
+  throw lastError || new Error("所有本機字幕模型都無法啟動。");
 }
 
 function isMostlySilent(audio) {
@@ -234,27 +278,29 @@ function mergeSegments(existing, incoming) {
 }
 
 function pipelineOptions(language, fastMode) {
+  const accurateMode = activeModel === ACCURATE_MODEL;
   const options = {
     task: "transcribe",
     chunk_length_s: fastMode ? 20 : 30,
     stride_length_s: fastMode ? 3 : 5,
     return_timestamps: true,
     do_sample: false,
+    num_beams: accurateMode ? 2 : 1,
+    max_new_tokens: accurateMode ? 320 : 256,
   };
   if (language && language !== "auto") options.language = language;
   return options;
 }
 
 function guardedPipelineOptions(language, fastMode, duration) {
-  const options = {
+  return {
     ...pipelineOptions(language, fastMode),
     chunk_length_s: fastMode ? 15 : 20,
     stride_length_s: fastMode ? 2 : 3,
     repetition_penalty: 1.18,
     no_repeat_ngram_size: 3,
-    max_new_tokens: Math.min(224, Math.max(32, Math.ceil(Math.max(1, duration) * 6))),
+    max_new_tokens: Math.min(256, Math.max(32, Math.ceil(Math.max(1, duration) * 6))),
   };
-  return options;
 }
 
 async function transcribeWithHallucinationGuard(pipe, audio, duration, language, fastMode, progress = 94) {
@@ -280,7 +326,7 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
   if (duration <= 4 * 60) {
     postStatus(
       "正在辨識字幕",
-      fastMode ? "極速模式分析中" : "高品質模式分析中",
+      `${modelLabel(activeModel)}分析中`,
       90,
       "處理會完全在目前裝置上完成。",
     );
@@ -320,7 +366,7 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
 
     postStatus(
       "正在處理長影片",
-      `辨識區段 ${index + 1} / ${totalWindows}`,
+      `${modelLabel(activeModel)} · 區段 ${index + 1} / ${totalWindows}`,
       percent,
       activeDevice === "webgpu" ? "使用 GPU 分段處理。" : "使用 CPU 分段處理，請保持頁面開啟。",
     );
@@ -390,6 +436,7 @@ self.addEventListener("message", async (event) => {
       duration,
       device: activeDevice,
       model: activeModel,
+      modelLabel: modelLabel(activeModel),
     });
   } catch (error) {
     console.error(error);
