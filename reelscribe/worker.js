@@ -107,6 +107,71 @@ function normalizeText(value) {
     .trim();
 }
 
+function meaningfulCharacters(value) {
+  return Array.from(normalizeText(value).replace(/[\s\p{P}\p{S}]/gu, ""));
+}
+
+function longestCharacterRun(characters) {
+  let longest = 0;
+  let current = 0;
+  let previous = "";
+  for (const character of characters) {
+    if (character === previous) current += 1;
+    else {
+      previous = character;
+      current = 1;
+    }
+    longest = Math.max(longest, current);
+  }
+  return longest;
+}
+
+function textRepetitionMetrics(value) {
+  const characters = meaningfulCharacters(value);
+  const length = characters.length;
+  if (!length) {
+    return { length: 0, dominantRatio: 0, longestRun: 0, bigramDiversity: 1 };
+  }
+
+  const frequency = new Map();
+  for (const character of characters) {
+    frequency.set(character, (frequency.get(character) || 0) + 1);
+  }
+  const dominant = Math.max(...frequency.values());
+
+  const bigrams = [];
+  for (let index = 0; index < characters.length - 1; index += 1) {
+    bigrams.push(`${characters[index]}${characters[index + 1]}`);
+  }
+  const bigramDiversity = bigrams.length ? new Set(bigrams).size / bigrams.length : 1;
+
+  return {
+    length,
+    dominantRatio: dominant / length,
+    longestRun: longestCharacterRun(characters),
+    bigramDiversity,
+  };
+}
+
+function isHallucinatedText(value) {
+  const metrics = textRepetitionMetrics(value);
+  if (metrics.length < 12) return metrics.longestRun >= 10;
+  if (metrics.longestRun >= 8) return true;
+  if (metrics.length >= 20 && metrics.dominantRatio >= 0.55) return true;
+  if (metrics.length >= 30 && metrics.bigramDiversity <= 0.1) return true;
+  return false;
+}
+
+function outputText(output) {
+  const chunks = Array.isArray(output?.chunks) ? output.chunks : [];
+  const fromChunks = chunks.map((chunk) => normalizeText(chunk?.text)).filter(Boolean).join(" ");
+  return normalizeText(fromChunks || output?.text);
+}
+
+function isHallucinatedOutput(output) {
+  return isHallucinatedText(outputText(output));
+}
+
 function chunksFromOutput(output, offset, fallbackDuration) {
   const chunks = Array.isArray(output?.chunks) ? output.chunks : [];
   if (!chunks.length) {
@@ -174,14 +239,43 @@ function pipelineOptions(language, fastMode) {
     chunk_length_s: fastMode ? 20 : 30,
     stride_length_s: fastMode ? 3 : 5,
     return_timestamps: true,
+    do_sample: false,
   };
   if (language && language !== "auto") options.language = language;
   return options;
 }
 
+function guardedPipelineOptions(language, fastMode, duration) {
+  const options = {
+    ...pipelineOptions(language, fastMode),
+    chunk_length_s: fastMode ? 15 : 20,
+    stride_length_s: fastMode ? 2 : 3,
+    repetition_penalty: 1.18,
+    no_repeat_ngram_size: 3,
+    max_new_tokens: Math.min(224, Math.max(32, Math.ceil(Math.max(1, duration) * 6))),
+  };
+  return options;
+}
+
+async function transcribeWithHallucinationGuard(pipe, audio, duration, language, fastMode, progress = 94) {
+  const first = await pipe(audio, pipelineOptions(language, fastMode));
+  if (!isHallucinatedOutput(first)) return first;
+
+  postStatus(
+    "偵測到重複字幕",
+    "正在自動重新辨識",
+    progress,
+    "系統已攔截低可信度的重複文字，不會直接輸出錯誤字幕。",
+  );
+
+  const retry = await pipe(audio, guardedPipelineOptions(language, fastMode, duration));
+  if (!isHallucinatedOutput(retry)) return retry;
+
+  throw new Error("偵測到模型持續產生大量重複文字，已停止輸出低可信度字幕。請確認影片內有清楚人聲，並指定正確語言後重試。");
+}
+
 async function transcribeAdaptive(pipe, audio, duration, language) {
   const fastMode = activeModel === FAST_MODEL;
-  const options = pipelineOptions(language, fastMode);
 
   if (duration <= 4 * 60) {
     postStatus(
@@ -190,7 +284,7 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
       90,
       "處理會完全在目前裝置上完成。",
     );
-    return pipe(audio, options);
+    return transcribeWithHallucinationGuard(pipe, audio, duration, language, fastMode);
   }
 
   const windowSeconds = activeDevice === "webgpu"
@@ -202,6 +296,7 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
   const stepSamples = Math.max(SAMPLE_RATE, windowSamples - overlapSamples);
   const totalWindows = Math.max(1, Math.ceil(Math.max(1, audio.length - overlapSamples) / stepSamples));
   const merged = [];
+  let rejectedWindows = 0;
 
   for (let index = 0; index < totalWindows; index += 1) {
     const startSample = index * stepSamples;
@@ -230,17 +325,44 @@ async function transcribeAdaptive(pipe, audio, duration, language) {
       activeDevice === "webgpu" ? "使用 GPU 分段處理。" : "使用 CPU 分段處理，請保持頁面開啟。",
     );
 
-    const output = await pipe(window, options);
-    mergeSegments(merged, chunksFromOutput(output, offset, windowDuration));
+    try {
+      const output = await transcribeWithHallucinationGuard(
+        pipe,
+        window,
+        windowDuration,
+        language,
+        fastMode,
+        percent,
+      );
+      mergeSegments(merged, chunksFromOutput(output, offset, windowDuration));
+    } catch (error) {
+      rejectedWindows += 1;
+      console.warn(`Rejected low-confidence window ${index + 1}`, error);
+      postStatus(
+        "正在處理長影片",
+        `已略過低可信度區段 ${index + 1} / ${totalWindows}`,
+        percent,
+        "重複或無清楚人聲的區段不會被寫入字幕。",
+      );
+    }
   }
 
-  if (!merged.length) throw new Error("沒有辨識到清楚語音，請確認音量或改用其他檔案格式。");
+  if (!merged.length) {
+    throw new Error("沒有取得可信的語音字幕。請確認音量、人聲與語言設定，或改用較清楚的音訊檔。");
+  }
+
+  const text = merged.map((item) => item.text).join(" ").replace(/\s+/g, " ").trim();
+  if (isHallucinatedText(text)) {
+    throw new Error("合併後字幕仍出現大量重複文字，已停止輸出低可信度結果。");
+  }
+
   return {
-    text: merged.map((item) => item.text).join(" ").replace(/\s+/g, " ").trim(),
+    text,
     chunks: merged.map((item) => ({
       text: item.text,
       timestamp: [item.start, item.end],
     })),
+    rejectedWindows,
   };
 }
 
@@ -251,11 +373,16 @@ self.addEventListener("message", async (event) => {
   try {
     const audio = new Float32Array(message.audioBuffer);
     if (!audio.length) throw new Error("音訊內容是空的。");
+    if (isMostlySilent(audio)) throw new Error("沒有偵測到足夠清楚的人聲，請確認影片音量或改用其他音訊來源。");
 
     const duration = Number(message.duration) || audio.length / SAMPLE_RATE;
     const model = selectModel(message.model, duration, message.preferGpu);
     const pipe = await loadPipeline(model, message.preferGpu);
     const output = await transcribeAdaptive(pipe, audio, duration, message.language);
+
+    if (isHallucinatedOutput(output)) {
+      throw new Error("偵測到大量重複文字，已阻止低可信度字幕輸出。");
+    }
 
     self.postMessage({
       type: "result",
