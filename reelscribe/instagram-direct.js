@@ -81,6 +81,9 @@
         throw error;
       }
       return data;
+    } catch (error) {
+      if (error?.name === "AbortError") throw new Error("Instagram 解析逾時，請再試一次。");
+      throw error;
     } finally {
       clearTimeout(timer);
     }
@@ -95,8 +98,8 @@
       errors.push(error);
     }
 
-    updateProvider("running", "瀏覽器模擬解析");
-    setStatus("快速解析未取得影片，正在嘗試相容性較高的 Instagram 解析器…", "ok");
+    updateProvider("running", "相容解析");
+    setStatus("正在切換 Instagram 相容解析器…", "ok");
     try {
       return await callResolver("/api/instagram-yt", canonicalUrl);
     } catch (error) {
@@ -143,15 +146,24 @@
         }
         chunks.push(value);
         const progress = Number.isFinite(total) && total > 0 ? Math.min(99, Math.round((received / total) * 100)) : null;
-        setStatus(progress ? `正在安全讀取 Instagram 公開影片… ${progress}%` : `正在安全讀取 Instagram 公開影片… ${(received / 1024 / 1024).toFixed(1)} MB`, "ok");
+        setStatus(progress ? `正在讀取公開影片… ${progress}%` : `正在讀取公開影片… ${(received / 1024 / 1024).toFixed(1)} MB`, "ok");
       }
       return new File(chunks, `instagram-${shortcode}.mp4`, { type, lastModified: Date.now() });
+    } catch (error) {
+      if (error?.name === "AbortError") throw new Error("Instagram 影片讀取逾時，請再試一次。");
+      throw error;
     } finally {
       clearTimeout(timer);
     }
   }
 
   function assignFile(file) {
+    const app = window.ReelScribeApp;
+    if (app?.setFile) {
+      if (!app.setFile(file)) throw new Error("影片已取得，但目前裝置無法載入這個媒體格式。");
+      return;
+    }
+
     if (typeof DataTransfer === "undefined") throw new Error("目前瀏覽器無法把 Instagram 影片交給本機字幕引擎。");
     const transfer = new DataTransfer();
     transfer.items.add(file);
@@ -159,12 +171,22 @@
     fileInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  async function waitUntilReady(timeout = 4000) {
+  async function waitUntilReady(timeout = 5000) {
     const started = Date.now();
-    while (transcribeButton.disabled && Date.now() - started < timeout) {
+    while (Date.now() - started < timeout) {
+      if (window.ReelScribeApp?.isReady?.() || !transcribeButton.disabled) return;
       await new Promise((resolve) => setTimeout(resolve, 60));
     }
-    if (transcribeButton.disabled) throw new Error("影片已取得，但本機字幕引擎尚未就緒。");
+    throw new Error("影片已取得，但本機字幕引擎尚未就緒。");
+  }
+
+  async function beginTranscription() {
+    if (window.ReelScribeApp?.startTranscription) {
+      const started = await window.ReelScribeApp.startTranscription();
+      if (!started) throw new Error("本機字幕引擎目前無法啟動。");
+      return;
+    }
+    transcribeButton.click();
   }
 
   async function runInstagramDirect(rawUrl = input.value) {
@@ -178,27 +200,27 @@
     if (verifiedActions) verifiedActions.hidden = false;
     resolveButton.disabled = true;
     resolveButton.textContent = "解析 Instagram…";
-    setStatus("正在以公開、無 Cookie 的方式解析 Instagram 影片…", "ok");
+    setStatus("正在解析公開 Instagram 影片…", "ok");
     updateProvider("running", "解析中");
 
     try {
       const data = await resolveMedia(parsed.canonicalUrl);
       const media = data.media[0];
       if (fallback) fallback.open = true;
-      setStatus(data.media.length > 1 ? `找到 ${data.media.length} 段影片，先處理第一段…` : "已找到公開影片，正在交給本機 AI…", "ok");
+      setStatus(data.media.length > 1 ? `找到 ${data.media.length} 段影片，先處理第一段…` : "已找到公開影片，正在準備本機字幕…", "ok");
       updateProvider("ok", data.provider?.includes("yt-dlp") ? "相容解析成功" : "快速解析成功");
 
       const file = await fetchMediaFile(media, parsed.shortcode);
       assignFile(file);
       await waitUntilReady();
-      setStatus("影片只暫存在目前裝置，現在開始本機產生字幕。", "ok");
-      transcribeButton.click();
+      setStatus("影片只暫存在目前裝置，已開始產生字幕。", "ok");
+      await beginTranscription();
       return true;
     } catch (error) {
       console.warn("Instagram direct transcription failed", error);
       const message = error instanceof Error ? error.message : "Instagram 直接解析失敗。";
-      setStatus(`${message} 可改用下方分頁音訊或本機檔案備援。`, "error");
-      updateProvider("fail", "匿名解析受限");
+      setStatus(`${message} 請改用下方本機備援。`, "error");
+      updateProvider("fail", "暫時無法解析");
       if (fallback) fallback.open = true;
       return true;
     } finally {
