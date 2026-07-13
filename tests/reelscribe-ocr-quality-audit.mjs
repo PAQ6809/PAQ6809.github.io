@@ -4,6 +4,7 @@ import vm from "node:vm";
 
 const source = fs.readFileSync("reelscribe/screen-ocr.js", "utf8");
 const ui = fs.readFileSync("reelscribe/ui.js", "utf8");
+const runtimeCss = fs.readFileSync("reelscribe/runtime.css", "utf8");
 const serviceWorker = fs.readFileSync("reelscribe/sw.js", "utf8");
 
 function extractFunction(text, name) {
@@ -82,7 +83,10 @@ assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.9"/);
 assert.match(ui, /function isBadOcrText/);
 assert.match(ui, /function isBadSavedResult/);
 assert.match(ui, /畫面 OCR 只取得混合符號/);
-assert.match(serviceWorker, /reelscribe-shell-v15/);
+assert.match(runtimeCss, /--mobile-browser-chrome-clearance/);
+assert.match(runtimeCss, /env\(safe-area-inset-bottom\)/);
+assert.match(runtimeCss, /scroll-margin-bottom:\s*var\(--mobile-browser-chrome-clearance\)/);
+assert.match(serviceWorker, /reelscribe-shell-v16/);
 assert.doesNotMatch(serviceWorker, /skipWaiting|clients\.claim|window\.location\.reload/);
 
-console.log("ReelScribe OCR quality audit passed: mixed-script gibberish rejection, language plausibility, temporal confirmation, preprocessing retry, saved-result purge, and stable Service Worker update.");
+console.log("ReelScribe OCR quality audit passed: mixed-script gibberish rejection, language plausibility, temporal confirmation, preprocessing retry, saved-result purge, Safari toolbar clearance, and stable Service Worker update.");
