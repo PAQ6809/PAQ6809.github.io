@@ -7,60 +7,63 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 ## Interface rules
 
 1. The first screen focuses on one task: paste a link and get subtitles.
-2. The input and primary action remain visible on common phone screens without horizontal scrolling.
+2. The input and primary action remain visible on 320, 375, 390, 430, 768 and 1280 px widths without horizontal scrolling.
 3. Upload, local Whisper, tab capture, microphone, OCR, model and enhancement controls stay in the collapsed fallback section.
 4. Light theme remains the default; avoid decorative gradients, excessive badges, repeated feature lists and unnecessary animation.
 5. Touch targets are at least 44 CSS pixels high.
-6. Widths 320, 375, 390, 430, 768 and 1280 pixels remain usable.
-7. Copy remains the primary result action; TXT, SRT and VTT are secondary.
-8. On phone widths the header is not sticky, and provider chips wrap inside their card.
-9. The music-suppression control is enabled by default and notes that song/lyric transcription may require disabling it.
-10. Model progress, storage status and OCR status reserve stable minimum heights before text changes.
-11. Model-loading mode suppresses nonessential animations and transitions to avoid layout shifts.
-12. Model options are present in initial HTML; JavaScript may disable unsuitable options but must not insert options after first paint.
+6. Copy remains the primary result action; TXT, SRT and VTT are secondary.
+7. On phone widths the header is not sticky, provider chips wrap inside their card and Safari browser chrome must not cover essential controls.
+8. Model progress, storage status and OCR status reserve stable minimum heights before text changes.
+9. Model-loading mode suppresses nonessential animation and transitions.
+10. Model options exist in initial HTML; JavaScript may disable unsuitable options but must not insert them after first paint.
 
-## Storage and background preparation rules
+## Storage, memory and background preparation
 
 - Read storage information only through standard browser APIs such as `navigator.storage.estimate()`, `persisted()` and `persist()`.
-- Storage estimates are advisory; the app must remain usable when quota or persistence information is unavailable.
-- Background model preparation is best-effort and starts only while the page is visible, during idle time, with sufficient storage, acceptable battery and no Data Saver/slow-network signal.
-- Conservative free-space thresholds remain at least approximately 220 MB on mobile and 420 MB on desktop unless measured browser tests justify a change.
-- When estimated cache usage reaches roughly 86% or remaining space is below the threshold, background preparation stops and local transcription falls back to Tiny.
-- Mobile background preparation is limited to Tiny; normal desktop WebGPU background preparation is limited to Base.
+- Storage estimates are advisory and do not represent renderer RAM.
+- Mobile devices never automatically preload Whisper on the landing page.
+- On mobile, media decode and speech enhancement finish before demand-loading Tiny or Base.
+- Desktop background preparation runs only while no file is selected, no foreground processing is active, the page is visible, storage is sufficient, Data Saver is off and battery/network conditions are acceptable.
+- Conservative thresholds remain approximately 260 MB mobile, 420 MB desktop and 82% usage pressure unless measured browser tests justify changes.
 - Small and Large-v3-turbo are never automatically downloaded at page load.
-- A user may manually request preparation after receiving a truthful storage/network warning.
-- The app exposes a clear AI-cache removal control that does not delete the App Shell or transcript text.
-- OCR uses a no-write cache mode when storage is constrained.
-- Model/OCR cache pressure must never trigger an intentional page reload.
+- A foreground file, Instagram handoff, OCR start or transcription preempts unfinished background model preparation.
+- OCR and Whisper are mutually exclusive on memory-constrained browsers.
+- AI-cache removal must not delete the App Shell or transcript text.
+- Cache pressure must never intentionally reload the page.
 
 ## PWA update and no-reload rules
 
 - HTML, JavaScript, CSS, workers and manifest use network-first caching.
 - Static icons may remain cache-first.
-- Every model-worker, OCR, enhancement, resolver or breaking interface update increments the Service Worker cache version.
-- Service Worker registration uses `updateViaCache: "none"` and may call `registration.update()`.
-- The Service Worker must not call `skipWaiting()` or `clients.claim()` while a previous version may have an open client.
-- App and UI scripts must not reload the page on `controllerchange` or call `window.location.reload()` for updates.
-- A waiting update is announced non-disruptively and applies after existing tabs close or on the next natural visit.
-- Cache cleanup only deletes ReelScribe App Shell caches by prefix; it does not broadly delete model, OCR or unrelated origin caches.
-- Service Worker v14 or newer is required for the repeated-token quality guard and YouTube captions fallback.
-- Critical production comparison includes `index.html`, `app.js`, `ui.js`, `styles.css`, `ui-polish.css`, `runtime.css`, `speech-enhancer.js`, `runtime-optimizer.js`, `screen-ocr.js`, `instagram-direct.js`, `universal-link.js`, `worker.js` and `sw.js`.
+- Every breaking model-worker, OCR, enhancement, resolver or interface change increments the Service Worker cache version.
+- Service Worker registration may use `updateViaCache: "none"` and `registration.update()`.
+- The Service Worker must not call `skipWaiting()` or `clients.claim()` while an older client may be active.
+- App and UI scripts must not reload on `controllerchange` or call `window.location.reload()` for updates.
+- A waiting update applies after existing tabs close or on the next natural visit.
+- Cache cleanup only deletes `reelscribe-shell-*` caches.
+- Service Worker v15 or newer is required for the current OCR quality guard.
+- Production comparison includes `index.html`, `app.js`, `ui.js`, `styles.css`, `ui-polish.css`, `runtime.css`, `speech-enhancer.js`, `runtime-optimizer.js`, `screen-ocr.js`, `instagram-direct.js`, `universal-link.js`, `worker.js` and `sw.js`.
 
 ## Screen OCR rules
 
-- Screen OCR is optional and explicitly described as recognition of text visibly burned into video frames, not scene understanding.
+- OCR recognizes text visibly burned into local video frames; it is not scene understanding.
 - Tesseract.js is version-pinned and loaded only after the user starts OCR.
-- OCR captures frames from the local `<video>` element through Canvas; frames, screenshots and recognized text are not uploaded.
-- The default crop is the lower 45% of the frame; users may select a bounded lower-frame crop.
-- Mobile OCR processes at most 60 sampled frames per pass; desktop processes at most 120 unless measured memory tests justify a change.
-- Long videos automatically increase the sampling interval to remain within the frame cap.
-- Frames receive limited grayscale/contrast preprocessing, not destructive filters that make text unreadable.
-- OCR languages follow the user's selected language, with Traditional Chinese plus English as the default Chinese path.
-- Low-confidence, symbol-only and hallucinated text is rejected.
+- Frames are captured from the local `<video>` element through Canvas; frames, screenshots and recognized text are not uploaded.
+- The default crop is the lower 45%; users may select a bounded lower-frame crop.
+- Mobile processes at most 60 sampled frames; desktop at most 120 unless measured memory tests justify changes.
+- Long videos automatically increase the sampling interval.
+- Each crop receives a small white border and a 300 DPI hint.
+- The first pass uses grayscale and restrained contrast. Only an uncertain frame receives a second bright-text binarization pass.
+- OCR languages follow the selected language, with Traditional Chinese plus English as the default Chinese path.
+- Quality filtering checks Tesseract confidence, script consistency, symbol ratio, digit ratio, single-letter-word ratio and the global hallucination guard.
+- Mixed garbage such as `x - yo § J 78 9%` must be rejected even when Tesseract reports a high page confidence.
+- A low-confidence single frame is not written immediately. It needs either high confidence or a similar adjacent-frame observation.
 - Similar consecutive OCR results are merged; an OCR segment may replace an overlapping speech segment only when explicitly enabled.
-- Tesseract workers terminate after completion, stop or failure to release memory.
+- If every frame is weak, show a truthful failure with rejected-frame count and do not create a transcript.
+- Previously cached OCR results are revalidated on restore; invalid OCR transcripts are removed from localStorage.
+- Tesseract workers terminate after completion, stop or failure.
 - OCR cache writes are disabled under storage pressure.
-- OCR must remain usable independently of Whisper; failure to load OCR must not break speech transcription.
+- OCR failure must not break speech transcription.
 
 ## Instagram direct-link rules
 
@@ -75,139 +78,84 @@ Keep ReelScribe bright, simple, fast, mobile-first, accurate, secure, storage-aw
 
 ## YouTube captions rules
 
-- A dedicated `/api/youtube-captions` endpoint is attempted before the browser-only timed-text, Piped and Invidious fallbacks.
-- The endpoint accepts only HTTPS YouTube watch, Shorts, live, embed or youtu.be links with a valid 11-character video ID.
+- `/api/youtube-captions` is attempted before timed-text, Piped and Invidious.
+- It accepts only HTTPS YouTube watch, Shorts, live, embed or youtu.be links with a valid 11-character video ID.
 - It reads public manual captions first and public automatic captions second; it does not download or store video media.
 - It never accepts cookies, account sessions, passwords, private tokens or login bypass instructions.
-- Caption downloads are restricted to HTTPS YouTube and Googlevideo hosts, use finite timeouts and are capped at 4 MB.
+- Caption downloads are restricted to HTTPS YouTube and Googlevideo hosts, finite timeouts and 4 MB.
 - The frontend uses `credentials: omit`, `no-referrer`, `cache: no-store` and a 45-second timeout.
-- A dedicated-backend failure must fall through to timed-text, Piped and Invidious rather than returning a false success.
-- Returned caption segments are imported into the existing editor and retain copy, TXT, SRT and VTT export.
+- Dedicated-backend failure falls through to browser providers rather than returning false success.
 
-## Speech enhancement rules
+## Speech enhancement and model rules
 
-- `speech-enhancer.js` loads before `app.js` and remains dependency-free at build time.
-- ONNX Runtime Web and `@ricky0123/vad-web` are lazy-loaded only when local speech enhancement is used.
-- External runtime versions remain pinned and are checked by scheduled CI.
-- Silero VAD v5 uses `NonRealTimeVAD` on the already-decoded 16 kHz Float32Array.
-- Stereo input may use Mid/Side analysis to emphasize center-panned speech; mono input remains unchanged before filtering.
-- The lightweight speech band uses a low-frequency high-pass, restrained presence boost and high-frequency low-pass.
-- VAD speech regions receive short padding and merge across small gaps to prevent clipped words.
-- Non-speech regions are strongly attenuated with fades, not abruptly deleted, so timestamps remain aligned.
-- Speech gain normalization is bounded to prevent clipping and pumping.
-- When VAD finds no speech, reject transcription instead of asking Whisper to guess from music.
-- If VAD assets fail, use DSP fallback and never silently upload audio.
-- Song and lyric recognition may bypass VAD/music suppression because singing is not ordinary speech.
-
-## Model architecture rules
-
-- The local stack contains four multilingual tiers:
-  - Tiny: phone, long video, low resources and WASM.
-  - Base: normal clips and mobile WebGPU.
-  - Small: desktop WebGPU precision.
-  - Large-v3-turbo: capable desktop WebGPU flagship mode.
-- Smart mode considers duration, WebGPU, mobile detection, memory, CPU cores, Data Saver, network type and storage pressure.
-- Large-v3-turbo is never forced on a phone and is not used on slow/data-saving connections.
-- Large-v3-turbo WebGPU uses per-module q4f16 for encoder and merged decoder.
-- Small/Base/Tiny WebGPU prefer encoder fp16 and merged decoder q4f16, then full fp16 if required.
-- WASM uses q8 and never loads Large-v3-turbo or Small.
-- The fallback chain is `Turbo → Small → Base → Tiny → WASM Base/Tiny`.
-- Model switching disposes the previous pipeline when practical.
-- A `prepare` message may start model loading while media decode and VAD run; actual transcription reuses the same in-flight or loaded pipeline.
-- No model is a render-blocking page dependency.
-- Model download progress, selected model, storage fallback and compatibility fallback remain visible and truthful.
+- `speech-enhancer.js` loads before `app.js`.
+- ONNX Runtime Web and Silero VAD are lazy-loaded only for local speech enhancement.
+- External versions remain pinned and scheduled CI checks upstream availability.
+- Mid/Side analysis, restrained speech-band filtering, padded VAD regions and bounded gain may reduce background-music interference.
+- No-speech output is rejected instead of asking Whisper to guess from music.
+- Songs may disable VAD/music suppression.
+- The model tiers are Tiny, Base, Small and Large-v3-turbo.
+- Smart mode considers duration, WebGPU, mobile status, memory, CPU, Data Saver, network and storage pressure.
+- Large-v3-turbo and Small are desktop WebGPU only; WASM uses q8 Base/Tiny.
+- Fallback order is `Turbo → Small → Base → Tiny → WASM Base/Tiny`.
+- No model is render-blocking.
 
 ## Accuracy and hallucination rules
 
-- `smart` is the default mode.
 - Long recordings use bounded windows, overlap, silence skipping, duplicate removal, low-confidence rejection and timestamps.
-- Hallucination detection includes repeated character runs, dominant and unique character ratios, bigram diversity, repeating character patterns, symbol-only output, repeated word dominance, word diversity, consecutive word runs and repeated one-to-four-word n-grams.
-- `>>`, repeated punctuation, repeated single characters, repeated `I'm`, repeated boilerplate and repeated phrases are rejected.
-- Suspicious output gets one retry with shorter chunks, repetition penalty, n-gram blocking and bounded output length.
-- A second suspicious result is rejected, never displayed as completed subtitles.
-- Long-form processing may skip the rejected window and continue with trustworthy windows.
-- Every restored localStorage result is revalidated with the current quality guard.
-- Cached repetitive garbage is deleted before it can remain visible as an old restored transcript.
-- Do not silently rewrite low-confidence output into guessed sentences.
-- Do not promise perfect accuracy, real-time completion or identical performance across devices and audio conditions.
+- Hallucination detection includes repeated characters, symbols, repeated words, repeated phrases and one-to-four-token n-grams.
+- `>>`, repeated punctuation, repeated single characters, repeated `I'm` and repeated boilerplate are rejected.
+- Suspicious speech output gets one guarded retry; a second suspicious result is rejected.
+- Long-form processing may skip only the rejected window and continue with trustworthy windows.
+- Every restored localStorage result is revalidated.
+- Do not rewrite low-confidence output into guessed sentences.
+- Do not promise perfect accuracy, real-time completion or identical performance across devices.
 
-## Performance rules
+## Performance and security rules
 
 - Do not add a UI framework.
-- Keep Whisper in a Web Worker and App Shell caching in the Service Worker.
-- Background preparation must be conservative; actual model loading remains demand-driven when conditions are unsuitable.
+- Keep Whisper in a Web Worker and the App Shell in the Service Worker.
 - Keep provider requests parallel, timed out and independently degradable.
-- Cache successful text locally but never persist proxied Instagram media.
-- Run expensive recognition retries only after confidence checks fail.
-- Avoid copying multi-hour PCM arrays unnecessarily; file-size and memory limits remain conservative.
-- OCR yields between frames to keep the interface responsive and destroys temporary canvases after use.
-- Do not add analytics or advertising scripts without explicit approval and privacy review.
-
-## Security rules
-
+- Cache successful text locally but never persist proxied Instagram media or OCR frames.
+- Run expensive OCR/Whisper retries only after the first quality check fails.
+- Avoid unnecessary whole-file or PCM copies.
 - Keep restrictive CSP and `no-referrer`.
-- Never access `document.cookie`, use `eval`, or construct dynamic functions.
-- OCR must not use `FormData`, upload endpoints or remote screenshot analysis.
-- External CDN packages are pinned to explicit versions and health-checked.
+- Never access `document.cookie`, use `eval`, construct dynamic functions, upload OCR frames or use remote screenshot analysis.
+- External packages are pinned and health-checked.
 - GitHub Actions use read-only permissions, full-SHA-pinned actions and disabled checkout credentials.
 - Maintain `SECURITY.md`, `.github/CODEOWNERS`, `.github/dependabot.yml` and `reelscribe/SECURITY-HARDENING.md`.
-- Production integrity checks compare deployed assets with repository files.
-- Vercel signing secrets stay private and never enter client JavaScript.
-- Repository owner enables 2FA/passkey, branch rules, signed commits, owner review, force-push blocking, secret scanning and push protection.
 
 ## Required regression checks
 
-- Instagram URL normalization, resolver order, fallback, signed media handoff and health endpoint.
-- YouTube URL normalization, dedicated captions endpoint contract, browser-provider fallback and segment import.
-- iPhone Safari file handoff and transcription start.
-- No cookies, credentials, screenshot uploads, login bypass, unsafe dynamic code or private media persistence.
-- V14-or-newer Service Worker has no `skipWaiting`, `clients.claim`, forced reload or controller-change reload.
-- Storage estimate, persistence request, threshold fallback, Data Saver handling, manual preparation and AI-cache cleanup.
-- Stable progress panel, static model options, reduced animation and no horizontal overflow.
-- Tesseract 7 loading, local frame crop, mobile/desktop frame caps, confidence rejection, OCR deduplication, timeline merge and worker termination.
-- Tiny/Base/Small/Turbo device selection and fallback plans.
-- Per-module q4f16/fp16 mappings, prepare-message reuse and model disposal.
-- Silero VAD v5 loading, speech-region merging, non-speech mask, DSP fallback and no-speech rejection.
-- `>>`, repeated CJK character, repeated English word, repeated phrase and normal Traditional Chinese fixtures.
-- VTT/SRT fixtures, public-link normalization and broad MIME handling.
-- Copy, TXT, SRT, VTT, local file, Whisper, WebGPU/WASM, tab capture, microphone and PWA sharing.
-- Mobile layout, safe area, 16 px form sizing, focus order, no duplicate IDs, SEO, sitemap, robots and IndexNow.
-
-## Promotion rules
-
-- Public copy may state that speech enhancement reduces background-music interference, not that it perfectly separates every vocal track.
-- Public copy may state that OCR reads visible burned-in subtitles locally, not that it understands every frame or guarantees accuracy.
-- Public copy may state that background preparation can reduce later waiting when storage, battery and network permit, not that every browser keeps the model permanently.
-- Public copy may state that public YouTube manual or automatic captions use a text-only resolver, not that every YouTube video has captions.
-- Never claim every Instagram link, codec, platform or video is guaranteed.
-- Never describe rejected low-confidence output as successful transcription.
-- Do not auto-post, fabricate reviews, buy fake traffic or connect paid ad accounts without explicit authorization.
+- Instagram resolver order, signed handoff and iPhone transcription start.
+- YouTube dedicated captions endpoint, fallback and segment import.
+- No forced reload, `skipWaiting`, `clients.claim` or controller-change reload.
+- Mobile no-preload, background preemption, OCR/Whisper mutual exclusion and bounded background timeout.
+- Storage estimate, thresholds, Data Saver and cache cleanup.
+- Tesseract 7 loading, local crop, 300 DPI, white border, contrast pass, bright-text retry, language fit, confidence rejection, adjacent-frame confirmation, OCR deduplication and worker termination.
+- OCR fixtures include clear Traditional Chinese, English, Japanese and Korean plus mixed-symbol garbage matching the reported screenshot pattern.
+- Tiny/Base/Small/Turbo selection, VAD, music suppression and hallucination fixtures.
+- Copy, TXT, SRT, VTT, local file, tab capture, microphone and PWA sharing.
+- Mobile layout, safe area, focus order, SEO, sitemap, robots and IndexNow.
 
 ## Research-first automation rule
 
-Every scheduled maintenance run begins by checking current first-party or primary public sources relevant to the contemplated change, such as MDN/browser-vendor documentation, official Hugging Face model repositories and documentation, official package releases, upstream GitHub repositories, yt-dlp upstream and platform documentation.
+Every scheduled maintenance run begins by checking current first-party or primary sources relevant to the contemplated change: browser-vendor documentation, official Hugging Face repositories, Tesseract/Tesseract.js upstream, Silero VAD, ONNX Runtime, yt-dlp and platform documentation.
 
-Research does not grant automatic permission to install a feature. A candidate is applied only when it is:
+Research does not grant permission to install a feature. A candidate is applied only when it is free for the core workflow, version-pinnable, compatible with CSP and privacy rules, testable without private credentials, independently degradable and unlikely to increase mobile crashes or cache eviction.
 
-- free for the core workflow;
-- compatible with current CSP and privacy rules;
-- version-pinnable and independently degradable;
-- testable without private credentials or user data;
-- unlikely to increase mobile crashes, cache eviction or forced reloads;
-- legally and operationally appropriate for public content.
-
-Every future UI, resolver, backend, format, model, OCR, storage, Service Worker, music suppression, performance, long-video, accuracy, privacy, security, SEO, testing, sharing or promotion change updates all applicable items:
+Every applicable change updates:
 
 1. `.github/workflows/reelscribe-check.yml`
 2. `.github/workflows/reelscribe-stability-check.yml`
 3. `tests/reelscribe-audit.mjs`
 4. `tests/reelscribe-stability-audit.mjs`
-5. `tests/reelscribe-youtube-quality-audit.mjs`
+5. relevant focused audits such as `tests/reelscribe-youtube-quality-audit.mjs` and `tests/reelscribe-ocr-quality-audit.mjs`
 6. `reelscribe/README.md`
 7. `reelscribe/OPTIMIZATION.md`
 8. `reelscribe/STABILITY.md`
 9. `reelscribe/PROMOTION.md` when positioning changes
 10. `reelscribe/SECURITY-HARDENING.md` when protection changes
-11. The `ReelScribe 自動維護` scheduled task
+11. the `ReelScribe 自動維護` scheduled task
 
-Automated maintenance applies only small, testable, non-destructive fixes. It must not add paid core dependencies, cookie extraction, login bypass, private scraping, unverified proxy services, tracking, automatic third-party uploads or unauthorized advertising.
+Automated maintenance applies only small, testable, non-destructive fixes. It must not add paid core dependencies, cookie extraction, login bypass, private scraping, unverified public proxies, tracking or unauthorized advertising.
