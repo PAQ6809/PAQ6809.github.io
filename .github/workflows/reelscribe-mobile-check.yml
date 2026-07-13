@@ -54,9 +54,31 @@ jobs:
         working-directory: reelscribe-mobile
         run: npm install --ignore-scripts --no-audit --no-fund --silent
 
-      - name: Type-check application layer
+      - name: Capture TypeScript diagnostics
+        id: typecheck
         working-directory: reelscribe-mobile
-        run: npx tsc --noEmit --pretty false
+        run: |
+          set +e
+          npx tsc --noEmit --pretty false >typecheck.log 2>&1
+          status=$?
+          cat typecheck.log
+          printf '%s\n' "$status" >typecheck.exit
+          exit 0
+
+      - name: Upload TypeScript diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reelscribe-mobile-typecheck
+          path: |
+            reelscribe-mobile/typecheck.log
+            reelscribe-mobile/typecheck.exit
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Enforce TypeScript result
+        working-directory: reelscribe-mobile
+        run: test "$(cat typecheck.exit)" = "0"
 
       - name: Check app, privacy and store files
         run: |
