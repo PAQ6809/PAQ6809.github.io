@@ -1,0 +1,24 @@
+{
+  "locale": "en-US",
+  "name": "ReelScribe: Video to Text",
+  "subtitle": "Private on-device captions for videos",
+  "shortDescription": "Use public captions first, then on-device speech recognition and OCR. Edit timelines and export TXT, SRT or VTT.",
+  "fullDescription": "ReelScribe is an offline-first video transcription utility.\n\nPaste a public YouTube or Instagram link, or choose a video or audio file from your phone. ReelScribe checks for public captions first. When captions are unavailable, it can use on-device speech recognition and on-device text recognition for burned-in subtitles.\n\nFeatures:\n• Public captions and timestamped segments\n• On-device Whisper transcription\n• Speech enhancement and voice activity detection\n• On-device OCR for visible subtitles\n• Long-media chunking, checkpoints and resume\n• Editable transcript and timeline\n• TXT, SRT and VTT export\n• Device-aware model selection\n\nPrivacy:\n• Local mode does not upload your video, audio, frames or transcript\n• No social passwords, cookies or private tokens\n• No advertising tracker in the planned first release\n• Downloaded models can be managed and removed\n\nSome public links may not be available anonymously. ReelScribe does not bypass login, private accounts, paywalls, regional restrictions or DRM.",
+  "keywords": [
+    "captions",
+    "transcription",
+    "video to text",
+    "SRT",
+    "VTT",
+    "Whisper",
+    "OCR",
+    "Instagram",
+    "YouTube",
+    "offline"
+  ],
+  "primaryCategory": "Productivity",
+  "secondaryCategory": "Photo & Video",
+  "privacyPolicyUrl": "https://paq6809.github.io/reelscribe/privacy.html",
+  "supportUrl": "https://paq6809.github.io/reelscribe/",
+  "marketingUrl": "https://paq6809.github.io/reelscribe/"
+}
