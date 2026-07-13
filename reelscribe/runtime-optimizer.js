@@ -122,12 +122,14 @@
   function cancelPreparation(reason = "cancelled", message = "背景模型準備已停止，開始辨識時會按需載入。") {
     cancelScheduledPreparation();
     clearPrepareTimeout();
-    if (preparing || window.ReelScribeStability?.hasBackgroundWork?.()) {
+    const hadBackgroundWork = preparing || window.ReelScribeStability?.hasBackgroundWork?.();
+    // Mark idle before terminating the Worker because reset events are synchronous.
+    preparing = false;
+    document.documentElement.classList.remove("model-loading");
+    if (hadBackgroundWork) {
       window.ReelScribeApp?.cancelBackgroundPreparation?.(reason);
       window.ReelScribeStability?.cancelBackgroundWork?.(reason, { releaseLoadedOnMobile: false });
     }
-    preparing = false;
-    document.documentElement.classList.remove("model-loading");
     if (message) setStatus(message, "warning");
   }
 
@@ -295,7 +297,10 @@
   window.addEventListener("reelscribe:model", onModelEvent);
   window.addEventListener("reelscribe:model-reset", () => {
     if (!preparing) return;
-    cancelPreparation("worker-reset", "背景模型工作已釋放，前景處理將使用乾淨的單一 Worker。");
+    clearPrepareTimeout();
+    preparing = false;
+    document.documentElement.classList.remove("model-loading");
+    setStatus("背景模型 Worker 已釋放，前景處理將重新建立單一 Worker。", "warning");
   });
   window.addEventListener("reelscribe:user-intent", onUserIntent);
   fileInput?.addEventListener("change", onUserIntent, true);
