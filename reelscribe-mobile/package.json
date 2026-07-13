@@ -11,7 +11,9 @@
     "start": "react-native start",
     "typecheck": "tsc --noEmit",
     "audit:catalog": "node scripts/audit-model-catalog.mjs",
-    "check": "npm run typecheck && npm run audit:catalog"
+    "preflight:store": "node scripts/preflight-store.mjs",
+    "preflight:release": "RELEASE_BUILD=1 node scripts/audit-model-catalog.mjs && RELEASE_BUILD=1 node scripts/preflight-store.mjs",
+    "check": "npm run typecheck && npm run audit:catalog && npm run preflight:store"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "3.1.1",
