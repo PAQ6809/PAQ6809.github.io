@@ -1,0 +1,194 @@
+:root {
+  --runtime-panel-height: 7.5rem;
+}
+
+.resource-status,
+.ocr-status,
+.inline-status,
+.progress-copy {
+  overflow-wrap: anywhere;
+}
+
+.resource-status {
+  min-height: 3.25rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #dbe5f1;
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #52627a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.resource-status[data-state="ready"] {
+  border-color: #b9e0cb;
+  background: #f3fbf6;
+  color: #276247;
+}
+
+.resource-status[data-state="warning"] {
+  border-color: #f0d7a8;
+  background: #fffaf0;
+  color: #805d1f;
+}
+
+.resource-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.resource-actions .button {
+  min-height: 40px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.88rem;
+}
+
+.progress-panel {
+  min-height: var(--runtime-panel-height);
+  contain: layout paint;
+}
+
+.progress-copy {
+  min-height: 3.4rem;
+}
+
+.progress-copy strong,
+.progress-copy span,
+.progress-note,
+#model-cache-copy,
+#ocr-status-copy {
+  display: block;
+  min-height: 1.25em;
+}
+
+.progress-track,
+.progress-track > div {
+  transform: translateZ(0);
+}
+
+.ocr-tools {
+  margin-top: 1rem;
+  border: 1px solid #dbe5f1;
+  border-radius: 14px;
+  background: #ffffff;
+  overflow: clip;
+}
+
+.ocr-tools > summary {
+  min-height: 48px;
+  padding: 0.8rem 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-weight: 800;
+  color: #26364e;
+  list-style: none;
+}
+
+.ocr-tools > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ocr-tools > summary::after {
+  content: "+";
+  color: #2d63df;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.ocr-tools[open] > summary::after {
+  content: "−";
+}
+
+.ocr-body {
+  padding: 0 0.95rem 0.95rem;
+  border-top: 1px solid #edf2f7;
+}
+
+.ocr-body > p {
+  margin: 0.8rem 0;
+}
+
+.ocr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ocr-grid label {
+  min-width: 0;
+}
+
+.ocr-grid select {
+  width: 100%;
+}
+
+.ocr-actions {
+  margin-top: 0.85rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.65rem;
+}
+
+.ocr-status {
+  min-height: 3rem;
+  margin-top: 0.75rem;
+  color: #5f6e83;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+html.model-loading .settings-grid,
+html.model-loading .drop-zone,
+html.model-loading .ocr-tools {
+  contain: layout;
+}
+
+html.model-loading *,
+html.model-loading *::before,
+html.model-loading *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (max-width: 680px) {
+  :root {
+    --runtime-panel-height: 8.5rem;
+  }
+
+  .resource-status {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resource-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ocr-grid,
+  .ocr-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .ocr-actions .button,
+  .resource-actions .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-track > div {
+    transition: none !important;
+  }
+}
