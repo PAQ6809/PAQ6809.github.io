@@ -5,6 +5,7 @@ export type ModelId =
   | 'whisper-base'
   | 'whisper-small'
   | 'whisper-large-v3-turbo'
+  | 'breeze-asr-25'
   | 'sensevoice-small';
 
 export type ModelDefinition = {
@@ -29,12 +30,12 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     name: 'Whisper Tiny',
     summary: '速度最快，適合手機與長影片。',
     minimumMemoryGb: 3,
-    estimatedDownloadMb: 75,
+    estimatedDownloadMb: 78,
     defaultFor: 'all',
     releaseStatus: 'production',
     languages: '多語言',
     artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-tiny.bin`,
-    expectedSha256: null,
+    expectedSha256: 'be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21',
     explicitDownload: true,
   },
   {
@@ -42,12 +43,12 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     name: 'Whisper Base',
     summary: '速度與品質平衡。',
     minimumMemoryGb: 4,
-    estimatedDownloadMb: 150,
+    estimatedDownloadMb: 148,
     defaultFor: 'mid',
     releaseStatus: 'production',
     languages: '多語言',
     artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-base.bin`,
-    expectedSha256: null,
+    expectedSha256: '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
     explicitDownload: true,
   },
   {
@@ -73,6 +74,19 @@ export const MOBILE_MODELS: readonly [ModelDefinition, ...ModelDefinition[]] = [
     releaseStatus: 'candidate',
     languages: '多語言',
     artifactUrl: `${WHISPER_MODEL_ORIGIN}/ggml-large-v3-turbo.bin`,
+    expectedSha256: null,
+    explicitDownload: true,
+  },
+  {
+    id: 'breeze-asr-25',
+    name: 'Breeze ASR 25',
+    summary: '台灣華語、中英夾雜與字幕時間對齊研究候選。',
+    minimumMemoryGb: 8,
+    estimatedDownloadMb: null,
+    defaultFor: 'research',
+    releaseStatus: 'research',
+    languages: '繁中／英語',
+    artifactUrl: null,
     expectedSha256: null,
     explicitDownload: true,
   },
