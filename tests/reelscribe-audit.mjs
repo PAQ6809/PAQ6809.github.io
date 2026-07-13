@@ -10,10 +10,14 @@ const resolver = read("reelscribe/universal-link.js");
 const instagramDirect = read("reelscribe/instagram-direct.js");
 const worker = read("reelscribe/worker.js");
 const enhancer = read("reelscribe/speech-enhancer.js");
+const runtime = read("reelscribe/runtime-optimizer.js");
+const ocr = read("reelscribe/screen-ocr.js");
 const ui = read("reelscribe/ui.js");
 const formatCompat = read("reelscribe/format-compat.js");
 const serviceWorker = read("reelscribe/sw.js");
+const styles = read("reelscribe/styles.css");
 const uiPolish = read("reelscribe/ui-polish.css");
+const runtimeCss = read("reelscribe/runtime.css");
 const manifest = JSON.parse(read("reelscribe/manifest.webmanifest"));
 const sitemap = read("reelscribe/sitemap.xml");
 const robots = read("robots.txt");
@@ -53,6 +57,8 @@ for (const id of [
   "ig-url", "check-url", "fallback-tools", "media-file", "model-select",
   "language-select", "suppress-music", "prefer-gpu", "transcribe", "results",
   "full-transcript", "copy-text", "download-srt", "share-site",
+  "model-cache-status", "prepare-model", "clear-model-cache",
+  "screen-ocr-tools", "start-screen-ocr", "ocr-interval", "ocr-crop", "ocr-merge",
 ]) {
   assert.ok(ids.includes(id), `Missing required element #${id}`);
 }
@@ -63,10 +69,13 @@ assert.match(html, /name="twitter:card"/);
 assert.match(html, /type="application\/ld\+json"/);
 assert.match(html, /Content-Security-Policy/);
 assert.match(html, /name="referrer" content="no-referrer"/);
-assert.match(html, /\.\/speech-enhancer\.js/);
+assert.match(html, /\.\/runtime\.css/);
+assert.match(html, /\.\/runtime-optimizer\.js/);
+assert.match(html, /\.\/screen-ocr\.js/);
 assert.match(html, /id="suppress-music"[^>]*checked/);
-assert.match(html, /Silero VAD/);
 assert.ok(html.indexOf('./speech-enhancer.js') < html.indexOf('./app.js'), "Speech enhancer must load before app.js");
+assert.ok(html.indexOf('./app.js') < html.indexOf('./runtime-optimizer.js'), "Runtime optimizer must load after app.js");
+assert.ok(html.indexOf('./runtime-optimizer.js') < html.indexOf('./screen-ocr.js'), "Storage policy must load before OCR");
 assert.ok(html.indexOf('./instagram-direct.js') < html.indexOf('./universal-link.js'), "Instagram direct resolver must run first");
 assert.ok(html.indexOf('id="copy-text"') < html.indexOf('id="download-txt"'), "Copy remains the first result action");
 assert.doesNotMatch(html, /class="notes shell"/);
@@ -77,24 +86,60 @@ const jsonLd = JSON.parse(jsonLdMatch[1]);
 assert.equal(jsonLd["@type"], "SoftwareApplication");
 assert.equal(jsonLd.offers.price, "0");
 assert.ok(jsonLd.featureList.some((item) => item.includes("背景音樂")));
-assert.ok(jsonLd.featureList.some((item) => item.includes("Large-v3-turbo")));
+assert.ok(jsonLd.featureList.some((item) => item.includes("OCR")));
+assert.ok(jsonLd.featureList.some((item) => item.includes("背景模型")));
 
 assert.equal(manifest.share_target.action, "./");
 assert.match(sitemap, /https:\/\/paq6809\.github\.io\/reelscribe\//);
 assert.match(robots, /Sitemap: https:\/\/paq6809\.github\.io\/reelscribe\/sitemap\.xml/);
-assert.match(serviceWorker, /reelscribe-shell-v12/);
+assert.match(serviceWorker, /reelscribe-shell-v13/);
+assert.match(serviceWorker, /\.\/runtime\.css/);
+assert.match(serviceWorker, /\.\/runtime-optimizer\.js/);
+assert.match(serviceWorker, /\.\/screen-ocr\.js/);
 assert.match(serviceWorker, /\.\/speech-enhancer\.js/);
 assert.match(serviceWorker, /async function networkFirst/);
 assert.match(serviceWorker, /cache:\s*"no-store"/);
+assert.doesNotMatch(serviceWorker, /skipWaiting\s*\(/);
+assert.doesNotMatch(serviceWorker, /clients\.claim\s*\(/);
 
-assert.match(app, /const APP_BUILD = "2026\.07\.13\.6"/);
-assert.match(app, /type:\s*"prepare"/);
-assert.match(app, /Promise|平行執行/);
-assert.match(app, /navigator\.storage\.persist/);
-assert.match(app, /ReelScribeSpeechEnhancer/);
-assert.match(app, /enhancementMeta/);
+assert.match(app, /const APP_BUILD = "2026\.07\.13\.7"/);
+assert.match(app, /function prepareModel/);
+assert.match(app, /function setStoragePolicy/);
+assert.match(app, /function mergeExternalSegments/);
+assert.match(app, /storagePolicy/);
+assert.match(app, /cacheAllowed/);
+assert.match(app, /backgroundPreparing/);
+assert.match(app, /registration\.waiting/);
 assert.match(app, /updateViaCache:\s*"none"/);
+assert.doesNotMatch(app, /controllerchange/);
+assert.doesNotMatch(app, /window\.location\.reload\s*\(/);
 assert.match(app, /window\.ReelScribeApp = Object\.freeze/);
+
+assert.match(runtime, /navigator\.storage\.estimate/);
+assert.match(runtime, /navigator\.storage\.persist/);
+assert.match(runtime, /requestIdleCallback/);
+assert.match(runtime, /saveData/);
+assert.match(runtime, /MOBILE_PREFETCH_MIN/);
+assert.match(runtime, /DESKTOP_PREFETCH_MIN/);
+assert.match(runtime, /onnx-community\/whisper-tiny/);
+assert.match(runtime, /onnx-community\/whisper-base/);
+assert.match(runtime, /clearModelCaches/);
+assert.match(runtime, /indexedDB\.databases/);
+assert.doesNotMatch(runtime, /window\.location\.reload\s*\(/);
+
+assert.match(ocr, /TESSERACT_VERSION = "7\.0\.0"/);
+assert.match(ocr, /Tesseract\.createWorker/);
+assert.match(ocr, /cacheMethod/);
+assert.match(ocr, /MAX_MOBILE_FRAMES = 60/);
+assert.match(ocr, /MAX_DESKTOP_FRAMES = 120/);
+assert.match(ocr, /captureFrame/);
+assert.match(ocr, /cropFraction/);
+assert.match(ocr, /worker\.recognize/);
+assert.match(ocr, /worker\.terminate/);
+assert.match(ocr, /mergeExternalSegments/);
+assert.match(ocr, /chi_tra/);
+assert.match(ocr, /confidence < 42/);
+assert.doesNotMatch(ocr, /fetch\([^)]*upload|FormData|document\.cookie/i);
 
 assert.match(enhancer, /const VAD_VERSION = "0\.0\.30"/);
 assert.match(enhancer, /NonRealTimeVAD/);
@@ -118,14 +163,20 @@ assert.match(worker, /repetition_penalty:\s*1\.2/);
 assert.match(worker, /no_repeat_ngram_size:\s*3/);
 assert.match(worker, /enhancementMeta/);
 
-assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.6"/);
+assert.match(ui, /const QUALITY_BUILD = "2026\.07\.13\.7"/);
 assert.match(ui, /onnx-community\/whisper-large-v3-turbo/);
 assert.match(ui, /此裝置不建議/);
 assert.match(ui, /smallestRepeatingUnit/);
 assert.match(ui, /重複符號或文字/);
 assert.match(ui, /ReelScribeQualityGuard/);
+assert.doesNotMatch(ui, /controllerchange/);
+assert.doesNotMatch(ui, /window\.location\.reload\s*\(/);
+assert.match(runtimeCss, /\.progress-panel\s*\{[\s\S]*min-height/);
+assert.match(runtimeCss, /html\.model-loading/);
+assert.match(runtimeCss, /\.ocr-tools/);
 assert.match(uiPolish, /\.topbar\s*\{\s*position:\s*relative/);
 assert.match(uiPolish, /overflow-wrap:\s*anywhere/);
+assert.match(styles, /prefers-reduced-motion/);
 
 for (const extension of ["mkv", "avi", "flac", "opus", "m2ts", "amr", "caf"]) {
   assert.match(formatCompat, new RegExp(`\\b${extension}:`), `Missing format mapping: ${extension}`);
@@ -227,4 +278,15 @@ const mask = enhancerContext.api.buildFrameMask(16000 * 5, 16000, regions);
 assert.ok(mask.mask.some((value) => value === 1));
 assert.ok(mask.mask.some((value) => value < 0.1));
 
-console.log("ReelScribe audit passed: Silero VAD music suppression, Turbo mixed precision, parallel prepare, symbol hallucination guard, Instagram fallback, PWA, SEO, formats, VTT and SRT.");
+const ocrContext = vm.createContext({ console, Set, Array, String, Math, window: { ReelScribeQualityGuard: { isHallucinatedText: () => false } } });
+vm.runInContext(`${extractFunction(ocr, "normalizeText")}\n${extractFunction(ocr, "compact")}\n${extractFunction(ocr, "similarity")}\nglobalThis.api={normalizeText,compact,similarity};`, ocrContext);
+assert.equal(ocrContext.api.normalizeText("  第一行\n第二行  "), "第一行 第二行");
+assert.ok(ocrContext.api.similarity("今天下雨", "今天下雨。") > 0.9);
+assert.ok(ocrContext.api.similarity("今天下雨", "明天晴天") < 0.8);
+
+const allClientSource = [app, runtime, ocr, enhancer, ui, resolver, instagramDirect].join("\n");
+assert.doesNotMatch(allClientSource, /document\.cookie/);
+assert.doesNotMatch(allClientSource, /new Function\s*\(/);
+assert.doesNotMatch(allClientSource, /(^|[^\w])eval\s*\(/m);
+
+console.log("ReelScribe audit passed: storage-aware preload, no forced refresh, stable loading layout, local OCR, Silero VAD, adaptive Whisper, hallucination guard, Instagram fallback, PWA, SEO, formats, VTT and SRT.");
