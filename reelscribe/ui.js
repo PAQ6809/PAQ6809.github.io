@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const QUALITY_BUILD = "2026.07.13.6";
+  const QUALITY_BUILD = "2026.07.13.7";
 
   const fallback = document.querySelector("#fallback-tools");
   const focusUpload = document.querySelector("#focus-upload");
@@ -23,32 +23,6 @@
 
   document.documentElement.classList.add("js");
   if (status) status.setAttribute("aria-atomic", "true");
-
-  function refreshServiceWorker() {
-    if (!("serviceWorker" in navigator)) return;
-    let reloading = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloading) return;
-      reloading = true;
-      const key = `reelscribe:quality-reload:${QUALITY_BUILD}`;
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
-        window.location.reload();
-      }
-    });
-
-    window.addEventListener("load", async () => {
-      try {
-        const registration = await navigator.serviceWorker.register(`./sw.js?v=${QUALITY_BUILD}`, {
-          scope: "./",
-          updateViaCache: "none",
-        });
-        await registration.update();
-      } catch {
-        // Quality checks still work without offline caching.
-      }
-    });
-  }
 
   function browserProfile() {
     const userAgent = String(navigator.userAgent || "");
@@ -73,32 +47,29 @@
     const smart = modelSelect.querySelector('option[value="smart"]');
     const tiny = modelSelect.querySelector('option[value="onnx-community/whisper-tiny"]');
     const base = modelSelect.querySelector('option[value="onnx-community/whisper-base"]');
+    const small = modelSelect.querySelector('option[value="onnx-community/whisper-small"]');
+    const turbo = modelSelect.querySelector('option[value="onnx-community/whisper-large-v3-turbo"]');
+
     if (smart) smart.textContent = "智慧模式（自動選 Turbo／Small／Base／Tiny）";
     if (tiny) tiny.textContent = "極速模式 · Whisper Tiny（長影片／手機）";
     if (base) base.textContent = "平衡模式 · Whisper Base（一般短片）";
 
-    if (!modelSelect.querySelector('option[value="onnx-community/whisper-small"]')) {
-      const accurate = document.createElement("option");
-      accurate.value = "onnx-community/whisper-small";
-      accurate.textContent = "精準模式 · Whisper Small（桌機 WebGPU）";
-      accurate.disabled = profile.mobile || !profile.gpuAvailable;
-      if (accurate.disabled) accurate.textContent += " · 此裝置改用智慧模式";
-      modelSelect.appendChild(accurate);
+    if (small) {
+      small.textContent = "精準模式 · Whisper Small（桌機 WebGPU）";
+      small.disabled = profile.mobile || !profile.gpuAvailable;
+      if (small.disabled) small.textContent += " · 此裝置改用智慧模式";
     }
 
-    if (!modelSelect.querySelector('option[value="onnx-community/whisper-large-v3-turbo"]')) {
-      const turbo = document.createElement("option");
-      turbo.value = "onnx-community/whisper-large-v3-turbo";
-      turbo.textContent = "旗艦模式 · Large-v3-turbo（桌機 WebGPU，首次下載較大）";
+    if (turbo) {
       const slowNetwork = /(^|-)2g$/.test(profile.effectiveType) || profile.effectiveType === "slow-2g";
       const capable = !profile.mobile
         && profile.gpuAvailable
         && !profile.saveData
         && !slowNetwork
         && (profile.memory >= 8 || profile.cores >= 8);
+      turbo.textContent = "旗艦模式 · Large-v3-turbo（桌機 WebGPU，首次下載較大）";
       turbo.disabled = !capable;
       if (turbo.disabled) turbo.textContent += " · 此裝置不建議";
-      modelSelect.appendChild(turbo);
     }
   }
 
@@ -194,13 +165,13 @@
     if (results) results.hidden = true;
     if (status) {
       status.className = "inline-status error";
-      status.textContent = "偵測到大量重複符號或文字，已自動清除低可信字幕。請開啟語音強化並指定正確語言後重試。";
+      status.textContent = "偵測到大量重複符號或文字，已自動清除低可信字幕。請開啟語音強化、指定正確語言，或改用畫面 OCR。";
     }
     if (progressPanel) progressPanel.hidden = false;
     if (progressTitle) progressTitle.textContent = "已攔截低可信字幕";
     if (progressDetail) progressDetail.textContent = "偵測到模型重複符號或文字";
     if (progressBar) progressBar.style.width = "0%";
-    if (progressNote) progressNote.textContent = "網站不會再把 >>、單一字元或重複片語當成完成字幕。";
+    if (progressNote) progressNote.textContent = "網站不會把 >>、單一字元或重複片語當成完成字幕。";
     if (suppressMusic) suppressMusic.checked = true;
     openFallback();
     return true;
@@ -235,7 +206,6 @@
   installModelChoices();
   clearBadSavedResult();
   queueMicrotask(suppressHallucinatedResult);
-  refreshServiceWorker();
 
   const viewport = window.visualViewport;
   if (viewport) {
@@ -246,5 +216,5 @@
     setViewportHeight();
   }
 
-  window.ReelScribeQualityGuard = Object.freeze({ isHallucinatedText, browserProfile });
+  window.ReelScribeQualityGuard = Object.freeze({ isHallucinatedText, browserProfile, build: QUALITY_BUILD });
 })();
