@@ -145,7 +145,7 @@ jobs:
           grep -q 'Content-Security-Policy' reelscribe/index.html
           grep -q 'supported-platforms.html' reelscribe/index.html
           grep -q 'instagram-direct.js' reelscribe/sw.js
-          grep -q 'reelscribe-shell-v10' reelscribe/sw.js
+          grep -q 'reelscribe-shell-v11' reelscribe/sw.js
           grep -q 'async function networkFirst' reelscribe/sw.js
           grep -q 'format-compat.js' reelscribe/sw.js
           grep -q 'supported-platforms.html' reelscribe/sw.js
@@ -153,13 +153,21 @@ jobs:
           grep -q 'window.ReelScribeApp' reelscribe/app.js
           grep -q 'controllerchange' reelscribe/app.js
           grep -q 'window.ReelScribeApp' reelscribe/instagram-direct.js
-          grep -q 'selectModel' reelscribe/worker.js
+          grep -q 'const ACCURATE_MODEL = "onnx-community/whisper-small"' reelscribe/worker.js
+          grep -q 'const BALANCED_MODEL = "onnx-community/whisper-base"' reelscribe/worker.js
+          grep -q 'deviceProfile' reelscribe/worker.js
+          grep -q 'modelFallbacks' reelscribe/worker.js
+          grep -q 'loadPlans' reelscribe/worker.js
+          grep -q 'num_beams' reelscribe/worker.js
           grep -q 'transcribeAdaptive' reelscribe/worker.js
           grep -q 'isMostlySilent' reelscribe/worker.js
           grep -q 'isHallucinatedText' reelscribe/worker.js
           grep -q 'transcribeWithHallucinationGuard' reelscribe/worker.js
           grep -q 'repetition_penalty' reelscribe/worker.js
           grep -q 'no_repeat_ngram_size' reelscribe/worker.js
+          grep -q 'QUALITY_BUILD = "2026.07.13.5"' reelscribe/ui.js
+          grep -q 'installModelChoices' reelscribe/ui.js
+          grep -q 'onnx-community/whisper-small' reelscribe/ui.js
           grep -q 'ReelScribeQualityGuard' reelscribe/ui.js
           grep -q 'clearBadSavedResult' reelscribe/ui.js
           grep -q '/api/instagram-resolve' reelscribe/instagram-direct.js
