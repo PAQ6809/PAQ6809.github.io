@@ -221,12 +221,14 @@
     stopRequested = false;
     startButton.disabled = true;
     stopButton.hidden = false;
+    stopButton.disabled = false;
     const savedTime = video.currentTime;
     const wasPaused = video.paused;
     video.pause();
 
     try {
       activeWorker = await createOcrWorker();
+      const worker = activeWorker;
       const duration = Number(video.duration) || 0;
       const requestedInterval = Math.max(0.75, Number(intervalSelect?.value) || 1.5);
       const maxFrames = isMobile() ? MAX_MOBILE_FRAMES : MAX_DESKTOP_FRAMES;
@@ -242,7 +244,7 @@
         const canvas = captureFrame(cropFraction);
         const baseProgress = 24 + Math.round((index / totalFrames) * 72);
         setStatus(`正在讀取畫面字幕 ${index + 1} / ${totalFrames}`, baseProgress);
-        const result = await activeWorker.recognize(canvas);
+        const result = await worker.recognize(canvas);
         const text = normalizeText(result?.data?.text);
         const confidence = Number(result?.data?.confidence) || 0;
         if (acceptableText(text, confidence)) {
@@ -276,7 +278,8 @@
       setStatus(error instanceof Error ? error.message : String(error), 0);
     } finally {
       try {
-        if (activeWorker) await activeWorker.terminate();
+        const worker = activeWorker;
+        if (worker) await worker.terminate();
       } catch {
         // Worker cleanup is best-effort.
       }
@@ -290,6 +293,7 @@
       running = false;
       startButton.disabled = !video?.src;
       stopButton.hidden = true;
+      stopButton.disabled = false;
     }
   }
 
