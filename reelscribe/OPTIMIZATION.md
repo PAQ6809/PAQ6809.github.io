@@ -15,6 +15,8 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 7. Widths 320, 375, 390, 430, 768, and 1280 pixels must remain usable without horizontal overflow.
 8. Copy is the primary result action; TXT, SRT, and VTT are secondary.
 9. Platform and format details belong on `supported-platforms.html`, not repeated on the landing screen.
+10. On phone widths, the header is not sticky because it must not cover the hero title, status text, or Safari-restored scroll position.
+11. Provider status chips wrap inside the card; they must never extend beyond the viewport or require horizontal scrolling.
 
 ## Instagram direct-link rules
 
@@ -25,8 +27,19 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 - Media proxy URLs must be HMAC-signed, short-lived, HTTPS-only, limited to Instagram/Facebook CDN hosts, and capped at 300 MB.
 - Backend responses and media are `no-store`; the backend does not persist media or captions.
 - The frontend uses `credentials: omit`, `no-referrer`, request timeouts, streaming size checks, and local Whisper.
-- A failed anonymous extraction must display a truthful fallback message instead of claiming success.
+- Instagram media is handed to the local engine through `window.ReelScribeApp.setFile()` first; `DataTransfer` is only a legacy fallback because iPhone Safari support can be inconsistent.
+- The local transcription starts through `window.ReelScribeApp.startTranscription()` when available, rather than depending on a synthetic button click.
+- A failed anonymous extraction must display a short truthful fallback message instead of claiming success.
 - Private, login-only, age-restricted, region-restricted, removed, DRM, or platform-blocked content is not bypassed.
+
+## PWA freshness rules
+
+- HTML, JavaScript, CSS, workers, and the manifest use a network-first Service Worker path so a stale App Shell cannot hide a newly deployed resolver.
+- Static icons and other non-critical assets may remain cache-first.
+- Every breaking resolver or interface update increments the Service Worker cache version.
+- Service Worker registration uses `updateViaCache: "none"` and explicitly calls `registration.update()`.
+- A new controller may reload the page once per build through a session-scoped guard; it must not enter a reload loop.
+- Critical production-integrity checks include `index.html`, `app.js`, `ui-polish.css`, `instagram-direct.js`, `universal-link.js`, `worker.js`, and `sw.js`.
 
 ## Format and platform rules
 
@@ -65,13 +78,16 @@ Keep ReelScribe bright, simple, fast, mobile-first, accessible, secure, and usab
 ## Required regression checks
 
 - Instagram URL normalization, script order, fast resolver, yt-dlp fallback, signed proxy handoff, and Vercel health endpoint.
+- iPhone Safari file handoff through `ReelScribeApp`, with DataTransfer as fallback only.
 - Resolver privacy controls: no cookies, no credentials, no-referrer, CDN allowlist, expiry, rate limit, timeout, and size cap.
+- Service Worker network-first strategy, cache-version bump, `updateViaCache: none`, controller-change reload guard, and stale App Shell recovery.
 - Link resolver, provider status, metadata, and local cache.
 - VTT/SRT fixtures, YouTube and generic URL normalization.
 - Broad format MIME normalization for chooser and drag-and-drop.
 - Smart model selection, silence detection, segmentation, and overlap deduplication.
 - Copy, TXT, SRT, VTT, local file selection, local Whisper, WebGPU/WASM, tab capture, microphone, PWA sharing.
 - SEO, sitemap, robots, IndexNow, safe-area spacing, 16px mobile form sizing, focus order, no duplicate IDs, and no repeated notes section.
+- Mobile header must not overlap the hero and provider chips must remain inside the card.
 
 ## Promotion rules
 
