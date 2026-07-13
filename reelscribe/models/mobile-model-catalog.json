@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-13",
+  "policy": {
+    "defaultExecution": "on-device",
+    "commercialReleaseRequiresSha256": true,
+    "downloadOnlyOnExplicitConsent": true,
+    "neverBundleAllModels": true,
+    "mobileMemoryRule": "Only one ASR engine and one model may be resident at a time.",
+    "privacyRule": "Local models must not upload audio, video frames, transcripts, cookies, account sessions or device identifiers."
+  },
+  "engines": [
+    {
+      "id": "whisper-cpp",
+      "version": "1.9.1",
+      "license": "MIT",
+      "targets": ["ios", "android"],
+      "status": "production-core",
+      "notes": "Primary offline multilingual engine. Native Swift/Kotlin bridge or a reviewed React Native binding is required."
+    },
+    {
+      "id": "sherpa-onnx",
+      "version": "review-on-build",
+      "license": "Apache-2.0",
+      "targets": ["ios", "android"],
+      "status": "production-candidate",
+      "notes": "Candidate runtime for SenseVoice, VAD, diarization, enhancement and source separation. Pin a release and verify every included model license before shipping."
+    }
+  ],
+  "models": [
+    {
+      "id": "whisper-tiny",
+      "displayName": "Whisper Tiny",
+      "engine": "whisper-cpp",
+      "languages": ["multilingual"],
+      "license": "MIT",
+      "deployment": "on-device",
+      "deviceTier": "all",
+      "recommendedFor": ["phones", "long-video", "low-memory", "fast-preview"],
+      "status": "production-default",
+      "artifact": {
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
+        "sha256": null,
+        "integrityStatus": "must-lock-before-store-release"
+      }
+    },
+    {
+      "id": "whisper-base",
+      "displayName": "Whisper Base",
+      "engine": "whisper-cpp",
+      "languages": ["multilingual"],
+      "license": "MIT",
+      "deployment": "on-device",
+      "deviceTier": "mid",
+      "recommendedFor": ["normal-clips", "balanced-quality"],
+      "status": "production-optional",
+      "artifact": {
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
+        "sha256": null,
+        "integrityStatus": "must-lock-before-store-release"
+      }
+    },
+    {
+      "id": "whisper-small",
+      "displayName": "Whisper Small",
+      "engine": "whisper-cpp",
+      "languages": ["multilingual"],
+      "license": "MIT",
+      "deployment": "on-device",
+      "deviceTier": "high",
+      "recommendedFor": ["high-end-phones", "tablets", "accuracy"],
+      "status": "production-optional",
+      "artifact": {
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
+        "sha256": null,
+        "integrityStatus": "must-lock-before-store-release"
+      }
+    },
+    {
+      "id": "whisper-large-v3-turbo",
+      "displayName": "Whisper Large v3 Turbo",
+      "engine": "whisper-cpp",
+      "languages": ["multilingual"],
+      "license": "MIT",
+      "deployment": "optional-on-device",
+      "deviceTier": "flagship",
+      "recommendedFor": ["flagship-phones", "tablets", "manual-wifi-download"],
+      "status": "release-candidate",
+      "artifact": {
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
+        "sha256": null,
+        "integrityStatus": "must-lock-and-benchmark-before-store-release"
+      }
+    },
+    {
+      "id": "sensevoice-small",
+      "displayName": "SenseVoice Small",
+      "engine": "sherpa-onnx",
+      "languages": ["zh", "yue", "en", "ja", "ko"],
+      "license": "verify-model-license-before-release",
+      "deployment": "on-device-candidate",
+      "deviceTier": "mid",
+      "recommendedFor": ["chinese", "cantonese", "audio-event-detection", "low-latency"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "not-approved-for-store-build"
+      }
+    },
+    {
+      "id": "qwen3-asr-0.6b",
+      "displayName": "Qwen3-ASR 0.6B",
+      "engine": "qwen-asr-vllm",
+      "languages": ["52-languages-and-dialects"],
+      "license": "Apache-2.0",
+      "deployment": "optional-self-hosted-server",
+      "deviceTier": "server-gpu",
+      "recommendedFor": ["songs-with-bgm", "chinese-dialects", "high-accuracy-cloud-mode"],
+      "status": "server-candidate",
+      "privacy": "Disabled by default. Requires an explicit opt-in and a self-hosted privacy-reviewed endpoint."
+    },
+    {
+      "id": "qwen3-asr-1.7b",
+      "displayName": "Qwen3-ASR 1.7B",
+      "engine": "qwen-asr-vllm",
+      "languages": ["52-languages-and-dialects"],
+      "license": "Apache-2.0",
+      "deployment": "optional-self-hosted-server",
+      "deviceTier": "server-gpu",
+      "recommendedFor": ["highest-server-quality", "complex-acoustics"],
+      "status": "server-research",
+      "privacy": "Disabled by default. Not a mobile model."
+    },
+    {
+      "id": "distil-whisper-large-v3.5",
+      "displayName": "Distil-Whisper Large v3.5",
+      "engine": "transformers-server",
+      "languages": ["en"],
+      "license": "MIT",
+      "deployment": "desktop-or-server",
+      "deviceTier": "server-gpu",
+      "recommendedFor": ["english-only", "fast-server-transcription"],
+      "status": "english-server-candidate"
+    },
+    {
+      "id": "parakeet-tdt-0.6b-v3",
+      "displayName": "NVIDIA Parakeet TDT 0.6B v3",
+      "engine": "nemo-server",
+      "languages": ["25-european-languages"],
+      "license": "CC-BY-4.0",
+      "deployment": "server-gpu",
+      "deviceTier": "server-gpu",
+      "recommendedFor": ["european-languages", "high-throughput", "long-audio"],
+      "status": "server-candidate"
+    },
+    {
+      "id": "moonshine-v2-multilingual",
+      "displayName": "Moonshine v2 multilingual models",
+      "deployment": "excluded",
+      "license": "non-commercial-community-license",
+      "status": "do-not-ship-in-commercial-app",
+      "reason": "Multilingual model terms are not suitable for the planned commercial store distribution. English MIT variants may be re-evaluated separately."
+    },
+    {
+      "id": "npusper",
+      "displayName": "NPUsper mobile-NPU Whisper research",
+      "deployment": "research-only",
+      "license": "verify-upstream",
+      "status": "not-production-ready",
+      "reason": "Promising 2026 mobile-NPU research; requires reproducible code, supported devices and store-grade validation before integration."
+    }
+  ]
+}
