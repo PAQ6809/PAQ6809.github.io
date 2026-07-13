@@ -5,11 +5,13 @@ import vm from "node:vm";
 const read = (path) => fs.readFileSync(path, "utf8");
 const html = read("reelscribe/index.html");
 const supportHtml = read("reelscribe/supported-platforms.html");
+const app = read("reelscribe/app.js");
 const resolver = read("reelscribe/universal-link.js");
 const instagramDirect = read("reelscribe/instagram-direct.js");
 const worker = read("reelscribe/worker.js");
 const formatCompat = read("reelscribe/format-compat.js");
 const serviceWorker = read("reelscribe/sw.js");
+const uiPolish = read("reelscribe/ui-polish.css");
 const manifest = JSON.parse(read("reelscribe/manifest.webmanifest"));
 const sitemap = read("reelscribe/sitemap.xml");
 const robots = read("robots.txt");
@@ -84,6 +86,22 @@ assert.match(serviceWorker, /\.\/instagram-direct\.js/);
 assert.match(serviceWorker, /\.\/format-compat\.js/);
 assert.match(serviceWorker, /\.\/supported-platforms\.html/);
 assert.match(serviceWorker, /\.\/share\.js/);
+assert.match(serviceWorker, /reelscribe-shell-v9/);
+assert.match(serviceWorker, /async function networkFirst/);
+assert.match(serviceWorker, /cache:\s*"no-store"/);
+assert.match(serviceWorker, /event\.request\.mode === "navigate"/);
+
+assert.match(app, /const APP_BUILD = "2026\.07\.13\.3"/);
+assert.match(app, /window\.ReelScribeApp = Object\.freeze/);
+assert.match(app, /updateViaCache:\s*"none"/);
+assert.match(app, /controllerchange/);
+assert.match(app, /sessionStorage\.getItem/);
+assert.match(instagramDirect, /window\.ReelScribeApp/);
+assert.match(instagramDirect, /app\.setFile\(file\)/);
+assert.match(instagramDirect, /app\.startTranscription/);
+assert.match(uiPolish, /\.topbar\s*\{\s*position:\s*relative/);
+assert.match(uiPolish, /\.provider-log[\s\S]*flex-wrap:\s*wrap/);
+assert.match(uiPolish, /overflow-wrap:\s*anywhere/);
 
 for (const extension of ["mkv", "avi", "flac", "opus", "m2ts", "amr", "caf"]) {
   assert.match(formatCompat, new RegExp(`\\b${extension}:`), `Missing format mapping: ${extension}`);
@@ -176,4 +194,4 @@ mergeSegments(merged, [{ start: 3, end: 7, text: "world again" }]);
 assert.equal(merged.length, 2);
 assert.match(merged[1].text, /again/);
 
-console.log("ReelScribe audit passed: Instagram direct fallback, HTML, SEO, CSP, formats, smart long-video mode, URL normalization, VTT and SRT parsing.");
+console.log("ReelScribe audit passed: fresh PWA cache, iPhone Instagram handoff, Instagram fallback, HTML, SEO, CSP, formats, long-video mode, URL normalization, VTT and SRT parsing.");
