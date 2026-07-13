@@ -2,8 +2,10 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +13,7 @@ import {
 } from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {pick} from '@react-native-documents/picker';
+import RNFS from 'react-native-fs';
 import {
   MOBILE_MODELS,
   recommendedModel,
@@ -30,6 +33,8 @@ type SelectedMedia = {
   size?: number | null;
 };
 
+type ExportFormat = 'txt' | 'srt' | 'vtt';
+
 const LANGUAGES = [
   ['auto', '自動'],
   ['zh', '中文'],
@@ -44,6 +49,29 @@ function formatTime(milliseconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+}
+
+function subtitleTimestamp(milliseconds: number, separator: ',' | '.'): string {
+  const safe = Math.max(0, Math.round(milliseconds));
+  const hours = Math.floor(safe / 3_600_000);
+  const minutes = Math.floor((safe % 3_600_000) / 60_000);
+  const seconds = Math.floor((safe % 60_000) / 1000);
+  const millis = safe % 1000;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}${separator}${String(millis).padStart(3, '0')}`;
+}
+
+function exportContent(result: TranscriptionResult, format: ExportFormat): string {
+  if (format === 'txt') return result.text.trim();
+  const cues = result.segments
+    .filter(segment => segment.text.trim())
+    .map((segment, index) => {
+      const separator = format === 'srt' ? ',' : '.';
+      const timing = `${subtitleTimestamp(segment.startMs, separator)} --> ${subtitleTimestamp(segment.endMs, separator)}`;
+      return format === 'srt'
+        ? `${index + 1}\n${timing}\n${segment.text.trim()}`
+        : `${timing}\n${segment.text.trim()}`;
+    });
+  return format === 'vtt' ? `WEBVTT\n\n${cues.join('\n\n')}` : cues.join('\n\n');
 }
 
 function AppContent(): React.JSX.Element {
@@ -183,6 +211,32 @@ function AppContent(): React.JSX.Element {
     }
   }
 
+  function updateTranscript(text: string): void {
+    setResult(previous => previous ? {...previous, text} : previous);
+  }
+
+  async function shareSubtitle(format: ExportFormat): Promise<void> {
+    if (!result) return;
+    const content = exportContent(result, format);
+    if (!content.trim()) {
+      Alert.alert('沒有字幕', '目前沒有可分享的字幕內容。');
+      return;
+    }
+    try {
+      const fileName = `reelscribe-${Date.now()}.${format}`;
+      const path = `${RNFS.CachesDirectoryPath}/${fileName}`;
+      await RNFS.writeFile(path, content, 'utf8');
+      await Share.share({
+        title: fileName,
+        message: content,
+        url: Platform.OS === 'ios' ? `file://${path}` : undefined,
+      });
+      setStatus(`已開啟 ${format.toUpperCase()} 分享選單。`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -288,7 +342,14 @@ function AppContent(): React.JSX.Element {
         {result ? (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>完整字幕</Text>
-            <TextInput value={result.text} multiline editable style={styles.transcript} />
+            <View style={styles.exportRow}>
+              {(['txt', 'srt', 'vtt'] as ExportFormat[]).map(format => (
+                <Pressable key={format} style={styles.exportButton} onPress={() => shareSubtitle(format)}>
+                  <Text style={styles.exportButtonText}>{format.toUpperCase()}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput value={result.text} onChangeText={updateTranscript} multiline editable style={styles.transcript} />
             <Text style={styles.resultMeta}>{result.segments.length} 段 · {formatTime(result.durationMs)}</Text>
             {result.segments.slice(0, 20).map((segment: TranscriptSegment, index) => (
               <View key={`${segment.startMs}-${index}`} style={styles.segment}>
@@ -352,6 +413,9 @@ const styles = StyleSheet.create({
   progressText: {flex: 1, color: '#556177', fontSize: 14},
   cancelText: {color: '#b42318', fontWeight: '800'},
   status: {fontSize: 14, lineHeight: 21, color: '#64748b'},
+  exportRow: {flexDirection: 'row', gap: 8},
+  exportButton: {flex: 1, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#bfc9da', alignItems: 'center', justifyContent: 'center'},
+  exportButtonText: {color: '#1f2937', fontWeight: '800'},
   transcript: {minHeight: 180, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 14, padding: 14, color: '#111827', fontSize: 16, lineHeight: 25, textAlignVertical: 'top'},
   resultMeta: {fontSize: 14, color: '#64748b'},
   segment: {flexDirection: 'row', gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#d9e0ea'},
