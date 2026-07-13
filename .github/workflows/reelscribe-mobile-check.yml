@@ -120,7 +120,7 @@ jobs:
           assert 'new Function(' not in source
           assert not re.search(r'(^|[^\w])eval\s*\(', source)
           assert "credentials: 'omit'" in source
-          assert "cache: 'no-store'" in source
+          assert "'Cache-Control': 'no-store, max-age=0'" in source
           assert "referrerPolicy: 'no-referrer'" in source
           assert 'initWhisper' in source
           assert 'releaseAllWhisper' in source
