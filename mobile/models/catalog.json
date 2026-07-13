@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-13",
+  "policy": {
+    "bundleLargeModels": false,
+    "defaultNetwork": "wifi",
+    "requireExplicitDownloadConsent": true,
+    "requireChecksum": true,
+    "requireLicenseReviewBeforeActivation": true,
+    "mobileMemorySafetyFirst": true
+  },
+  "models": [
+    {
+      "id": "whisper-tiny-transformersjs",
+      "displayName": "Whisper Tiny",
+      "state": "active-web",
+      "runtime": "Transformers.js ONNX",
+      "languages": ["multilingual"],
+      "platforms": ["web", "ios-webview", "android-webview"],
+      "installPolicy": "on-demand; preferred phone fallback",
+      "license": "MIT",
+      "licenseReviewRequired": false,
+      "source": "https://huggingface.co/onnx-community/whisper-tiny"
+    },
+    {
+      "id": "whisper-base-transformersjs",
+      "displayName": "Whisper Base",
+      "state": "active-web",
+      "runtime": "Transformers.js ONNX",
+      "languages": ["multilingual"],
+      "platforms": ["web", "ios-webview", "android-webview"],
+      "installPolicy": "on-demand; balanced short-video mode",
+      "license": "MIT",
+      "licenseReviewRequired": false,
+      "source": "https://huggingface.co/onnx-community/whisper-base"
+    },
+    {
+      "id": "whisper-small-transformersjs",
+      "displayName": "Whisper Small",
+      "state": "active-web",
+      "runtime": "Transformers.js ONNX",
+      "languages": ["multilingual"],
+      "platforms": ["desktop-webgpu"],
+      "installPolicy": "on-demand; desktop WebGPU only",
+      "license": "MIT",
+      "licenseReviewRequired": false,
+      "source": "https://huggingface.co/onnx-community/whisper-small"
+    },
+    {
+      "id": "whisper-large-v3-turbo-transformersjs",
+      "displayName": "Whisper Large-v3-turbo",
+      "state": "active-web",
+      "runtime": "Transformers.js ONNX",
+      "languages": ["multilingual"],
+      "platforms": ["high-end-desktop-webgpu"],
+      "installPolicy": "explicit on-demand download; never automatic on phones",
+      "license": "MIT",
+      "licenseReviewRequired": false,
+      "source": "https://huggingface.co/onnx-community/whisper-large-v3-turbo"
+    },
+    {
+      "id": "sherpa-qwen3-asr-0.6b-int8-2026-03-25",
+      "displayName": "Qwen3-ASR 0.6B INT8",
+      "state": "native-candidate",
+      "runtime": "sherpa-onnx",
+      "languages": ["zh", "yue", "en", "ja", "ko", "de", "fr", "es", "pt", "ar", "th", "vi", "other"],
+      "platforms": ["android-native", "ios-native"],
+      "estimatedDownloadBytes": 990000000,
+      "installPolicy": "optional high-accuracy pack; Wi-Fi and explicit consent; not bundled",
+      "licenseReviewRequired": true,
+      "source": "https://k2-fsa.github.io/sherpa/onnx/qwen3-asr/pretrained.html"
+    },
+    {
+      "id": "sherpa-funasr-nano-int8-2025-12-30",
+      "displayName": "FunASR Nano INT8",
+      "state": "native-candidate",
+      "runtime": "sherpa-onnx",
+      "languages": ["zh", "en", "ja", "Chinese dialects", "singing"],
+      "platforms": ["android-native", "ios-native"],
+      "installPolicy": "optional Chinese-first pack; benchmark before activation",
+      "licenseReviewRequired": true,
+      "source": "https://k2-fsa.github.io/sherpa/onnx/funasr-nano/pretrained.html"
+    },
+    {
+      "id": "sherpa-moonshine-base-zh-quantized-2026-02-27",
+      "displayName": "Moonshine Base Chinese Quantized",
+      "state": "native-candidate",
+      "runtime": "sherpa-onnx",
+      "languages": ["zh"],
+      "platforms": ["android-native", "ios-native"],
+      "installPolicy": "optional low-latency Chinese pack; device benchmark required",
+      "licenseReviewRequired": true,
+      "source": "https://k2-fsa.github.io/sherpa/onnx/moonshine/models-v2.html"
+    },
+    {
+      "id": "sherpa-sensevoice-int8-2025-09-09",
+      "displayName": "SenseVoice INT8",
+      "state": "native-candidate",
+      "runtime": "sherpa-onnx",
+      "languages": ["zh", "en", "ja", "ko", "yue"],
+      "platforms": ["android-native", "ios-native"],
+      "installPolicy": "optional East-Asian compact pack; benchmark and license review required",
+      "licenseReviewRequired": true,
+      "source": "https://k2-fsa.github.io/sherpa/onnx/sense-voice/pretrained.html"
+    },
+    {
+      "id": "sherpa-omnilingual-1600-300m-int8-2025-11-12",
+      "displayName": "Omnilingual ASR 1600+ Languages 300M INT8",
+      "state": "native-candidate",
+      "runtime": "sherpa-onnx",
+      "languages": ["1600+ languages"],
+      "platforms": ["android-native", "ios-native"],
+      "installPolicy": "optional language-expansion pack; not default for Chinese users",
+      "licenseReviewRequired": true,
+      "source": "https://k2-fsa.github.io/sherpa/onnx/omnilingual-asr/models.html"
+    },
+    {
+      "id": "whisper-cpp-base-q5",
+      "displayName": "whisper.cpp Base Quantized",
+      "state": "native-candidate",
+      "runtime": "whisper.cpp 1.9.x",
+      "languages": ["multilingual"],
+      "platforms": ["ios-native", "android-native"],
+      "installPolicy": "native offline fallback; user-selected model download",
+      "license": "MIT",
+      "licenseReviewRequired": false,
+      "source": "https://github.com/ggml-org/whisper.cpp"
+    }
+  ]
+}
