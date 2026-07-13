@@ -1,0 +1,25 @@
+{
+  "appId": "io.github.paq6809.reelscribe",
+  "appName": "ReelScribe",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false,
+    "allowNavigation": [
+      "paq6809.github.io",
+      "vite-xi-one-59.vercel.app",
+      "huggingface.co",
+      "cdn.jsdelivr.net"
+    ]
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
