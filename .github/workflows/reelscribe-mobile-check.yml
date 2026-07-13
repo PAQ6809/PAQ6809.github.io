@@ -7,6 +7,7 @@ on:
       - "reelscribe/models/mobile-model-catalog.json"
       - "reelscribe/privacy.html"
       - "reelscribe/terms.html"
+      - "reelscribe/support.html"
       - ".github/workflows/reelscribe-mobile-check.yml"
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - "reelscribe/models/mobile-model-catalog.json"
       - "reelscribe/privacy.html"
       - "reelscribe/terms.html"
+      - "reelscribe/support.html"
       - ".github/workflows/reelscribe-mobile-check.yml"
   schedule:
     - cron: "30 2 * * 1"
@@ -42,13 +44,15 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate JSON and model policy
+      - name: Validate JSON and release policy
         run: |
           set -euo pipefail
           python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
+          python -m json.tool reelscribe-mobile/platform-services.json >/dev/null
           python -m json.tool reelscribe-mobile/package.json >/dev/null
           python -m json.tool reelscribe-mobile/app.json >/dev/null
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
+          node reelscribe-mobile/scripts/preflight-store.mjs
 
       - name: Install pinned JavaScript dependencies without lifecycle scripts
         working-directory: reelscribe-mobile
@@ -80,31 +84,42 @@ jobs:
         working-directory: reelscribe-mobile
         run: test "$(cat typecheck.exit)" = "0"
 
-      - name: Check app, privacy and store files
+      - name: Check app, privacy, support and store files
         run: |
           set -euo pipefail
           test -s reelscribe-mobile/src/App.tsx
           test -s reelscribe-mobile/src/modelCatalog.ts
           test -s reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+          test -s reelscribe-mobile/src/services/modelManager.ts
           test -s reelscribe-mobile/src/services/publicResolver.ts
           test -s reelscribe-mobile/native/IMPLEMENTATION.md
           test -s reelscribe-mobile/MODEL-RESEARCH.md
           test -s reelscribe-mobile/STORE-LAUNCH.md
           test -s reelscribe-mobile/PRIVACY.md
+          test -s reelscribe-mobile/platform-services.json
+          test -s reelscribe-mobile/store/zh-TW.md
+          test -s reelscribe-mobile/store/en-US.md
+          test -s reelscribe-mobile/store/APP-PRIVACY-ANSWERS.md
+          test -s reelscribe-mobile/store/GOOGLE-DATA-SAFETY.md
+          test -s reelscribe-mobile/scripts/preflight-store.mjs
           test -s reelscribe/privacy.html
           test -s reelscribe/terms.html
+          test -s reelscribe/support.html
           grep -q 'io.github.paq6809.reelscribe' reelscribe-mobile/README.md
           grep -q 'React Native 0.86' reelscribe-mobile/README.md
           grep -q 'whisper.rn.*0.6.0' reelscribe-mobile/README.md
           grep -q 'whisper.rn' reelscribe-mobile/package.json
+          grep -q 'preflight:store' reelscribe-mobile/package.json
           grep -q 'initWhisper' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           grep -q 'ReelScribeManager' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
           grep -q 'SHA-256' reelscribe-mobile/native/IMPLEMENTATION.md
           grep -q 'Qwen3-ASR' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'SenseVoice' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Moonshine' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'Nemotron' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Data Safety' reelscribe-mobile/STORE-LAUNCH.md
           grep -q 'App Privacy' reelscribe-mobile/STORE-LAUNCH.md
+          grep -q 'support.html' reelscribe-mobile/store/zh-TW.md
           grep -q '不包含跨 App 追蹤' reelscribe/privacy.html
 
       - name: Enforce mobile privacy and security boundaries
@@ -132,9 +147,14 @@ jobs:
           assert by_id['moonshine-v2-multilingual']['deployment'] == 'excluded'
           assert 'server' in by_id['qwen3-asr-0.6b']['deployment']
           assert by_id['whisper-tiny']['deployment'] == 'on-device'
+          assert 'server' in by_id['nemotron-3.5-asr-streaming-0.6b']['deployment']
+
+          services = json.loads(Path('reelscribe-mobile/platform-services.json').read_text(encoding='utf-8'))
+          assert services['principles']['defaultExecution'] == 'on-device'
+          assert services['principles']['noSilentCloudFallback'] is True
           PY
 
-      - name: Check current upstream model records
+      - name: Check current upstream model and runtime records
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           set -euo pipefail
@@ -145,7 +165,7 @@ jobs:
             https://api.github.com/repos/mybigday/whisper.rn/releases/latest \
             | python -m json.tool >/dev/null
           curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://huggingface.co/Qwen/Qwen3-ASR-0.6B/raw/main/README.md \
+            https://raw.githubusercontent.com/QwenLM/Qwen3-ASR/main/README.md \
             | grep -q 'Qwen3-ASR'
           curl --fail --silent --show-error --location --retry 3 --max-time 30 \
             https://raw.githubusercontent.com/FunAudioLLM/SenseVoice/main/README.md \
@@ -153,6 +173,15 @@ jobs:
           curl --fail --silent --show-error --location --retry 3 --max-time 30 \
             https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/latest \
             | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://api.github.com/repos/moonshine-ai/moonshine/releases/latest \
+            | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://api.github.com/repos/argmaxinc/argmax-oss-swift/releases/latest \
+            | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
+            https://raw.githubusercontent.com/NVIDIA-NeMo/Speech/main/README.md \
+            | grep -Eiq 'Nemotron|Parakeet'
 
       - name: Enforce read-only and pinned Actions
         run: |
