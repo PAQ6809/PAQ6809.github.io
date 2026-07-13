@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const QUALITY_BUILD = "2026.07.13.7";
+  const QUALITY_BUILD = "2026.07.13.8";
 
   const fallback = document.querySelector("#fallback-tools");
   const focusUpload = document.querySelector("#focus-upload");
@@ -85,6 +85,13 @@
     return Array.from(String(value || "").normalize("NFKC").replace(/[\s\p{P}\p{S}]/gu, ""));
   }
 
+  function wordTokens(value) {
+    return String(value || "")
+      .normalize("NFKC")
+      .toLocaleLowerCase("en")
+      .match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu) || [];
+  }
+
   function smallestRepeatingUnit(value, maxUnit = 12) {
     const compact = compactCharacters(value).join("");
     if (compact.length < 12) return "";
@@ -98,6 +105,61 @@
       if (matched / compact.length >= 0.9) return unit;
     }
     return "";
+  }
+
+  function tokenRepetitionMetrics(value) {
+    const tokens = wordTokens(value);
+    const count = tokens.length;
+    if (!count) {
+      return {
+        count: 0,
+        dominantRatio: 0,
+        uniqueRatio: 1,
+        longestRun: 0,
+        repeatedNgramCount: 0,
+        repeatedNgramCoverage: 0,
+      };
+    }
+
+    const frequency = new Map();
+    let longestRun = 0;
+    let currentRun = 0;
+    let previous = "";
+    for (const token of tokens) {
+      frequency.set(token, (frequency.get(token) || 0) + 1);
+      if (token === previous) currentRun += 1;
+      else {
+        previous = token;
+        currentRun = 1;
+      }
+      longestRun = Math.max(longestRun, currentRun);
+    }
+
+    let repeatedNgramCount = 0;
+    let repeatedNgramCoverage = 0;
+    const maxSize = Math.min(4, Math.floor(count / 3));
+    for (let size = 1; size <= maxSize; size += 1) {
+      const grams = new Map();
+      for (let index = 0; index <= count - size; index += 1) {
+        const key = tokens.slice(index, index + size).join("\u0001");
+        grams.set(key, (grams.get(key) || 0) + 1);
+      }
+      const best = grams.size ? Math.max(...grams.values()) : 0;
+      const coverage = Math.min(1, (best * size) / count);
+      if (coverage > repeatedNgramCoverage) {
+        repeatedNgramCoverage = coverage;
+        repeatedNgramCount = best;
+      }
+    }
+
+    return {
+      count,
+      dominantRatio: Math.max(...frequency.values()) / count,
+      uniqueRatio: frequency.size / count,
+      longestRun,
+      repeatedNgramCount,
+      repeatedNgramCoverage,
+    };
   }
 
   function isHallucinatedText(value) {
@@ -126,6 +188,7 @@
     const bigrams = [];
     for (let index = 0; index < length - 1; index += 1) bigrams.push(`${compact[index]}${compact[index + 1]}`);
     const bigramDiversity = bigrams.length ? new Set(bigrams).size / bigrams.length : 1;
+    const tokenMetrics = tokenRepetitionMetrics(value);
 
     if (length >= 12 && meaningful.length === 0) return true;
     if (longestRun >= 8) return true;
@@ -133,7 +196,16 @@
     if (length >= 20 && dominantRatio >= 0.55) return true;
     if (length >= 24 && smallestRepeatingUnit(value)) return true;
     if (length >= 30 && bigramDiversity <= 0.1) return true;
-    return length >= 30 && symbolRatio >= 0.8 && uniqueRatio <= 0.15;
+    if (length >= 30 && symbolRatio >= 0.8 && uniqueRatio <= 0.15) return true;
+    if (tokenMetrics.count >= 8 && tokenMetrics.dominantRatio >= 0.5) return true;
+    if (tokenMetrics.count >= 10 && tokenMetrics.uniqueRatio <= 0.28) return true;
+    if (tokenMetrics.longestRun >= 5) return true;
+    if (
+      tokenMetrics.count >= 12
+      && tokenMetrics.repeatedNgramCount >= 3
+      && tokenMetrics.repeatedNgramCoverage >= 0.72
+    ) return true;
+    return false;
   }
 
   function clearBadSavedResult() {
@@ -165,13 +237,13 @@
     if (results) results.hidden = true;
     if (status) {
       status.className = "inline-status error";
-      status.textContent = "偵測到大量重複符號或文字，已自動清除低可信字幕。請開啟語音強化、指定正確語言，或改用畫面 OCR。";
+      status.textContent = "偵測到重複單字、短句、符號或字元，已自動清除低可信字幕。請指定正確語言、開啟語音強化，或改用畫面 OCR。";
     }
     if (progressPanel) progressPanel.hidden = false;
     if (progressTitle) progressTitle.textContent = "已攔截低可信字幕";
-    if (progressDetail) progressDetail.textContent = "偵測到模型重複符號或文字";
+    if (progressDetail) progressDetail.textContent = "偵測到模型反覆輸出相同單字或短句";
     if (progressBar) progressBar.style.width = "0%";
-    if (progressNote) progressNote.textContent = "網站不會把 >>、單一字元或重複片語當成完成字幕。";
+    if (progressNote) progressNote.textContent = "網站不會把 I'm、>>、單一中文字或重複片語當成完成字幕。";
     if (suppressMusic) suppressMusic.checked = true;
     openFallback();
     return true;
@@ -216,5 +288,10 @@
     setViewportHeight();
   }
 
-  window.ReelScribeQualityGuard = Object.freeze({ isHallucinatedText, browserProfile, build: QUALITY_BUILD });
+  window.ReelScribeQualityGuard = Object.freeze({
+    isHallucinatedText,
+    tokenRepetitionMetrics,
+    browserProfile,
+    build: QUALITY_BUILD,
+  });
 })();
