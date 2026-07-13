@@ -8,7 +8,7 @@ const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
 const releaseBuild = process.env.RELEASE_BUILD === '1';
 const errors = [];
 
-if (catalog.schemaVersion !== 1) errors.push('Unsupported model catalog schema.');
+if (catalog.schemaVersion !== 2) errors.push('Unsupported model catalog schema.');
 if (!Array.isArray(catalog.models) || catalog.models.length < 4) errors.push('Model catalog is incomplete.');
 
 const ids = new Set();
@@ -33,8 +33,13 @@ for (const model of catalog.models || []) {
     }
   }
 
-  if (model.id.includes('moonshine') && model.deployment !== 'excluded') {
-    errors.push(`${model.id}: multilingual Moonshine is not approved for commercial distribution.`);
+  const moonshineLanguages = Array.isArray(model.languages) ? model.languages.map(String) : [];
+  const isEnglishOnlyMoonshine = model.id.includes('moonshine')
+    && moonshineLanguages.length === 1
+    && moonshineLanguages[0] === 'en'
+    && String(model.license).toUpperCase() === 'MIT';
+  if (model.id.includes('moonshine') && model.deployment !== 'excluded' && !isEnglishOnlyMoonshine) {
+    errors.push(`${model.id}: only English MIT Moonshine candidates may remain outside the excluded tier.`);
   }
 
   if (model.id.startsWith('qwen3-asr') && !String(model.deployment).includes('server')) {
@@ -42,8 +47,8 @@ for (const model of catalog.models || []) {
   }
 }
 
-for (const required of ['whisper-tiny', 'whisper-base', 'whisper-small', 'whisper-large-v3-turbo']) {
-  if (!ids.has(required)) errors.push(`Missing required mobile tier: ${required}`);
+for (const required of ['whisper-tiny', 'whisper-base', 'whisper-small', 'whisper-large-v3-turbo', 'breeze-asr-25']) {
+  if (!ids.has(required)) errors.push(`Missing required model registry entry: ${required}`);
 }
 
 if (errors.length) {
