@@ -1,19 +1,22 @@
 (() => {
   "use strict";
 
-  const BUILD = "2026.07.13.7";
+  const BUILD = "2026.07.13.8";
   const MB = 1024 * 1024;
-  const MOBILE_PREFETCH_MIN = 220 * MB;
+  const MOBILE_PREFETCH_MIN = 260 * MB;
   const DESKTOP_PREFETCH_MIN = 420 * MB;
-  const HARD_PRESSURE_RATIO = 0.86;
-  const PREPARE_TIMEOUT_MS = 5 * 60 * 1000;
+  const HARD_PRESSURE_RATIO = 0.82;
+  const PREPARE_TIMEOUT_MS = 3 * 60 * 1000;
   const status = document.querySelector("#model-cache-status");
   const statusCopy = document.querySelector("#model-cache-copy");
   const prepareButton = document.querySelector("#prepare-model");
   const clearButton = document.querySelector("#clear-model-cache");
+  const fileInput = document.querySelector("#media-file");
   let preparing = false;
   let prepared = false;
   let prepareTimeout = null;
+  let idleHandle = null;
+  let fallbackTimer = null;
 
   function setStatus(message, state = "idle") {
     if (statusCopy) statusCopy.textContent = message;
@@ -28,9 +31,11 @@
   }
 
   function isMobile() {
-    const ua = String(navigator.userAgent || "");
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
-      || (/Macintosh/i.test(ua) && Number(navigator.maxTouchPoints) > 1);
+    return window.ReelScribeStability?.isMobile?.() ?? /Android|iPhone|iPad|iPod|Mobile/i.test(String(navigator.userAgent || ""));
+  }
+
+  function isIOS() {
+    return window.ReelScribeStability?.isIOS?.() ?? /iPhone|iPad|iPod/i.test(String(navigator.userAgent || ""));
   }
 
   function connectionProfile() {
@@ -66,7 +71,7 @@
 
   async function requestPersistence() {
     try {
-      if (!navigator.storage?.persist) return false;
+      if (!navigator.storage?.persist || isIOS()) return false;
       if (await navigator.storage.persisted?.()) return true;
       return await navigator.storage.persist();
     } catch {
@@ -78,7 +83,7 @@
     try {
       if (!navigator.getBattery) return true;
       const battery = await navigator.getBattery();
-      return battery.charging || battery.level >= 0.25;
+      return battery.charging || battery.level >= 0.35;
     } catch {
       return true;
     }
@@ -102,18 +107,35 @@
     return state;
   }
 
+  function cancelScheduledPreparation() {
+    if (idleHandle !== null && "cancelIdleCallback" in window) cancelIdleCallback(idleHandle);
+    if (fallbackTimer !== null) clearTimeout(fallbackTimer);
+    idleHandle = null;
+    fallbackTimer = null;
+  }
+
   function clearPrepareTimeout() {
     if (prepareTimeout) clearTimeout(prepareTimeout);
     prepareTimeout = null;
+  }
+
+  function cancelPreparation(reason = "cancelled", message = "背景模型準備已停止，開始辨識時會按需載入。") {
+    cancelScheduledPreparation();
+    clearPrepareTimeout();
+    if (preparing || window.ReelScribeStability?.hasBackgroundWork?.()) {
+      window.ReelScribeApp?.cancelBackgroundPreparation?.(reason);
+      window.ReelScribeStability?.cancelBackgroundWork?.(reason, { releaseLoadedOnMobile: false });
+    }
+    preparing = false;
+    document.documentElement.classList.remove("model-loading");
+    if (message) setStatus(message, "warning");
   }
 
   function startPrepareTimeout() {
     clearPrepareTimeout();
     prepareTimeout = setTimeout(() => {
       if (!preparing) return;
-      preparing = false;
-      document.documentElement.classList.remove("model-loading");
-      setStatus("背景模型準備時間較長，已停止等待狀態；開始辨識時會接續使用或自動重試。", "warning");
+      cancelPreparation("prepare-timeout", "背景模型準備逾時，已立即停止下載，避免長時間占用記憶體。開始辨識時會重新載入較小模型。");
     }, PREPARE_TIMEOUT_MS);
   }
 
@@ -121,19 +143,27 @@
     if (preparing || prepared) return false;
     const app = window.ReelScribeApp;
     if (!app?.prepareModel) return false;
+    if (app.getFile?.() || app.isProcessing?.()) {
+      setStatus("已選擇影片或正在處理；不會再同時啟動背景模型下載。開始辨識時將依序載入。", "warning");
+      return false;
+    }
 
     const network = connectionProfile();
     const storage = await updateStoragePolicy();
+    if (!force && isMobile()) {
+      setStatus("行動裝置已停用自動背景下載，避免模型與影片解碼同時占用記憶體；開始辨識後會依序載入 Tiny 模型。", "ready");
+      return false;
+    }
     if (!force && (network.saveData || network.slow)) {
       setStatus("已偵測到省流量或慢速網路，暫不在背景下載模型。開始辨識時才會按需載入。", "warning");
       return false;
     }
     if (!force && storage.constrained) {
-      setStatus(`瀏覽器可用空間約 ${formatBytes(storage.available)}，已停止背景下載並切換節省空間模式，避免增加頁面被系統回收的風險。`, "warning");
+      setStatus(`瀏覽器可用空間約 ${formatBytes(storage.available)}，已停止背景下載並切換節省空間模式。`, "warning");
       return false;
     }
     if (!force && !(await batteryAllowsBackgroundWork())) {
-      setStatus("電量偏低且未充電，已延後背景下載；開始辨識時仍可正常載入。", "warning");
+      setStatus("電量偏低且未充電，已延後背景下載。", "warning");
       return false;
     }
     if (!force && document.visibilityState !== "visible") return false;
@@ -141,7 +171,7 @@
     preparing = true;
     document.documentElement.classList.add("model-loading");
     const model = preferredModel();
-    setStatus(`${model.endsWith("tiny") ? "極速" : "平衡"}模型正在背景準備；頁面可繼續操作。`, "idle");
+    setStatus(`${model.endsWith("tiny") ? "極速" : "平衡"}模型正在背景準備；選擇影片時會立即中止背景下載，避免資源衝突。`, "idle");
     try {
       await requestPersistence();
       const started = app.prepareModel({
@@ -166,6 +196,7 @@
   function onModelEvent(event) {
     const detail = event.detail || {};
     if (detail.type === "download") {
+      if (!preparing) return;
       const progress = Number.isFinite(detail.progress) ? Math.round(detail.progress) : 0;
       setStatus(`背景模型下載中 ${progress}% · ${detail.file || "模型檔案"}`, "idle");
       return;
@@ -175,19 +206,24 @@
       preparing = false;
       prepared = true;
       document.documentElement.classList.remove("model-loading");
-      setStatus(`${detail.modelLabel || "字幕模型"}已準備完成，之後開始辨識可直接使用。`, "ready");
+      setStatus(`${detail.modelLabel || "字幕模型"}已準備完成。`, "ready");
       return;
     }
-    if (detail.type === "error") {
+    if (["error", "cancelled", "deferred"].includes(detail.type)) {
       clearPrepareTimeout();
       preparing = false;
       document.documentElement.classList.remove("model-loading");
-      setStatus("背景模型未能完成，開始辨識時會自動重試並降級。", "warning");
+      if (detail.type === "deferred") {
+        setStatus("行動裝置採用穩定模式：先完成影片解碼，再載入字幕模型。", "ready");
+      } else {
+        setStatus("背景模型已停止；前景辨識會使用單一模型工作流程重新載入。", "warning");
+      }
     }
   }
 
   async function clearModelCaches() {
     if (!confirm("要清除 ReelScribe 的 AI 模型與 OCR 快取嗎？網站介面與字幕文字不會被刪除。")) return;
+    cancelPreparation("cache-clear", "正在清除 AI 模型快取…");
     if (clearButton) clearButton.disabled = true;
     setStatus("正在清除 AI 模型快取…", "idle");
     let removed = 0;
@@ -223,24 +259,56 @@
   }
 
   function scheduleIdlePreparation() {
-    const run = () => prepareModel().catch(() => {});
+    cancelScheduledPreparation();
+    if (isMobile()) {
+      setStatus("手機穩定模式已啟用：不會在首頁自動下載模型，避免 Safari 因模型與影片同時載入而重新啟動頁面。", "ready");
+      return;
+    }
+    const run = () => {
+      idleHandle = null;
+      fallbackTimer = null;
+      if (window.ReelScribeApp?.getFile?.() || window.ReelScribeApp?.isProcessing?.()) return;
+      prepareModel().catch(() => {});
+    };
     if ("requestIdleCallback" in window) {
-      requestIdleCallback(run, { timeout: 6000 });
+      idleHandle = requestIdleCallback(run, { timeout: 12000 });
     } else {
-      setTimeout(run, 3500);
+      fallbackTimer = setTimeout(run, 8000);
     }
   }
 
   async function showInitialStorage() {
     const state = await updateStoragePolicy();
+    if (isMobile()) {
+      setStatus("手機將在影片解碼完成後才載入字幕模型，避免兩個大型工作同時進行。", "ready");
+      return;
+    }
     if (state.quota > 0) {
-      setStatus(`瀏覽器可用空間約 ${formatBytes(state.available)}。空間足夠時會在背景準備較小的字幕模型。`, state.constrained ? "warning" : "idle");
+      setStatus(`瀏覽器可用空間約 ${formatBytes(state.available)}。桌機空間足夠時才會在背景準備較小模型。`, state.constrained ? "warning" : "idle");
     }
   }
 
+  function onUserIntent() {
+    cancelPreparation("user-intent", "已停止背景模型工作，避免與影片、OCR 或前景辨識衝突。");
+  }
+
   window.addEventListener("reelscribe:model", onModelEvent);
+  window.addEventListener("reelscribe:model-reset", () => {
+    if (!preparing) return;
+    cancelPreparation("worker-reset", "背景模型工作已釋放，前景處理將使用乾淨的單一 Worker。");
+  });
+  window.addEventListener("reelscribe:user-intent", onUserIntent);
+  fileInput?.addEventListener("change", onUserIntent, true);
   prepareButton?.addEventListener("click", () => prepareModel({ force: true }));
   clearButton?.addEventListener("click", clearModelCaches);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && !window.ReelScribeApp?.isProcessing?.()) {
+      cancelPreparation("page-hidden", "頁面已進入背景，已停止非必要模型下載以節省記憶體。");
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    if (!window.ReelScribeApp?.isProcessing?.()) cancelPreparation("pagehide", "");
+  });
   window.addEventListener("pageshow", () => {
     showInitialStorage().catch(() => {});
     scheduleIdlePreparation();
@@ -252,6 +320,8 @@
     updateStoragePolicy,
     prepareModel,
     clearModelCaches,
+    cancelPreparation,
+    cancelScheduledPreparation,
     isPreparing: () => preparing,
   });
 })();
