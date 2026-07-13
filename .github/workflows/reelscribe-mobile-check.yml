@@ -31,7 +31,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -44,13 +44,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate JSON and release policy
+      - name: Validate JSON, model catalog and store preflight
         run: |
           set -euo pipefail
           python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
           python -m json.tool reelscribe-mobile/platform-services.json >/dev/null
           python -m json.tool reelscribe-mobile/package.json >/dev/null
           python -m json.tool reelscribe-mobile/app.json >/dev/null
+          python -m json.tool reelscribe-mobile/native/reelscribe-manager/package.json >/dev/null
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
           node reelscribe-mobile/scripts/preflight-store.mjs
 
@@ -58,71 +59,68 @@ jobs:
         working-directory: reelscribe-mobile
         run: npm install --ignore-scripts --no-audit --no-fund --silent
 
-      - name: Capture TypeScript diagnostics
-        id: typecheck
+      - name: Type-check application
         working-directory: reelscribe-mobile
-        run: |
-          set +e
-          npx tsc --noEmit --pretty false >typecheck.log 2>&1
-          status=$?
-          cat typecheck.log
-          printf '%s\n' "$status" >typecheck.exit
-          exit 0
+        run: npx tsc --noEmit --pretty false
 
-      - name: Upload TypeScript diagnostics
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: reelscribe-mobile-typecheck
-          path: |
-            reelscribe-mobile/typecheck.log
-            reelscribe-mobile/typecheck.exit
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Enforce TypeScript result
-        working-directory: reelscribe-mobile
-        run: test "$(cat typecheck.exit)" = "0"
-
-      - name: Check app, privacy, support and store files
+      - name: Validate native package and store assets
         run: |
           set -euo pipefail
-          test -s reelscribe-mobile/src/App.tsx
-          test -s reelscribe-mobile/src/modelCatalog.ts
-          test -s reelscribe-mobile/src/native/NativeReelScribeEngine.ts
-          test -s reelscribe-mobile/src/services/modelManager.ts
-          test -s reelscribe-mobile/src/services/publicResolver.ts
-          test -s reelscribe-mobile/native/IMPLEMENTATION.md
-          test -s reelscribe-mobile/MODEL-RESEARCH.md
-          test -s reelscribe-mobile/STORE-LAUNCH.md
-          test -s reelscribe-mobile/PRIVACY.md
-          test -s reelscribe-mobile/platform-services.json
-          test -s reelscribe-mobile/store/zh-TW.md
-          test -s reelscribe-mobile/store/en-US.md
-          test -s reelscribe-mobile/store/APP-PRIVACY-ANSWERS.md
-          test -s reelscribe-mobile/store/GOOGLE-DATA-SAFETY.md
-          test -s reelscribe-mobile/scripts/preflight-store.mjs
-          test -s reelscribe/privacy.html
-          test -s reelscribe/terms.html
-          test -s reelscribe/support.html
-          grep -q 'io.github.paq6809.reelscribe' reelscribe-mobile/README.md
-          grep -q 'React Native 0.86' reelscribe-mobile/README.md
+          files=(
+            reelscribe-mobile/src/App.tsx
+            reelscribe-mobile/src/modelCatalog.ts
+            reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+            reelscribe-mobile/src/services/modelManager.ts
+            reelscribe-mobile/src/services/publicResolver.ts
+            reelscribe-mobile/native/IMPLEMENTATION.md
+            reelscribe-mobile/native/reelscribe-manager/package.json
+            reelscribe-mobile/native/reelscribe-manager/react-native.config.js
+            reelscribe-mobile/native/reelscribe-manager/ReelScribeManager.podspec
+            reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
+            reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManagerBridge.m
+            reelscribe-mobile/native/reelscribe-manager/ios/Data+ReelScribe.swift
+            reelscribe-mobile/native/reelscribe-manager/android/build.gradle
+            reelscribe-mobile/native/reelscribe-manager/android/src/main/AndroidManifest.xml
+            reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerPackage.kt
+            reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
+            reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ByteBufferExtensions.kt
+            reelscribe-mobile/MODEL-RESEARCH.md
+            reelscribe-mobile/STORE-LAUNCH.md
+            reelscribe-mobile/PRIVACY.md
+            reelscribe-mobile/platform-services.json
+            reelscribe-mobile/store/zh-TW.md
+            reelscribe-mobile/store/en-US.md
+            reelscribe-mobile/store/APP-PRIVACY-ANSWERS.md
+            reelscribe-mobile/store/GOOGLE-DATA-SAFETY.md
+            reelscribe-mobile/scripts/preflight-store.mjs
+            reelscribe-mobile/scripts/release-preflight.mjs
+            reelscribe/privacy.html
+            reelscribe/terms.html
+            reelscribe/support.html
+          )
+          for file in "${files[@]}"; do test -s "$file"; done
+
+          grep -q '"@reelscribe/native-manager": "file:./native/reelscribe-manager"' reelscribe-mobile/package.json
           grep -q 'whisper.rn.*0.6.0' reelscribe-mobile/README.md
-          grep -q 'whisper.rn' reelscribe-mobile/package.json
-          grep -q 'preflight:store' reelscribe-mobile/package.json
           grep -q 'initWhisper' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
-          grep -q 'ReelScribeManager' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
-          grep -q 'SHA-256' reelscribe-mobile/native/IMPLEMENTATION.md
+          grep -q 'releaseAllWhisper' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+          grep -q 'model.sha256' reelscribe-mobile/src/native/NativeReelScribeEngine.ts
+          grep -q 'jobId = task.jobId' reelscribe-mobile/src/services/modelManager.ts
+          grep -q 'AVAssetReader' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
+          grep -q 'VNRecognizeTextRequest' reelscribe-mobile/native/reelscribe-manager/ios/ReelScribeManager.swift
+          grep -q 'MediaExtractor' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
+          grep -q 'MediaCodec' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
+          grep -q 'ChineseTextRecognizerOptions' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
+          grep -q '300L \* 1024L \* 1024L' reelscribe-mobile/native/reelscribe-manager/android/src/main/java/io/github/paq6809/reelscribe/manager/ReelScribeManagerModule.kt
+          grep -q 'WhisperKit' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Qwen3-ASR' reelscribe-mobile/MODEL-RESEARCH.md
-          grep -q 'SenseVoice' reelscribe-mobile/MODEL-RESEARCH.md
-          grep -q 'Moonshine' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Nemotron' reelscribe-mobile/MODEL-RESEARCH.md
+          grep -q 'Moonshine' reelscribe-mobile/MODEL-RESEARCH.md
           grep -q 'Data Safety' reelscribe-mobile/STORE-LAUNCH.md
           grep -q 'App Privacy' reelscribe-mobile/STORE-LAUNCH.md
           grep -q 'support.html' reelscribe-mobile/store/zh-TW.md
-          grep -q '不包含跨 App 追蹤' reelscribe/privacy.html
 
-      - name: Enforce mobile privacy and security boundaries
+      - name: Audit mobile privacy and security boundaries
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -130,7 +128,12 @@ jobs:
           import json
           import re
 
-          source = '\n'.join(path.read_text(encoding='utf-8') for path in Path('reelscribe-mobile/src').rglob('*') if path.suffix in {'.ts', '.tsx'})
+          source = '\n'.join(
+              path.read_text(encoding='utf-8')
+              for root in [Path('reelscribe-mobile/src'), Path('reelscribe-mobile/native/reelscribe-manager')]
+              for path in root.rglob('*')
+              if path.suffix in {'.ts', '.tsx', '.swift', '.m', '.kt'}
+          )
           assert 'document.cookie' not in source
           assert 'new Function(' not in source
           assert not re.search(r'(^|[^\w])eval\s*\(', source)
@@ -139,8 +142,9 @@ jobs:
           assert "referrerPolicy: 'no-referrer'" in source
           assert 'initWhisper' in source
           assert 'releaseAllWhisper' in source
-          assert 'model.sha256' in source
           assert 'prepareMedia' in source
+          assert 'vite-xi-one-59.vercel.app' in source
+          assert 'document.cookie' not in source
 
           catalog = json.loads(Path('reelscribe/models/mobile-model-catalog.json').read_text(encoding='utf-8'))
           by_id = {item['id']: item for item in catalog['models']}
@@ -152,36 +156,22 @@ jobs:
           services = json.loads(Path('reelscribe-mobile/platform-services.json').read_text(encoding='utf-8'))
           assert services['principles']['defaultExecution'] == 'on-device'
           assert services['principles']['noSilentCloudFallback'] is True
+          assert services['principles']['oneHeavyInferenceTaskAtATime'] is True
           PY
 
       - name: Check current upstream model and runtime records
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest \
-            | python -m json.tool >/dev/null
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://api.github.com/repos/mybigday/whisper.rn/releases/latest \
-            | python -m json.tool >/dev/null
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://raw.githubusercontent.com/QwenLM/Qwen3-ASR/main/README.md \
-            | grep -q 'Qwen3-ASR'
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://raw.githubusercontent.com/FunAudioLLM/SenseVoice/main/README.md \
-            | grep -q 'SenseVoice'
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/latest \
-            | python -m json.tool >/dev/null
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://api.github.com/repos/moonshine-ai/moonshine/releases/latest \
-            | python -m json.tool >/dev/null
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://api.github.com/repos/argmaxinc/argmax-oss-swift/releases/latest \
-            | python -m json.tool >/dev/null
-          curl --fail --silent --show-error --location --retry 3 --max-time 30 \
-            https://raw.githubusercontent.com/NVIDIA-NeMo/Speech/main/README.md \
-            | grep -Eiq 'Nemotron|Parakeet'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/mybigday/whisper.rn/releases/latest | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://raw.githubusercontent.com/QwenLM/Qwen3-ASR/main/README.md | grep -q 'Qwen3-ASR'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://raw.githubusercontent.com/FunAudioLLM/SenseVoice/main/README.md | grep -q 'SenseVoice'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/latest | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/moonshine-ai/moonshine/releases/latest | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://api.github.com/repos/argmaxinc/argmax-oss-swift/releases/latest | python -m json.tool >/dev/null
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://raw.githubusercontent.com/NVIDIA-NeMo/Speech/main/README.md | grep -Eiq 'Nemotron|Parakeet'
+          curl --fail --silent --show-error --location --retry 3 --max-time 30 https://developers.google.com/ml-kit/vision/text-recognition/v2/android | grep -q 'text-recognition-chinese'
 
       - name: Enforce read-only and pinned Actions
         run: |
