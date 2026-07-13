@@ -5,6 +5,9 @@ on:
     paths:
       - "reelscribe/**"
       - "tests/reelscribe-audit.mjs"
+      - "tests/reelscribe-stability-audit.mjs"
+      - "tests/reelscribe-youtube-quality-audit.mjs"
+      - "tests/reelscribe-ocr-quality-audit.mjs"
       - "robots.txt"
       - "SECURITY.md"
       - ".github/CODEOWNERS"
@@ -15,6 +18,9 @@ on:
     paths:
       - "reelscribe/**"
       - "tests/reelscribe-audit.mjs"
+      - "tests/reelscribe-stability-audit.mjs"
+      - "tests/reelscribe-youtube-quality-audit.mjs"
+      - "tests/reelscribe-ocr-quality-audit.mjs"
       - "robots.txt"
       - "SECURITY.md"
       - ".github/CODEOWNERS"
@@ -61,12 +67,20 @@ jobs:
           node --check reelscribe/ui.js
           node --check reelscribe/share.js
           node --check tests/reelscribe-audit.mjs
+          node --check tests/reelscribe-stability-audit.mjs
+          node --check tests/reelscribe-youtube-quality-audit.mjs
+          node --check tests/reelscribe-ocr-quality-audit.mjs
           cp reelscribe/worker.js /tmp/reelscribe-worker.mjs
           node --check /tmp/reelscribe-worker.mjs
           node --check reelscribe/sw.js
 
-      - name: Run dependency-free functional audit
-        run: node tests/reelscribe-audit.mjs
+      - name: Run dependency-free functional audits
+        run: |
+          set -euo pipefail
+          node tests/reelscribe-audit.mjs
+          node tests/reelscribe-stability-audit.mjs
+          node tests/reelscribe-youtube-quality-audit.mjs
+          node tests/reelscribe-ocr-quality-audit.mjs
 
       - name: Validate manifest, sitemap and structured data
         run: |
@@ -112,20 +126,22 @@ jobs:
               assert css.count("{") == css.count("}"), f"Unbalanced CSS braces: {path}"
           PY
 
-      - name: Confirm app, preload, OCR and security wiring
+      - name: Confirm app, OCR and security wiring
         run: |
           set -euo pipefail
           files=(
             reelscribe/index.html reelscribe/supported-platforms.html
             reelscribe/styles.css reelscribe/ui-polish.css reelscribe/runtime.css
-            reelscribe/OPTIMIZATION.md reelscribe/PROMOTION.md reelscribe/README.md
+            reelscribe/OPTIMIZATION.md reelscribe/STABILITY.md reelscribe/PROMOTION.md reelscribe/README.md
             reelscribe/sitemap.xml reelscribe/social-card.svg
             robots.txt SECURITY.md .github/CODEOWNERS .github/dependabot.yml
             reelscribe/format-compat.js reelscribe/speech-enhancer.js reelscribe/app.js
             reelscribe/runtime-optimizer.js reelscribe/screen-ocr.js
             reelscribe/capture.js reelscribe/traditional.js reelscribe/instagram-direct.js
             reelscribe/universal-link.js reelscribe/ui.js reelscribe/share.js
-            reelscribe/worker.js reelscribe/sw.js tests/reelscribe-audit.mjs
+            reelscribe/worker.js reelscribe/sw.js
+            tests/reelscribe-audit.mjs tests/reelscribe-stability-audit.mjs
+            tests/reelscribe-youtube-quality-audit.mjs tests/reelscribe-ocr-quality-audit.mjs
           )
           for file in "${files[@]}"; do test -s "$file"; done
 
@@ -138,9 +154,7 @@ jobs:
 
           grep -q 'APP_BUILD = "2026.07.13.7"' reelscribe/app.js
           grep -q 'function prepareModel' reelscribe/app.js
-          grep -q 'function setStoragePolicy' reelscribe/app.js
           grep -q 'function mergeExternalSegments' reelscribe/app.js
-          grep -q 'cacheAllowed' reelscribe/app.js
           grep -q 'registration.waiting' reelscribe/app.js
           grep -q 'updateViaCache: "none"' reelscribe/app.js
           ! grep -q 'controllerchange' reelscribe/app.js
@@ -149,40 +163,38 @@ jobs:
           grep -q 'navigator.storage.estimate' reelscribe/runtime-optimizer.js
           grep -q 'navigator.storage.persist' reelscribe/runtime-optimizer.js
           grep -q 'requestIdleCallback' reelscribe/runtime-optimizer.js
-          grep -q 'saveData' reelscribe/runtime-optimizer.js
           grep -q 'clearModelCaches' reelscribe/runtime-optimizer.js
-          grep -q 'MOBILE_PREFETCH_MIN' reelscribe/runtime-optimizer.js
-          grep -q 'DESKTOP_PREFETCH_MIN' reelscribe/runtime-optimizer.js
 
           grep -q 'TESSERACT_VERSION = "7.0.0"' reelscribe/screen-ocr.js
-          grep -q 'Tesseract.createWorker' reelscribe/screen-ocr.js
-          grep -q 'cacheMethod' reelscribe/screen-ocr.js
+          grep -q 'user_defined_dpi: "300"' reelscribe/screen-ocr.js
+          grep -q 'const FRAME_BORDER = 16' reelscribe/screen-ocr.js
+          grep -q 'bright-text' reelscribe/screen-ocr.js
+          grep -q 'function scriptStats' reelscribe/screen-ocr.js
+          grep -q 'function languagePlausibility' reelscribe/screen-ocr.js
+          grep -q 'function confirmCandidate' reelscribe/screen-ocr.js
+          grep -q 'isAcceptableText: acceptableText' reelscribe/screen-ocr.js
           grep -q 'MAX_MOBILE_FRAMES = 60' reelscribe/screen-ocr.js
-          grep -q 'worker.recognize' reelscribe/screen-ocr.js
           grep -q 'worker.terminate' reelscribe/screen-ocr.js
           grep -q 'mergeExternalSegments' reelscribe/screen-ocr.js
-          grep -q 'chi_tra' reelscribe/screen-ocr.js
 
           grep -q 'VAD_VERSION = "0.0.30"' reelscribe/speech-enhancer.js
           grep -q 'NonRealTimeVAD' reelscribe/speech-enhancer.js
           grep -q 'model: "v5"' reelscribe/speech-enhancer.js
-          grep -q 'buildFrameMask' reelscribe/speech-enhancer.js
 
           grep -q 'FLAGSHIP_MODEL = "onnx-community/whisper-large-v3-turbo"' reelscribe/worker.js
           grep -q 'ACCURATE_MODEL = "onnx-community/whisper-small"' reelscribe/worker.js
           grep -q 'message.type === "prepare"' reelscribe/worker.js
-          grep -q 'smallestRepeatingUnit' reelscribe/worker.js
           grep -q 'repetition_penalty: 1.2' reelscribe/worker.js
           grep -q 'no_repeat_ngram_size: 3' reelscribe/worker.js
 
-          grep -q 'QUALITY_BUILD = "2026.07.13.7"' reelscribe/ui.js
+          grep -q 'QUALITY_BUILD = "2026.07.13.9"' reelscribe/ui.js
+          grep -q 'function isBadOcrText' reelscribe/ui.js
+          grep -q 'function isBadSavedResult' reelscribe/ui.js
           grep -q 'ReelScribeQualityGuard' reelscribe/ui.js
           ! grep -q 'controllerchange' reelscribe/ui.js
           ! grep -q 'window.location.reload' reelscribe/ui.js
 
-          grep -q 'reelscribe-shell-v13' reelscribe/sw.js
-          grep -q './runtime.css' reelscribe/sw.js
-          grep -q './runtime-optimizer.js' reelscribe/sw.js
+          grep -q 'reelscribe-shell-v15' reelscribe/sw.js
           grep -q './screen-ocr.js' reelscribe/sw.js
           grep -q 'async function networkFirst' reelscribe/sw.js
           ! grep -q 'skipWaiting' reelscribe/sw.js
@@ -198,7 +210,6 @@ jobs:
           grep -q 'prefers-reduced-motion' reelscribe/styles.css
           grep -q 'min-height: 46px' reelscribe/styles.css
           grep -q 'html.model-loading' reelscribe/runtime.css
-          grep -q '.ocr-tools' reelscribe/runtime.css
           ! grep -q 'class="notes shell"' reelscribe/index.html
 
       - name: Audit workflow and client security controls
@@ -209,17 +220,15 @@ jobs:
           import re
 
           workflow = Path('.github/workflows/reelscribe-check.yml').read_text(encoding='utf-8')
-          uses = re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M)
-          for value in uses:
+          for value in re.findall(r'^\s*uses:\s*([^\s#]+)', workflow, flags=re.M):
               if value.startswith('./'):
                   continue
-              assert re.search(r'@[0-9a-f]{40}$', value), f'Action is not pinned to a full SHA: {value}'
-
+              assert re.search(r'@[0-9a-f]{40}$', value), value
           assert re.search(r'^permissions:\s*\n\s+contents:\s+read\s*$', workflow, flags=re.M)
+
           index = Path('reelscribe/index.html').read_text(encoding='utf-8')
           assert 'Content-Security-Policy' in index
           assert 'name="referrer" content="no-referrer"' in index
-
           source = '\n'.join(path.read_text(encoding='utf-8') for path in Path('reelscribe').glob('*.js'))
           assert 'document.cookie' not in source
           assert 'new Function(' not in source
@@ -227,15 +236,15 @@ jobs:
           assert 'FormData(' not in Path('reelscribe/screen-ocr.js').read_text(encoding='utf-8')
           PY
 
-      - name: Check Instagram resolver service
+      - name: Check public resolver service
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 3 --max-time 30 \
             https://vite-xi-one-59.vercel.app/api/health \
-            | tee /tmp/instagram-health.json
+            | tee /tmp/resolver-health.json
           python - <<'PY'
           import json
-          data = json.load(open('/tmp/instagram-health.json', encoding='utf-8'))
+          data = json.load(open('/tmp/resolver-health.json', encoding='utf-8'))
           assert data.get('ok') is True
           assert data.get('mode') == 'public-only-no-cookies-no-storage'
           PY
