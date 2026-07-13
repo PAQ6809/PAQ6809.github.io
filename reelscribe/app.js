@@ -17,6 +17,7 @@ const elements = {
   removeFile: $("#remove-file"),
   model: $("#model-select"),
   language: $("#language-select"),
+  suppressMusic: $("#suppress-music"),
   preferGpu: $("#prefer-gpu"),
   transcribe: $("#transcribe"),
   progressPanel: $("#progress-panel"),
@@ -44,11 +45,14 @@ const state = {
   result: null,
   startedAt: 0,
   sourceUrl: "",
+  mediaDuration: 0,
+  enhancement: null,
+  modelReadyLabel: "",
 };
 
 const MAX_FILE_BYTES = 300 * 1024 * 1024;
 const TARGET_SAMPLE_RATE = 16000;
-const APP_BUILD = "2026.07.13.3";
+const APP_BUILD = "2026.07.13.6";
 
 function showToast(message) {
   elements.toast.textContent = message;
@@ -94,7 +98,7 @@ function validateUrl() {
     const normalized = normalizeInstagramUrl(elements.igUrl.value);
     state.sourceUrl = normalized;
     elements.igUrl.value = normalized;
-    elements.urlStatus.textContent = "連結格式正確。接著請選擇你有權處理的影片檔。";
+    elements.urlStatus.textContent = "連結格式正確。正在嘗試取得公開影片或字幕。";
     elements.urlStatus.classList.add("ok");
     elements.openInstagram.href = normalized;
     elements.verifiedActions.hidden = false;
@@ -119,6 +123,9 @@ async function pasteUrl() {
 function clearFile() {
   state.file = null;
   state.result = null;
+  state.enhancement = null;
+  state.mediaDuration = 0;
+  state.modelReadyLabel = "";
   elements.fileInput.value = "";
   elements.filePanel.hidden = true;
   elements.transcribe.disabled = true;
@@ -128,6 +135,14 @@ function clearFile() {
   state.previewUrl = null;
   elements.preview.removeAttribute("src");
   elements.preview.load();
+}
+
+function updatePreviewDuration() {
+  const duration = Number(elements.preview.duration);
+  state.mediaDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  if (state.mediaDuration && state.file) {
+    elements.fileDetail.textContent = `${formatBytes(state.file.size)} · ${state.file.type || "媒體檔案"} · ${formatDuration(state.mediaDuration)}`;
+  }
 }
 
 function setFile(file) {
@@ -143,8 +158,12 @@ function setFile(file) {
   }
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
   state.file = file;
+  state.result = null;
+  state.enhancement = null;
+  state.mediaDuration = 0;
   state.previewUrl = URL.createObjectURL(file);
   elements.preview.src = state.previewUrl;
+  elements.preview.onloadedmetadata = updatePreviewDuration;
   elements.fileName.textContent = file.name;
   elements.fileDetail.textContent = `${formatBytes(file.size)} · ${file.type || "媒體檔案"}`;
   elements.filePanel.hidden = false;
@@ -158,9 +177,9 @@ function downmixToMono(audioBuffer) {
   const output = new Float32Array(audioBuffer.length);
   for (let channel = 0; channel < channels; channel += 1) {
     const data = audioBuffer.getChannelData(channel);
-    for (let i = 0; i < data.length; i += 1) output[i] += data[i] / channels;
+    for (let index = 0; index < data.length; index += 1) output[index] += data[index] / channels;
   }
-  return output;
+  return { audio: output, stereoCentered: false };
 }
 
 function resampleLinear(input, sourceRate, targetRate) {
@@ -168,27 +187,53 @@ function resampleLinear(input, sourceRate, targetRate) {
   const ratio = sourceRate / targetRate;
   const outputLength = Math.max(1, Math.round(input.length / ratio));
   const output = new Float32Array(outputLength);
-  for (let i = 0; i < outputLength; i += 1) {
-    const sourceIndex = i * ratio;
+  for (let index = 0; index < outputLength; index += 1) {
+    const sourceIndex = index * ratio;
     const left = Math.floor(sourceIndex);
     const right = Math.min(left + 1, input.length - 1);
     const weight = sourceIndex - left;
-    output[i] = input[left] * (1 - weight) + input[right] * weight;
+    output[index] = input[left] * (1 - weight) + input[right] * weight;
   }
   return output;
 }
 
 async function decodeMedia(file) {
-  setProgress("正在讀取影片", "解碼音訊中", 4, "大型影片在手機上可能需要一點時間，請保持頁面開啟。 ");
+  setProgress("正在讀取影片", "解碼音訊中", 4, "模型會同時在背景準備，縮短整體等待時間。 ");
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) throw new Error("這個瀏覽器不支援音訊解碼。請改用最新版 Safari、Chrome 或 Edge。 ");
   const context = new AudioContextClass();
   try {
     const arrayBuffer = await file.arrayBuffer();
     const decoded = await context.decodeAudioData(arrayBuffer.slice(0));
-    const mono = downmixToMono(decoded);
-    const resampled = resampleLinear(mono, decoded.sampleRate, TARGET_SAMPLE_RATE);
-    return { audio: resampled, duration: decoded.duration };
+    state.mediaDuration = decoded.duration;
+
+    const enhancer = window.ReelScribeSpeechEnhancer;
+    const channel = enhancer?.extractSpeechChannel
+      ? enhancer.extractSpeechChannel(decoded)
+      : downmixToMono(decoded);
+    const resampled = resampleLinear(channel.audio, decoded.sampleRate, TARGET_SAMPLE_RATE);
+
+    if (!elements.suppressMusic?.checked || !enhancer?.enhance) {
+      state.enhancement = {
+        enabled: false,
+        stereoCentered: Boolean(channel.stereoCentered),
+      };
+      return { audio: resampled, duration: decoded.duration, enhancement: state.enhancement };
+    }
+
+    setProgress("正在強化人聲", "分析語音與背景音樂", 7, "Silero VAD 只在需要時載入，並與 Whisper 模型同時準備。 ");
+    const enhanced = await enhancer.enhance(resampled, TARGET_SAMPLE_RATE, {
+      useVad: true,
+      onProgress(title, detail, progress) {
+        setProgress(title, detail, Math.max(7, Math.min(18, progress)), "保留人聲並衰減純音樂區段。歌曲辨識可關閉此功能。 ");
+      },
+    });
+    state.enhancement = {
+      ...enhanced.meta,
+      stereoCentered: Boolean(channel.stereoCentered),
+      sideEnergyRatio: Number(channel.sideEnergyRatio) || 0,
+    };
+    return { audio: enhanced.audio, duration: decoded.duration, enhancement: state.enhancement };
   } catch (error) {
     throw new Error("無法讀取這個影片的音訊。請改用 MP4（H.264/AAC）、M4A、MP3 或 WAV。 ");
   } finally {
@@ -222,14 +267,35 @@ function handleWorkerMessage(event) {
   }
   if (message.type === "download") {
     const progress = Number.isFinite(message.progress) ? message.progress : 0;
-    setProgress("正在準備 AI 模型", message.file || "下載模型中", Math.max(8, Math.round(progress)), "模型只需首次下載，瀏覽器之後會使用快取。 ");
+    setProgress("正在準備 AI 模型", message.file || "下載模型中", Math.max(8, Math.round(progress)), "模型會保存在瀏覽器快取；再次使用不需重新完整下載。 ");
+    return;
+  }
+  if (message.type === "ready") {
+    state.modelReadyLabel = message.modelLabel || "字幕模型";
     return;
   }
   if (message.type === "result") {
-    finishTranscription(message.output, message.duration, message.device);
+    finishTranscription(message.output, message.duration, message.device, message.model, message.modelLabel, message.enhancementMeta);
     return;
   }
   if (message.type === "error") failTranscription(message.message || "字幕辨識失敗。 ");
+}
+
+function estimateDuration() {
+  const previewDuration = Number(elements.preview.duration);
+  if (Number.isFinite(previewDuration) && previewDuration > 0) return previewDuration;
+  if (state.mediaDuration > 0) return state.mediaDuration;
+  return 60;
+}
+
+async function requestPersistentStorage() {
+  try {
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted?.()) return true;
+    return navigator.storage.persist();
+  } catch {
+    return false;
+  }
 }
 
 async function startTranscription() {
@@ -237,10 +303,26 @@ async function startTranscription() {
   elements.transcribe.disabled = true;
   elements.results.hidden = true;
   state.startedAt = performance.now();
+  state.modelReadyLabel = "";
+
   try {
-    const decoded = await decodeMedia(state.file);
-    setProgress("正在準備字幕模型", "第一次使用會下載模型", 7, "辨識過程完全在你的裝置上執行。 ");
+    requestPersistentStorage();
     const worker = getWorker();
+    worker.postMessage({
+      type: "prepare",
+      duration: estimateDuration(),
+      model: elements.model.value,
+      preferGpu: elements.preferGpu.checked,
+    });
+
+    const decoded = await decodeMedia(state.file);
+    setProgress(
+      "正在準備字幕模型",
+      state.modelReadyLabel || "等待模型與音訊完成準備",
+      18,
+      "音訊強化與模型載入已平行執行。 ",
+    );
+
     worker.postMessage(
       {
         type: "transcribe",
@@ -249,6 +331,7 @@ async function startTranscription() {
         model: elements.model.value,
         language: elements.language.value,
         preferGpu: elements.preferGpu.checked,
+        enhancementMeta: decoded.enhancement,
       },
       [decoded.audio.buffer],
     );
@@ -274,15 +357,20 @@ function normalizeSegments(output, duration) {
     .filter((segment) => segment.text);
 }
 
-function finishTranscription(output, duration, device) {
+function finishTranscription(output, duration, device, model, modelLabel, enhancementMeta) {
   const segments = normalizeSegments(output, duration);
   const text = segments.map((segment) => segment.text).join(" ").replace(/\s+/g, " ").trim() || String(output?.text || "").trim();
-  state.result = { text, segments, duration, device };
+  const enhancement = enhancementMeta || state.enhancement || null;
+  state.result = { text, segments, duration, device, model, modelLabel, enhancement };
   elements.transcript.value = text;
   renderSegments();
   const elapsed = (performance.now() - state.startedAt) / 1000;
   const words = text.replace(/\s/g, "").length;
-  elements.resultStats.textContent = `${formatDuration(duration)} · ${segments.length} 段 · 約 ${words} 字 · ${device === "webgpu" ? "WebGPU" : "WASM/CPU"} · ${formatDuration(elapsed)} 完成`;
+  const engine = modelLabel || (device === "webgpu" ? "WebGPU Whisper" : "WASM／CPU Whisper");
+  const enhanced = enhancement?.enabled
+    ? (enhancement.vadApplied ? "語音強化" : "語音濾波")
+    : "原始音訊";
+  elements.resultStats.textContent = `${formatDuration(duration)} · ${segments.length} 段 · 約 ${words} 字 · ${engine} · ${enhanced} · ${formatDuration(elapsed)} 完成`;
   elements.results.hidden = false;
   elements.progressPanel.hidden = false;
   setProgress("字幕完成", "可以編輯、複製或下載", 100, "字幕只保存在目前頁面，不會上傳到伺服器。 ");
@@ -292,7 +380,7 @@ function finishTranscription(output, duration, device) {
 }
 
 function failTranscription(message) {
-  setProgress("處理失敗", message, 0, "可嘗試切換快速模式、關閉 WebGPU，或改用 MP4／M4A 檔案。 ");
+  setProgress("處理失敗", message, 0, "可指定正確語言、切換智慧／平衡模式；歌曲或唱歌內容可關閉語音強化再試。 ");
   elements.transcribe.disabled = false;
   showToast("字幕辨識失敗，請查看錯誤說明");
 }
@@ -347,11 +435,11 @@ function syncTranscriptOnly() {
 
 function formatSrtTimestamp(seconds) {
   const ms = Math.max(0, Math.round(seconds * 1000));
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  const s = Math.floor((ms % 60000) / 1000);
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
   const milli = ms % 1000;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")},${String(milli).padStart(3, "0")}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")},${String(milli).padStart(3, "0")}`;
 }
 
 function formatVttTimestamp(seconds) {
