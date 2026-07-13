@@ -1,6 +1,8 @@
 # ReelScribe Stability Contract
 
-## Incident addressed
+## Incidents addressed
+
+### Renderer memory pressure
 
 iPhone Safari may show that a page "repeatedly had a problem" when the WebContent process is terminated under memory pressure. ReelScribe previously allowed three heavy operations to overlap:
 
@@ -9,6 +11,16 @@ iPhone Safari may show that a page "repeatedly had a problem" when the WebConten
 3. foreground model selection or OCR startup.
 
 A second foreground `prepare` message could arrive while a different background model was still loading. On memory-constrained browsers this could create concurrent model downloads, duplicate pipelines, decoded PCM, and video buffers in the same renderer process.
+
+### Restored low-confidence subtitles
+
+A prior result such as repeated `I'm`, repeated short phrases, `>>`, or a single repeated CJK character could be saved to local storage before the old character-only detector rejected it. On the next visit, the result appeared as "restored" even though it was not trustworthy.
+
+The quality guard now evaluates token dominance, token diversity, consecutive token runs, repeated one-to-four-token n-grams, character diversity, symbol ratio, repeating units, and character runs. A matching saved result is deleted before it can remain visible.
+
+### YouTube public captions false negative
+
+Browser-only timed-text, Piped, and Invidious requests may fail because of CORS, instance health, or upstream changes even when a YouTube video has public manual or automatic captions. The dedicated public backend now uses pinned yt-dlp metadata extraction to retrieve caption tracks only. It does not download or store the video. If that backend fails, the browser still falls back to the existing public caption providers.
 
 ## Required runtime behavior
 
@@ -21,12 +33,14 @@ A second foreground `prepare` message could arrive while a different background 
 - OCR and Whisper transcription are mutually exclusive.
 - Hidden pages cancel only nonessential background preparation; an active foreground transcription is not intentionally terminated.
 - Background preparation has a finite timeout and must release its Worker on timeout.
+- A restored transcript is never trusted solely because it was previously saved; the current quality guard revalidates it.
+- Repeated English words and phrases are rejected in addition to repeated symbols and characters.
 
 ## Worker resilience
 
-`format-compat.js` installs a narrow Worker proxy only for same-origin `worker.js`. Other workers, including Tesseract workers, are not wrapped.
+`format-compat.js` may install a narrow Worker proxy only for same-origin `worker.js`. Other workers, including Tesseract workers, are not wrapped.
 
-The proxy:
+A resilient proxy, when present:
 
 - forwards message and error events through an `EventTarget`-compatible interface;
 - can immediately terminate a background model Worker;
@@ -36,6 +50,18 @@ The proxy:
 
 `Worker.terminate()` is used only for nonessential background preparation or an explicit preemption. It is not used to interrupt a foreground transcription.
 
+## YouTube captions backend
+
+- Accept only HTTPS YouTube watch, Shorts, live, embed, or youtu.be URLs with a valid 11-character video ID.
+- Use public subtitle and automatic-caption metadata only.
+- Never accept browser cookies, account sessions, passwords, private tokens, or login bypass instructions.
+- Fetch caption data only from an HTTPS YouTube or Googlevideo allowlist.
+- Cap individual caption responses at 4 MB and use finite extraction and network timeouts.
+- Return normalized timed segments and plain text with `no-store` and `no-referrer` protections.
+- Prefer manual captions when available, then automatic captions.
+- The frontend uses `credentials: omit`, `cache: no-store`, and a 45-second timeout.
+- Failure of the dedicated backend must fall through to the browser's public caption providers rather than producing a false success.
+
 ## Service Worker behavior
 
 - No `skipWaiting()`.
@@ -44,6 +70,7 @@ The proxy:
 - No `window.location.reload()`.
 - A waiting Service Worker activates after older pages close naturally.
 - Critical scripts remain network-first so the next clean opening receives current code.
+- Cache version v14 or newer is required for the repeated-token and YouTube resolver update.
 
 ## Storage and memory rules
 
@@ -60,18 +87,21 @@ Every relevant change must run:
 
 - `tests/reelscribe-audit.mjs`
 - `tests/reelscribe-stability-audit.mjs`
+- `tests/reelscribe-youtube-quality-audit.mjs`
 - `.github/workflows/reelscribe-check.yml`
 - `.github/workflows/reelscribe-stability-check.yml`
 
-The stability audit must continue to reject:
+The stability audits must continue to reject:
 
 - forced reload paths;
 - `skipWaiting()` and `clients.claim()`;
 - automatic mobile warmup;
 - simultaneous OCR and speech transcription;
 - foreground preparation that does not preempt a background model Worker;
-- unbounded background preparation.
+- unbounded background preparation;
+- restored repeated-word or repeated-phrase transcripts;
+- a YouTube resolver that sends credentials or silently suppresses all public-provider fallbacks.
 
 ## Security boundary
 
-The stability layer remains local and does not upload media, screenshots, model state, or device-storage information. It does not access cookies, passwords, private tokens, or account sessions. It must not weaken CSP or introduce unpinned external scripts.
+The stability layer remains local and does not upload media, screenshots, model state, or device-storage information. It does not access cookies, passwords, private tokens, or account sessions. The YouTube caption endpoint receives only a public URL and optional language preference, returns public caption text, and does not store video media. Changes must not weaken CSP or introduce unpinned external scripts.
