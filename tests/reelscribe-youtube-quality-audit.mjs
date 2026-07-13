@@ -41,7 +41,7 @@ assert.equal(isHallucinatedText("今天我們測試公開影片字幕是否能�
 assert.ok(tokenRepetitionMetrics(repeatedEnglish).dominantRatio > 0.7);
 assert.match(ui, /localStorage\.removeItem\("reelscribe:last"\)/);
 assert.match(ui, /I'm、>>、單一中文字或重複片語/);
-assert.match(ui, /QUALITY_BUILD = "2026\.07\.13\.8"/);
+assert.match(ui, /QUALITY_BUILD = "2026\.07\.13\.9"/);
 
 const parseYouTubeSource = extractFunction(direct, "parseYouTube");
 const youtubeContext = vm.createContext({ URL, String });
@@ -55,7 +55,7 @@ assert.match(direct, /referrerPolicy:\s*"no-referrer"/);
 assert.match(direct, /ReelScribeYouTubeDirect/);
 assert.match(direct, /runUniversalFallback/);
 assert.match(direct, /YouTube 自動字幕/);
-assert.match(sw, /reelscribe-shell-v14/);
+assert.match(sw, /reelscribe-shell-v15/);
 assert.doesNotMatch(sw, /skipWaiting\(|clients\.claim\(/);
 
 console.log("ReelScribe YouTube and transcript-quality audit passed.");
