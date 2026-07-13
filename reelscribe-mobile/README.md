@@ -4,7 +4,7 @@ ReelScribe Mobile is the native iOS/Android product track for the existing ReelS
 
 ## Current status
 
-This directory contains the production architecture, React Native application layer, model policy, store metadata, privacy documents, native bridge contract, CI checks and bootstrap scripts.
+This directory now contains the React Native application layer, the installed `whisper.rn` native binding, the secure native model/media manager contract, model policy, public-link resolver client, store metadata, privacy documents, CI checks and bootstrap scripts.
 
 The provisional application identifier is:
 
@@ -17,11 +17,13 @@ It is **not yet registered** in App Store Connect or Google Play Console. Confir
 ## Architecture
 
 - React Native 0.86 + React 19.2 for the shared app UI and task orchestration.
-- Native Swift/Kotlin implementation behind `NativeReelScribeEngine`.
-- `whisper.cpp` 1.9.1 as the primary offline multilingual engine.
-- Optional `sherpa-onnx` integration for SenseVoice, VAD, source separation, diarization and enhancement after model-license review.
-- Apple Vision text recognition on iOS and ML Kit Text Recognition v2 on Android for on-device burned-in subtitle OCR.
-- The existing public link resolver remains a text/metadata service; local media and transcripts stay on the device unless the user explicitly enables an optional self-hosted server mode.
+- `whisper.rn` 0.6.0 is installed and provides the React Native binding to `whisper.cpp` for native iOS/Android ASR.
+- `NativeReelScribeEngine.ts` calls `whisper.rn` directly for local transcription, cancellation, progress and timestamped segments.
+- A small Swift/Kotlin native module named `ReelScribeManager` remains responsible for resumable model download, SHA-256 verification, media-to-local-audio preparation, checkpoint persistence and platform OCR.
+- `whisper.cpp` 1.9.1 is the pinned production engine target in the release catalog.
+- Optional `sherpa-onnx` integration for SenseVoice, VAD, source separation, diarization and enhancement remains a candidate until model-license and device testing pass.
+- Apple Vision text recognition on iOS and ML Kit Text Recognition v2 on Android provide on-device burned-in subtitle OCR.
+- The existing public link resolver remains a public text/metadata service; local media and transcripts stay on the device unless the user explicitly enables a future self-hosted server mode.
 
 ## Model policy
 
@@ -58,12 +60,14 @@ macOS/Linux:
 
 The scripts create the native `ios/` and `android/` projects through the pinned React Native community CLI, then copy the maintained ReelScribe source files into the generated project. A macOS machine with Xcode is required to produce and sign an iOS build.
 
+After bootstrap, native autolinking connects `whisper.rn`; the project still must implement `ReelScribeManager` according to `native/IMPLEMENTATION.md` before model download, media conversion and OCR work in a signed build.
+
 ## Native implementation gates
 
 The store build is blocked until all of these pass:
 
-- Native bridge implements model download, SHA-256 verification, cancellation, resume and one-model-at-a-time memory rules.
-- iOS uses background asset delivery or a reviewed application-support download location; Android uses Play Asset Delivery or verified app-private storage.
+- `ReelScribeManager` implements model download, exact-size and SHA-256 verification, media preparation, cancellation, checkpoints, resume and one-model-at-a-time memory rules.
+- iOS uses background asset delivery or a reviewed Application Support download location; Android uses Play Asset Delivery or verified app-private storage.
 - App stays responsive during model download, OCR and long transcription.
 - 15-minute, 60-minute and 3-hour regression files complete without process termination on the supported device matrix.
 - Airplane-mode transcription works after the selected model is installed.
