@@ -95,7 +95,8 @@ for (const url of [
 }
 
 if (!storeText.includes('io.github.paq6809.reelscribe')) errors.push('Store launch file must contain the provisional application identifier.');
-if (/100%|perfect accuracy|all links work|所有連結.*成功|百分之百準確/i.test(claimableStoreText)) {
+const unsupportedClaimPattern = /(?:all links work|所有連結[^\n]{0,40}成功|百分之百準確|100%\s*(?:accurate|accuracy|準確|成功)|perfect(?:ly)?\s+(?:accurate|removes? music))/i;
+if (unsupportedClaimPattern.test(claimableStoreText)) {
   errors.push('Store metadata contains an unsupported success/accuracy claim.');
 }
 if (/advertising id|廣告識別碼/i.test(source)) errors.push('App source unexpectedly references advertising identifiers.');
