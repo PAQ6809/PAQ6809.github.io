@@ -132,13 +132,15 @@ assert.match(ocr, /Tesseract\.createWorker/);
 assert.match(ocr, /cacheMethod/);
 assert.match(ocr, /MAX_MOBILE_FRAMES = 60/);
 assert.match(ocr, /MAX_DESKTOP_FRAMES = 120/);
+assert.match(ocr, /MIN_PAGE_CONFIDENCE = 50/);
 assert.match(ocr, /captureFrame/);
 assert.match(ocr, /cropFraction/);
 assert.match(ocr, /worker\.recognize/);
 assert.match(ocr, /worker\.terminate/);
 assert.match(ocr, /mergeExternalSegments/);
 assert.match(ocr, /chi_tra/);
-assert.match(ocr, /confidence < 42/);
+assert.match(ocr, /numericConfidence < MIN_PAGE_CONFIDENCE/);
+assert.match(ocr, /languagePlausibility/);
 assert.doesNotMatch(ocr, /fetch\([^)]*upload|FormData|document\.cookie/i);
 
 assert.match(enhancer, /const VAD_VERSION = "0\.0\.30"/);
