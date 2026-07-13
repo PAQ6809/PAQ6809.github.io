@@ -73,8 +73,9 @@
       "status": "production-default",
       "artifact": {
         "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
-        "sha256": null,
-        "integrityStatus": "must-lock-before-store-release"
+        "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+        "sizeMb": 77.7,
+        "integrityStatus": "locked-from-upstream-file-metadata"
       }
     },
     {
@@ -89,8 +90,9 @@
       "status": "production-optional",
       "artifact": {
         "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
-        "sha256": null,
-        "integrityStatus": "must-lock-before-store-release"
+        "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+        "sizeMb": 148,
+        "integrityStatus": "locked-from-upstream-file-metadata"
       }
     },
     {
@@ -126,6 +128,23 @@
       }
     },
     {
+      "id": "breeze-asr-25",
+      "displayName": "Breeze ASR 25",
+      "engine": "whisper-cpp-evaluation",
+      "languages": ["zh-TW", "en"],
+      "license": "Apache-2.0",
+      "deployment": "on-device-research-candidate",
+      "deviceTier": "flagship",
+      "recommendedFor": ["taiwanese-mandarin", "traditional-chinese", "mandarin-english-code-switching", "caption-alignment"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "official-base-model-reviewed-community-mobile-conversions-not-approved"
+      },
+      "notes": "Official MediaTek model is based on Whisper large-v2 and optimized for Taiwanese Mandarin, code-switching and timestamp alignment. No community ONNX/Core ML/GGUF artifact is approved until reproducible conversion, exact size, SHA-256 and physical-device tests pass."
+    },
+    {
       "id": "whisperkit-large-v3-compressed-ios",
       "displayName": "WhisperKit Large v3 compressed",
       "engine": "whisperkit-ios",
@@ -135,11 +154,7 @@
       "deviceTier": "flagship-apple",
       "recommendedFor": ["ios-accuracy", "coreml"],
       "status": "research-candidate",
-      "artifact": {
-        "url": null,
-        "sha256": null,
-        "integrityStatus": "not-approved-for-first-store-build"
-      }
+      "artifact": {"url": null, "sha256": null, "integrityStatus": "not-approved-for-first-store-build"}
     },
     {
       "id": "sensevoice-small",
@@ -151,11 +166,7 @@
       "deviceTier": "mid",
       "recommendedFor": ["chinese", "cantonese", "audio-event-detection", "low-latency"],
       "status": "research-candidate",
-      "artifact": {
-        "url": null,
-        "sha256": null,
-        "integrityStatus": "not-approved-for-store-build"
-      }
+      "artifact": {"url": null, "sha256": null, "integrityStatus": "not-approved-for-store-build"}
     },
     {
       "id": "moonshine-english-family",
@@ -167,11 +178,7 @@
       "deviceTier": "all",
       "recommendedFor": ["english-live-transcription", "low-latency"],
       "status": "research-candidate",
-      "artifact": {
-        "url": null,
-        "sha256": null,
-        "integrityStatus": "not-approved-for-first-store-build"
-      }
+      "artifact": {"url": null, "sha256": null, "integrityStatus": "not-approved-for-first-store-build"}
     },
     {
       "id": "qwen3-asr-0.6b",
