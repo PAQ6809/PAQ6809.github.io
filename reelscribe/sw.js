@@ -1,13 +1,16 @@
-const CACHE_NAME = "reelscribe-shell-v12";
+const CACHE_NAME = "reelscribe-shell-v13";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./supported-platforms.html",
   "./styles.css",
   "./ui-polish.css",
+  "./runtime.css",
   "./format-compat.js",
   "./speech-enhancer.js",
   "./app.js",
+  "./runtime-optimizer.js",
+  "./screen-ocr.js",
   "./capture.js",
   "./traditional.js",
   "./instagram-direct.js",
@@ -21,17 +24,15 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
+  // Do not call skipWaiting here. An update must never replace the active worker
+  // while a long model download, OCR pass, or transcription is in progress.
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)));
-    await self.clients.claim();
-    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    clients.forEach((client) => client.postMessage({ type: "REELSCRIBE_UPDATE_READY", version: CACHE_NAME }));
+    await Promise.all(keys.filter((key) => key.startsWith("reelscribe-shell-") && key !== CACHE_NAME).map((key) => caches.delete(key)));
   })());
 });
 
