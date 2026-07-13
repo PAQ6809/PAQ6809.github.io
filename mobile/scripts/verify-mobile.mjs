@@ -19,7 +19,9 @@ assert.match(syncScript, /getResult/);
 assert.match(nativeEntry, /Filesystem\.writeFile/);
 assert.match(nativeEntry, /Share\.share/);
 assert.match(nativeEntry, /appUrlOpen/);
-assert.match(nativeEntry, /credentials|cookie|session/i, "Native bridge security notes must remain reviewable");
+assert.doesNotMatch(nativeEntry, /document\.cookie/);
+assert.doesNotMatch(nativeEntry, /new Function\s*\(/);
+assert.doesNotMatch(nativeEntry, /(^|[^\w])eval\s*\(/m);
 
 const ids = new Set();
 for (const model of catalog.models) {
