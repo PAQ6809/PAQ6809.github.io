@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EduCraft 教案工坊｜國小教師備課平台</title>
+  <meta name="description" content="整合十二年國教官方來源、教育資源搜尋、教案產生、編輯、版本與多語校訂的國小教師備課平台。">
+  <meta name="theme-color" content="#082b50">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://paq6809.github.io/educraft/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="EduCraft 教案工坊">
+  <meta property="og:description" content="國小教師的課綱導航、資源搜尋與教案備課工作台。">
+  <meta property="og:url" content="https://paq6809.github.io/educraft/">
+  <meta property="og:image" content="https://paq6809.github.io/educraft/favicon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://goedzzhhvvnfczgnkqlv.supabase.co">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+  <div id="app" class="app-shell">
+    <aside id="sidebar" class="sidebar" aria-label="主要導覽">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">🎓</div>
+        <div><strong>EduCraft</strong><span>教案工坊</span></div>
+        <button id="close-nav" class="icon-btn mobile-only" aria-label="關閉導覽">✕</button>
+      </div>
+      <nav id="nav-list" class="nav-list"></nav>
+      <div class="sidebar-footer">
+        <div id="connection-status" class="status-chip">檢查連線中</div>
+        <small>教師對教案內容負最終審核責任</small>
+      </div>
+    </aside>
+    <div id="nav-backdrop" class="nav-backdrop" hidden></div>
+    <section class="workspace">
+      <header class="topbar">
+        <button id="open-nav" class="icon-btn mobile-only" aria-label="開啟導覽">☰</button>
+        <form id="global-search-form" class="global-search" role="search">
+          <label class="sr-only" for="global-search">搜尋資源與教案</label>
+          <span aria-hidden="true">⌕</span>
+          <input id="global-search" maxlength="80" autocomplete="off" placeholder="搜尋教案、資源、課綱索引…">
+        </form>
+        <div class="top-actions">
+          <span id="sync-indicator" class="sync-indicator" aria-live="polite">本機模式</span>
+          <button id="auth-button" class="btn btn-ghost">登入</button>
+        </div>
+      </header>
+      <main id="main-content" tabindex="-1"></main>
+    </section>
+  </div>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <dialog id="auth-dialog" class="modal">
+    <form method="dialog" class="modal-card" id="auth-form">
+      <button class="modal-close" value="cancel" aria-label="關閉">✕</button>
+      <h2>教師帳號登入</h2>
+      <p>輸入 Email 後，我們會寄送 Supabase Magic Link。未登入也能繼續使用本機模式。</p>
+      <label for="auth-email">Email</label>
+      <input id="auth-email" type="email" required maxlength="254" autocomplete="email" placeholder="teacher@example.com">
+      <button id="send-magic-link" type="submit" class="btn btn-primary">寄送登入連結</button>
+      <small>登入後可同步教案、版本與收藏；本機資料仍會保留備份。</small>
+    </form>
+  </dialog>
+  <div id="print-root" class="print-root" aria-hidden="true"></div>
+  <noscript>EduCraft 需要 JavaScript 才能使用教案編輯與資料儲存功能。</noscript>
+</body>
+</html>
