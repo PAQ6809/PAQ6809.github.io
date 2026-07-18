@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://paq6809.github.io/educraft/sitemap.xml
