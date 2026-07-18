@@ -1,6 +1,8 @@
-/* Mobile navigation overlay hardening.
-   Author CSS can override the browser's native [hidden] rule, so keep it explicit. */
-[hidden] {
+/* iOS Safari overlay hardening.
+   Author CSS can override native hidden/dialog rules, so make closed states explicit. */
+[hidden],
+dialog:not([open]),
+.modal:not([open]) {
   display: none !important;
 }
 
@@ -10,10 +12,22 @@
   pointer-events: none !important;
 }
 
+/* A restored top-layer dialog can leave only its backdrop visible on iOS Safari.
+   Keep the dialog usable without dimming the whole browser surface. */
+dialog::backdrop,
+.modal::backdrop {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 @media (max-width: 780px) {
   .nav-backdrop:not([hidden]) {
     display: block;
     opacity: 1;
     pointer-events: auto;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
