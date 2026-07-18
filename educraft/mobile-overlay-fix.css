@@ -1,0 +1,19 @@
+/* Mobile navigation overlay hardening.
+   Author CSS can override the browser's native [hidden] rule, so keep it explicit. */
+[hidden] {
+  display: none !important;
+}
+
+.nav-backdrop[hidden] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 780px) {
+  .nav-backdrop:not([hidden]) {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
