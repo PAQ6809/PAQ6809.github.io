@@ -1,5 +1,5 @@
-const CACHE = 'educraft-v4-20260718';
-const CORE = ['./','./index.html','./styles.css','./app-core.js','./app-library.js','./app-editor.js','./app-sync.js','./manifest.webmanifest','./favicon.svg'];
+const CACHE = 'educraft-v5-20260718-overlay-fix';
+const CORE = ['./','./index.html','./styles.css','./mobile-overlay-fix.css?v=20260718-1','./app-core.js','./app-library.js','./app-editor.js','./app-sync.js','./mobile-overlay-fix.js?v=20260718-1','./manifest.webmanifest','./favicon.svg'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {
