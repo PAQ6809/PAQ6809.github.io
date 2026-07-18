@@ -1,0 +1,14 @@
+{
+  "name": "EduCraft 教案工坊",
+  "short_name": "EduCraft",
+  "description": "國小教師課綱導航、資源搜尋與教案備課平台",
+  "start_url": "./#dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f8fb",
+  "theme_color": "#082b50",
+  "lang": "zh-Hant",
+  "icons": [
+    {"src":"./favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
