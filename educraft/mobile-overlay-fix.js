@@ -75,14 +75,16 @@
   });
 
   loadCss('./community.css?v=20260718-1');
+  loadCss('./chatgpt.css?v=20260718-1');
   Promise.resolve()
     .then(()=>loadScript('./app-account.js?v=20260718-1'))
     .then(()=>loadScript('./app-styles.js?v=20260718-1'))
+    .then(()=>loadScript('./app-chatgpt.js?v=20260718-1'))
     .then(()=>{
       const accountButton=document.querySelector('#auth-button');
       accountButton?.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();navigate('account');},true);
       updateAuthUi();
       renderRoute();
     })
-    .catch(error=>console.error('EduCraft community modules failed to load',error));
+    .catch(error=>console.error('EduCraft extension modules failed to load',error));
 })();
