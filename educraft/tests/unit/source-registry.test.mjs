@@ -29,6 +29,13 @@ test('visible-text digest ignores volatile form and script data', () => {
   assert.notEqual(digestBody(first, 'text/html'), digestBody(second.replace('source', 'updated'), 'text/html'));
 });
 
+test('visible-text normalization decodes entities only once', () => {
+  assert.equal(
+    canonicalizeVisibleText('<p>&amp;lt;script&amp;gt; &amp;amp;</p>'),
+    '&lt;script&gt; &amp;',
+  );
+});
+
 test('temporary external failures produce a read-only report without mutating the registry', async () => {
   const registry = await loadRegistry();
   const before = JSON.stringify(registry);

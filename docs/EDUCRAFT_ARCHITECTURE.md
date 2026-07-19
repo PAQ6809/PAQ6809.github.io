@@ -445,7 +445,7 @@ Backup normalizer 已有單元測試，但 restore UI 尚未接線；在接線�
 
 `educraft/scripts/source-registry.mjs` 同時提供 schema 驗證與只讀監測。監測會限制 HTTPS、redirect、回應大小與 timeout，並比較 HTTP 狀態、最終 URL、content type、digest、授權與 rights URL。它只輸出報告，不修改 registry；外部暫時故障也不會被誤當成內容撤回。`license=unknown` 永遠是人工審核項，不能由官方來源或可下載性推論成開放授權。
 
-每日 GitHub workflow 只上傳 30 天 artifact，不提交檔案、不部署、不自動更新課綱。v1 digest 為降低動態表單與 script 雜訊，刻意只雜湊可見文字；如果未來要逐條課綱或偵測只變更 href 的情況，必須加入來源專用 parser 與對應 fixture。
+每日 GitHub workflow 只上傳 30 天 artifact，不提交檔案、不部署、不自動更新課綱。v2 digest 為降低動態表單與 script 雜訊，刻意只雜湊可見文字，並只解碼一層 HTML entity；如果未來要逐條課綱或偵測只變更 href 的情況，必須加入來源專用 parser 與對應 fixture。
 
 ### 12.2 公開快照決策
 

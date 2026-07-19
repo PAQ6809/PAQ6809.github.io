@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "registryId": "educraft-curriculum-and-official-sources",
-  "registryUpdatedAt": "2026-07-19T15:02:54.575Z",
-  "digestProfile": "sha256-visible-text-v1",
+  "registryUpdatedAt": "2026-07-19T15:24:06.779Z",
+  "digestProfile": "sha256-visible-text-v2",
   "records": [
     {
       "sourceId": "naer-curriculum-general-guidelines",
@@ -17,10 +17,10 @@
       "rightsUrl": "https://www.naer.edu.tw/PageDoc/Detail?fid=324&id=1964",
       "versionLabel": "rolling-index",
       "versionPublishedAt": null,
-      "digestMethod": "sha256-visible-text-v1",
+      "digestMethod": "sha256-visible-text-v2",
       "contentDigest": "248ed119db57a2ef72c9920ec98ceddedc057d4dd29fefb4e3643b4b892c3e0e",
-      "retrievedAt": "2026-07-19T15:02:54.575Z",
-      "lastReviewedAt": "2026-07-19T15:02:54.575Z",
+      "retrievedAt": "2026-07-19T15:24:06.779Z",
+      "lastReviewedAt": "2026-07-19T15:24:06.779Z",
       "expectedContentType": "text/html"
     },
     {
@@ -36,10 +36,10 @@
       "rightsUrl": "https://www.naer.edu.tw/PageDoc/Detail?fid=324&id=1964",
       "versionLabel": "rolling-index",
       "versionPublishedAt": null,
-      "digestMethod": "sha256-visible-text-v1",
+      "digestMethod": "sha256-visible-text-v2",
       "contentDigest": "22f781037ac7d7c955af835751bae02cd88830153fee02e0051462a71542eecf",
-      "retrievedAt": "2026-07-19T15:02:54.575Z",
-      "lastReviewedAt": "2026-07-19T15:02:54.575Z",
+      "retrievedAt": "2026-07-19T15:24:06.779Z",
+      "lastReviewedAt": "2026-07-19T15:24:06.779Z",
       "expectedContentType": "text/html"
     },
     {
@@ -55,10 +55,10 @@
       "rightsUrl": "https://www.naer.edu.tw/PageDoc/Detail?fid=324&id=1964",
       "versionLabel": "rolling-index",
       "versionPublishedAt": null,
-      "digestMethod": "sha256-visible-text-v1",
+      "digestMethod": "sha256-visible-text-v2",
       "contentDigest": "e79a8b631465aec0bec291f8ed11224fd3a4cc6ce5d5b099bde1a8dfa2fecfec",
-      "retrievedAt": "2026-07-19T15:02:54.575Z",
-      "lastReviewedAt": "2026-07-19T15:02:54.575Z",
+      "retrievedAt": "2026-07-19T15:24:06.779Z",
+      "lastReviewedAt": "2026-07-19T15:24:06.779Z",
       "expectedContentType": "text/html"
     },
     {
@@ -74,10 +74,10 @@
       "rightsUrl": "https://market.cloud.edu.tw/about/copyright.jsp",
       "versionLabel": "rolling-service",
       "versionPublishedAt": null,
-      "digestMethod": "sha256-visible-text-v1",
+      "digestMethod": "sha256-visible-text-v2",
       "contentDigest": "2ca3a02c26e934f75cf94416805cd5001858334ae2533a7946c6f458d8120348",
-      "retrievedAt": "2026-07-19T15:02:54.575Z",
-      "lastReviewedAt": "2026-07-19T15:02:54.575Z",
+      "retrievedAt": "2026-07-19T15:24:06.779Z",
+      "lastReviewedAt": "2026-07-19T15:24:06.779Z",
       "expectedContentType": "text/html"
     },
     {
@@ -93,10 +93,10 @@
       "rightsUrl": "https://market.cloud.edu.tw/about/copyright.jsp",
       "versionLabel": "rolling-documentation",
       "versionPublishedAt": null,
-      "digestMethod": "sha256-visible-text-v1",
+      "digestMethod": "sha256-visible-text-v2",
       "contentDigest": "48f99b72a098e0de12cdddaa8459052c2a0238f4db3fac6fdb67395cc289fe72",
-      "retrievedAt": "2026-07-19T15:02:54.575Z",
-      "lastReviewedAt": "2026-07-19T15:02:54.575Z",
+      "retrievedAt": "2026-07-19T15:24:06.779Z",
+      "lastReviewedAt": "2026-07-19T15:24:06.779Z",
       "expectedContentType": "text/html"
     }
   ]

@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_REGISTRY_PATH = path.resolve(SCRIPT_DIR, '../data/source-registry.json');
-export const DIGEST_PROFILE = 'sha256-visible-text-v1';
+export const DIGEST_PROFILE = 'sha256-visible-text-v2';
 
 const SOURCE_STATUSES = new Set(['active', 'pending', 'degraded', 'withdrawn']);
 const REVIEW_STATUSES = new Set(['approved', 'pending', 'changes_detected', 'rejected']);
@@ -115,12 +115,16 @@ export function canonicalizeVisibleText(html) {
     .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/<(script|style|noscript|svg|form)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&(?:nbsp|#160);/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#(?:39|x27);/gi, "'")
+    .replace(/&(?:nbsp|#160|amp|lt|gt|quot|#39|#x27);/gi, entity => ({
+      '&nbsp;': ' ',
+      '&#160;': ' ',
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&#x27;': "'",
+    })[entity.toLowerCase()])
     .replace(/\s+/g, ' ')
     .trim();
 }
