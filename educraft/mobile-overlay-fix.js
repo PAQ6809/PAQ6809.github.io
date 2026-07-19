@@ -85,6 +85,7 @@
       accountButton?.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();navigate('account');},true);
       updateAuthUi();
       renderRoute();
+      document.documentElement.dataset.appReady='true';
     })
     .catch(error=>console.error('EduCraft extension modules failed to load',error));
 })();

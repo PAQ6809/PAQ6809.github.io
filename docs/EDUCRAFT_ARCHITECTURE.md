@@ -39,8 +39,8 @@ EduCraft 現階段是以 GitHub Pages 發布的國小教師備課工作台。Pha
 6. 私人教案寫入 `educraft_lesson_plans`；前端以 `visibility`、`public_slug`、`published_at` 等欄位表達發布狀態。匿名公開頁讀取 `educraft_public_lesson_plans`，但 repo 無法證明它是安全 view、獨立快照表或其他投影。
 7. ChatGPT 共備前端連到 `educraft-mcp`，認領時呼叫 `educraft_claim_chatgpt_transfer_draft`。前端契約為 12 碼小寫英數字、登入後認領、24 小時及一次性、匯入為私人草稿；其中後三項仍須以後端測試證明。
 8. 課綱目前是靜態導航摘要與 NAER 官方連結，不是可版本化的官方條文資料庫；教育資源由 Edge Function 代理，失敗時可降級為明確標示的示範資料。
-9. 已知 runtime 風險：`duplicatePlan()` 會複製整份教案但未清除 `visibility`、`publicSlug` 與 `publishedAt`。複製來源若為公開教案，副本可能仍標成公開並撞 slug；本里程碑只記錄風險，不修改正式前端。
-10. 已知初始化競態：`init()` 會等候 `getSession()` 後才呼叫 `bindGlobal()` 綁定 `hashchange`，但動態擴充模組可能先呈現可點擊入口。session 回應較慢時，URL 可能已改變而畫面仍停在舊 route；本里程碑的穩定 E2E 以明確 app-ready 測試門檻避開競態，runtime 修復另開 P0 工單。
+9. `duplicatePlan()` 固定產生私人副本，清除公開狀態、公開 slug、發布時間及雲端識別欄位；重新公開仍須走既有發布確認流程。持久化衍生關係留待 `LessonPlanEnvelopeV1` normalizer 工單一次處理。
+10. `init()` 在等待 `getSession()` 前先綁定核心事件並完成初次 render，以 `html[data-router-ready="true"]` 表示核心路由可操作；動態擴充載入後才設定 `html[data-app-ready="true"]`。hash listener 在事件發生時取得最新版 renderer，延遲 session 的 E2E 會驗證 URL 與畫面同步切換。
 
 ### 2.2 系統與信任邊界
 

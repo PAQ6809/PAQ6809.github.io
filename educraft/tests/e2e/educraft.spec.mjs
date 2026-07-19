@@ -40,11 +40,10 @@ test.beforeEach(async ({ page }) => {
       createClient: () => ({
         auth: {
           getSession: async () => {
-            // Model the full client-ready boundary: account state resolves after the
-            // dynamically loaded account, style and ChatGPT modules have wired the nav.
-            const deadline = Date.now() + 2_000;
-            while (!document.querySelector('[data-route="chatgpt-app"]') && Date.now() < deadline) {
-              await new Promise(resolve => setTimeout(resolve, 5));
+            if (window.__EDUCRAFT_HOLD_SESSION__) {
+              return new Promise(resolve => {
+                window.__resolveEduCraftTestSession = () => resolve({ data: { session: null }, error: null });
+              });
             }
             return { data: { session: null }, error: null };
           },
@@ -93,6 +92,59 @@ test('首頁 ChatGPT 共備入口可進入設定頁', async ({ page }) => {
   await expect(page).toHaveURL(/#chatgpt-app$/);
   await expect(page.getByRole('heading', { name: 'ChatGPT 共備 App' })).toBeVisible();
   await expect(page.locator('#mcp-endpoint')).toContainText('/educraft-mcp');
+});
+
+test('登入狀態延遲時路由仍可操作', async ({ page }) => {
+  await page.addInitScript(() => { window.__EDUCRAFT_HOLD_SESSION__ = true; });
+  await page.goto('./#dashboard');
+  await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true');
+  expect(await page.evaluate(() => typeof window.__resolveEduCraftTestSession)).toBe('function');
+
+  await page.getByRole('button', { name: /使用 ChatGPT 共備/ }).click();
+  await expect(page).toHaveURL(/#chatgpt-app$/);
+  await expect(page.getByRole('heading', { name: 'ChatGPT 共備 App' })).toBeVisible();
+  await page.evaluate(() => window.__resolveEduCraftTestSession());
+});
+
+test('複製公開教案時副本固定為私人', async ({ page }) => {
+  await page.addInitScript(() => {
+    const plan = {
+      id: 'published-plan',
+      cloudId: 'cloud-plan-id',
+      cloudUpdatedAt: '2026-07-18T00:00:00.000Z',
+      title: '公開水循環教案',
+      subject: '自然科學',
+      grade: 5,
+      topic: '水循環',
+      language: '繁體中文',
+      contentMarkdown: '# 公開水循環教案',
+      planJson: {},
+      citations: [],
+      tags: [],
+      status: 'completed',
+      sourceMode: 'manual',
+      visibility: 'public',
+      publicSlug: 'published-water-cycle',
+      publishedAt: '2026-07-18T00:00:00.000Z',
+      versions: [{ id: 'version-1', number: 1 }],
+      createdAt: '2026-07-18T00:00:00.000Z',
+      updatedAt: '2026-07-18T00:00:00.000Z',
+    };
+    localStorage.setItem('educraft:v2:plans', JSON.stringify([plan]));
+    localStorage.setItem('educraft:v2:current', plan.id);
+    localStorage.setItem('educraft:v2:migrated', '1');
+  });
+
+  await page.goto('./#editor');
+  await page.getByRole('button', { name: '複製教案' }).click();
+  const plans = await page.evaluate(() => JSON.parse(localStorage.getItem('educraft:v2:plans')));
+  const original = plans.find(plan => plan.id === 'published-plan');
+  const copy = plans.find(plan => plan.id !== 'published-plan');
+
+  expect(original.visibility).toBe('public');
+  expect(copy).toMatchObject({ visibility: 'private', publicSlug: '', publishedAt: null, versions: [] });
+  expect(copy).not.toHaveProperty('cloudId');
+  expect(copy).not.toHaveProperty('cloudUpdatedAt');
 });
 
 test('帳號頁提供登入與註冊表單', async ({ page }) => {

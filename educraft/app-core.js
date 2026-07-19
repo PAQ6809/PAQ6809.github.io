@@ -80,6 +80,8 @@ function openNav(){document.querySelector('#sidebar').classList.add('open');docu
 
 async function init() {
   migrateLegacy();
+  bindGlobal(); updateOnlineUi(); renderRoute();
+  document.documentElement.dataset.routerReady='true';
   if (window.supabase?.createClient) {
     state.supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, { auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
     const { data } = await state.supabase.auth.getSession(); state.session=data.session;
@@ -88,13 +90,13 @@ async function init() {
     state.supabase = null;
     state.sync = '本機模式（雲端模組未載入）';
   }
-  bindGlobal(); updateAuthUi(); updateOnlineUi(); renderRoute();
+  updateAuthUi();
   if(state.session) syncCloud();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 function migrateLegacy(){if(localStorage.getItem(STORAGE.migrated))return;const old=readJson('educraft:plans',[]);if(!state.plans.length&&old.length){state.plans=old.map(r=>({id:r.id||uid(),title:r.title||r.plan?.title||r.plan?.meta?.input?.topic||'未命名教案',subject:r.plan?.meta?.input?.subject||'',grade:r.plan?.meta?.input?.grade||null,topic:r.plan?.meta?.input?.topic||'',language:r.plan?.meta?.input?.language||'繁體中文',contentMarkdown:r.content||planToMarkdown(r.plan||{}),planJson:r.plan||{},tags:r.tags||[],status:'draft',citations:r.plan?.citations||[],versions:[],createdAt:r.createdAt||nowIso(),updatedAt:nowIso(),sourceMode:'template'}));persistPlans();}localStorage.setItem(STORAGE.migrated,'1');}
 function bindGlobal(){
-  addEventListener('hashchange',renderRoute); addEventListener('online',updateOnlineUi); addEventListener('offline',updateOnlineUi);
+  addEventListener('hashchange',()=>renderRoute()); addEventListener('online',updateOnlineUi); addEventListener('offline',updateOnlineUi);
   document.querySelector('#open-nav').addEventListener('click',openNav); document.querySelector('#close-nav').addEventListener('click',closeNav); document.querySelector('#nav-backdrop').addEventListener('click',closeNav);
   document.querySelector('#auth-button').addEventListener('click',()=>{if(!state.supabase){toast('雲端登入模組尚未載入；目前可繼續使用本機模式。','error');return;}state.session?logout():document.querySelector('#auth-dialog').showModal();});
   document.querySelector('#auth-form').addEventListener('submit',sendMagicLink);

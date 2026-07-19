@@ -35,7 +35,7 @@ Phase 1 只追求三個結果：
 
 - Supabase 各資料表、公開 view 與 RPC 的實際 schema、RLS 政策及匿名存取結果。
 - MCP 工具實作、轉移碼是否確實 24 小時失效且只能認領一次。
-- 複製公開教案目前會沿用 `visibility`、公開 slug 與發布時間，可能造成副本仍標成公開或 slug 衝突；本里程碑不改 runtime，須列為下一個 P0 修復工單。
+- 複製教案已採 private-by-default：副本清除公開狀態、公開 slug、發布時間及雲端識別欄位，由回歸測試保護。
 - 教育大市集正式 API Key、即時資料完整性與使用授權；降級或示範資料不得宣稱為即時官方資料。
 - 外部生成服務的模型、品質與可用性；目前介面已允許模板模式，不能把模板產生標成外部 AI 產生。
 
@@ -193,8 +193,8 @@ Phase 1 不以以下結果為成功標準：
 
 ## 12. Phase 1 完成前的必要工單
 
-1. 修正「複製公開教案沿用公開狀態與 slug」的既有風險，並留下 private-by-default 回歸測試。
-2. 修正初始化時 `getSession()` 與動態擴充模組之間的 hash router 競態，加入明確的 app-ready 契約與延遲 session 回歸測試。
+1. ✅ 複製教案已固定 private-by-default，並留下公開來源副本的回歸測試。
+2. ✅ 核心路由已在等待 `getSession()` 前啟用；`data-router-ready`／`data-app-ready` 與延遲 session 測試固定核心及擴充模組契約。
 3. 驗證並記錄 Supabase RLS、公開 view 與跨帳號存取矩陣。
 4. 對 MCP initialize、tools contract、24 小時到期、一次性認領與私人落地建立端對端測試。
 5. 以相容性測試固定結構化教案 schema，規劃既有 `planJson`／Markdown 的唯讀相容與遷移策略。
