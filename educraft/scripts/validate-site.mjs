@@ -52,11 +52,11 @@ async function validateHtml(source, relativePath) {
 
   // ponytail: This catches broken nesting, not every WHATWG rule. Add validator.nu only
   // if spec-level HTML conformance becomes a release requirement.
-  const withoutComments = source.replace(/<!--[\s\S]*?-->/g, '');
   const stack = [];
   const voidElements = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
-  for (const match of withoutComments.matchAll(/<\/?([a-z][\w:-]*)\b[^>]*>/gi)) {
+  for (const match of source.matchAll(/<!--[\s\S]*?-->|<\/?([a-z][\w:-]*)\b[^>]*>/gi)) {
     const raw = match[0];
+    if (raw.startsWith('<!--')) continue;
     const tag = match[1].toLowerCase();
     if (raw.startsWith('</')) {
       const expected = stack.pop();
