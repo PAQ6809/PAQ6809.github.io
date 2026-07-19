@@ -7,7 +7,10 @@ const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const core = await readFile(path.join(siteRoot, 'app-core.js'), 'utf8');
 const overrideUrl = process.env.EDUCRAFT_SUPABASE_URL;
 const overrideKey = process.env.EDUCRAFT_SUPABASE_PUBLISHABLE_KEY;
+const expectPublicSnapshot = process.env.EDUCRAFT_EXPECT_PUBLIC_SNAPSHOT === '1';
+const requireSnapshotCutover = process.env.EDUCRAFT_REQUIRE_SNAPSHOT_CUTOVER === '1';
 assert.equal(Boolean(overrideUrl), Boolean(overrideKey), 'set both Supabase override variables or neither');
+assert(!requireSnapshotCutover || expectPublicSnapshot, 'snapshot cutover requires snapshot checks');
 const projectUrl = overrideUrl || core.match(/supabaseUrl:\s*'([^']+)'/)?.[1];
 const publishableKey = overrideKey || core.match(/supabaseKey:\s*'([^']+)'/)?.[1];
 
@@ -56,27 +59,71 @@ const privateReads = [
   ['private lesson-plan versions', 'educraft_lesson_plan_versions?select=id&limit=1'],
   ['private saved resources', 'educraft_saved_resources?select=id&limit=1'],
   ['private teacher preferences', 'educraft_teacher_preferences?select=user_id&limit=1'],
-  ['non-public lesson plans', 'educraft_lesson_plans?select=id,visibility&visibility=neq.public&limit=1'],
 ];
+if (!requireSnapshotCutover) {
+  privateReads.push(['non-public lesson plans', 'educraft_lesson_plans?select=id,visibility&visibility=neq.public&limit=1']);
+}
 
 for (const [label, resource] of privateReads) {
   await check(`anonymous cannot read ${label}`, async () => expectEmpty(await request(resource), label));
 }
 
-await check('anonymous base-table reads are limited to published plans', async () => {
-  const result = await request('educraft_lesson_plans?select=id,visibility,published_at&limit=50');
-  assert.equal(result.status, 200, `expected HTTP 200, got ${result.status}`);
-  assert(Array.isArray(result.data), 'expected an array response');
-  assert(result.data.every(row => row.visibility === 'public' && row.published_at), 'base table returned a non-public plan');
-});
+if (requireSnapshotCutover) {
+  for (const relation of ['educraft_lesson_plans', 'educraft_public_lesson_plans']) {
+    await check(`snapshot cutover denies anonymous reads from legacy ${relation}`, async () => {
+      const result = await request(`${relation}?select=id&limit=1`);
+      assert([401, 403].includes(result.status), `expected HTTP 401/403, got ${result.status}`);
+    });
+  }
+} else {
+  await check('legacy base-table compatibility exposes only published plans', async () => {
+    const result = await request('educraft_lesson_plans?select=id,visibility,published_at&limit=50');
+    assert.equal(result.status, 200, `expected HTTP 200, got ${result.status}`);
+    assert(Array.isArray(result.data), 'expected an array response');
+    assert(result.data.every(row => row.visibility === 'public' && row.published_at), 'base table returned a non-public plan');
+  });
 
-await check('public lesson-plan view returns only published rows for selected fields', async () => {
-  const fields = 'id,user_id,title,subject,grade,topic,language,output_language,status,source_mode,visibility,public_slug,published_at,license,teaching_style,originality_note,public_summary,cover_emoji,forked_from,created_at,updated_at';
-  const result = await request(`educraft_public_lesson_plans?select=${fields}&limit=50`);
-  assert.equal(result.status, 200, `expected HTTP 200, got ${result.status}`);
-  assert(Array.isArray(result.data), 'expected an array response');
-  assert(result.data.every(row => row.visibility === 'public' && row.published_at), 'view returned a non-public plan');
-});
+  await check('legacy public view returns only published rows for selected fields', async () => {
+    const fields = 'id,user_id,title,subject,grade,topic,language,output_language,status,source_mode,visibility,public_slug,published_at,license,teaching_style,originality_note,public_summary,cover_emoji,forked_from,created_at,updated_at';
+    const result = await request(`educraft_public_lesson_plans?select=${fields}&limit=50`);
+    assert.equal(result.status, 200, `expected HTTP 200, got ${result.status}`);
+    assert(Array.isArray(result.data), 'expected an array response');
+    assert(result.data.every(row => row.visibility === 'public' && row.published_at), 'view returned a non-public plan');
+  });
+}
+
+if (expectPublicSnapshot) {
+  await check('snapshot view exposes only allowlisted public fields', async () => {
+    const fields = 'id,public_slug,author_slug,author_display_name,title,subject,grade,topic,language,output_language,content_markdown,license,teaching_style,originality_note,methodology,public_summary,cover_emoji,revision,published_at,snapshot_updated_at';
+    const result = await request(`educraft_public_lesson_plan_snapshots?select=${fields}&limit=50`);
+    assert.equal(result.status, 200, `expected HTTP 200, got ${result.status}`);
+    assert(Array.isArray(result.data), 'expected an array response');
+  });
+
+  await check('snapshot view rejects private and internal columns', async () => {
+    const result = await request('educraft_public_lesson_plan_snapshots?select=plan_json,citations_json,tags,owner_id,source_plan_id,user_id&limit=1');
+    assert.equal(result.status, 400, `expected HTTP 400, got ${result.status}`);
+  });
+
+  await check('snapshot table column grants hide internal identifiers', async () => {
+    const result = await request('educraft_lesson_plan_publications?select=owner_id,source_plan_id&limit=1');
+    assert([400, 401, 403].includes(result.status), `expected HTTP 400/401/403, got ${result.status}`);
+  });
+
+  for (const rpc of ['educraft_publish_lesson_plan_snapshot', 'educraft_withdraw_lesson_plan_snapshot']) {
+    await check(`anonymous callers cannot invoke ${rpc}`, async () => {
+      const body = rpc.includes('publish')
+        ? { p_plan_id: '00000000-0000-0000-0000-000000000000', p_public_slug: 'test-plan', p_public_summary: 'test', p_license: 'CC0 1.0', p_rights_confirmed: true, p_privacy_confirmed: true }
+        : { p_plan_id: '00000000-0000-0000-0000-000000000000' };
+      const result = await request(`rpc/${rpc}`, { method: 'POST', body });
+      assert([401, 403].includes(result.status), `expected HTTP 401/403, got ${result.status}`);
+    });
+  }
+
+  if (!requireSnapshotCutover) {
+    console.log('DEFER snapshot cutover: legacy anonymous lesson-plan paths remain enabled');
+  }
+}
 
 await check('public profile endpoint exposes only public profile fields', async () => {
   const fields = 'user_id,slug,display_name,headline,bio,school_public,region,languages,specialties,avatar_url,website_url,is_listed';

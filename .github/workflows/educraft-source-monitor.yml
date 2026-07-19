@@ -1,0 +1,47 @@
+name: EduCraft Source Monitor
+
+on:
+  schedule:
+    - cron: "20 21 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: educraft-source-monitor
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Validate source registry
+        run: node educraft/scripts/source-registry.mjs
+
+      - name: Run read-only health and digest monitor
+        run: >-
+          node educraft/scripts/source-registry.mjs
+          --monitor
+          --output educraft-source-monitor-report.json
+          --timeout-ms 15000
+
+      - name: Upload review report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: educraft-source-monitor-${{ github.run_id }}
+          path: educraft-source-monitor-report.json
+          if-no-files-found: warn
+          retention-days: 30

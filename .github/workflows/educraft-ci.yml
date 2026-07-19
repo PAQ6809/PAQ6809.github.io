@@ -6,11 +6,15 @@ on:
       - "educraft/**"
       - ".github/dependabot.yml"
       - ".github/workflows/educraft-ci.yml"
+      - ".github/workflows/educraft-source-monitor.yml"
+      - ".github/workflows/educraft-staging-contract.yml"
   pull_request:
     paths:
       - "educraft/**"
       - ".github/dependabot.yml"
       - ".github/workflows/educraft-ci.yml"
+      - ".github/workflows/educraft-source-monitor.yml"
+      - ".github/workflows/educraft-staging-contract.yml"
   workflow_dispatch:
 
 concurrency:
@@ -46,6 +50,10 @@ jobs:
         working-directory: educraft
         run: npm run check:static
 
+      - name: Check source registry and migration safety contracts
+        working-directory: educraft
+        run: npm run check:sources && npm run check:migrations
+
       - name: Run lesson-plan schema unit tests
         working-directory: educraft
         run: npm run test:unit
@@ -63,3 +71,7 @@ jobs:
       - name: Run browser acceptance tests
         working-directory: educraft
         run: npm run test:e2e
+
+      - name: Run serialized PWA and service worker tests
+        working-directory: educraft
+        run: npm run test:pwa

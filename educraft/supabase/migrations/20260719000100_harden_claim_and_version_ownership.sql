@@ -5,7 +5,7 @@ create or replace function public.educraft_claim_chatgpt_transfer_draft(p_claim_
 returns table(plan_id uuid, client_id text, title text)
 language plpgsql
 security definer
-set search_path to 'public'
+set search_path = ''
 as $function$
 declare
   v_uid uuid := auth.uid();

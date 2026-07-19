@@ -154,3 +154,21 @@ Transfer／rate-limit table 沒有 user policy 是刻意 deny-all，配合 clien
 7. 人工核准後才套用 production；本 PR 不自動執行 production migration。
 
 這個 gate 同時避免 GitHub Pages 部署意外改動 Supabase schema。
+
+## 8. M4 安全驗證與 closure（2026-07-19）
+
+| 驗證項 | 證據 | 結果 |
+|---|---|---|
+| 公開 snapshot 欄位最小化 | migration 靜態契約禁止 `plan_json`、citations、tags、owner UUID、source plan ID 進入公開 view；SQL metadata contract 重複檢查欄位 | 靜態通過，remote 待驗 |
+| 匿名只讀 active snapshot | RLS 同時要求 `withdrawn_at is null` 與 listed 公開名片；一般 client 無 INSERT／UPDATE／DELETE | 靜態通過，身分矩陣待 staging |
+| Owner-only 發布／撤回 | 兩個 RPC 均以 `auth.uid()` 比對 source plan／publication owner，空 `search_path`，authenticated-only execute | 靜態通過，跨帳號待 staging |
+| Slug 競態 | `public_slug` UNIQUE，RPC 將 unique violation 轉為 `public_slug_taken`；同一 source plan 亦 UNIQUE | 靜態通過，並行交易待 staging |
+| Snapshot cutover 防誤判 | `ADDITIVE_ONLY` 與 `REQUIRE_SNAPSHOT_CUTOVER` 分離；以目前 production 做 read-only 負向控制時，舊路徑 HTTP 200、新 relation HTTP 404，cutover gate 正確維持失敗 | 通過 |
+| M3 claim／version migration | migration checker 確認 named conflict constraint、parent owner policy 與空 `search_path` | 靜態通過，remote 尚未套用 |
+| PWA cache 隔離 | Chromium PWA 測試植入舊 EduCraft cache 與無關 cache，確認只刪前者；完全離線 app shell 與公開庫路由通過 | 自動化通過 |
+| 幽靈遮罩回歸 | PWA mobile viewport 與既有 WebKit Mobile Safari 測試均無 backdrop／open dialog | 自動化通過，實機待簽核 |
+| 來源自動更新界線 | monitor 僅輸出 read-only artifact；5/5 官方入口健康且 digest 未變，5 筆 unknown license 保留人工審核 | 通過 |
+
+此次驗證修復一項新增發現：舊 Service Worker activate 會刪除同 origin 的所有 cache，可能影響 `PAQ6809.github.io` 下其他應用。`sw.js` 已改成只清除舊 `educraft-*` cache，並由負向控制測試固定此邊界。
+
+尚不能關閉的風險：repository 沒有受保護的 `educraft-staging` environment、staging URL／publishable key／MCP endpoint，也未取得建立付費 Supabase branch 的核准。因此 M3／M4 SQL 都未套用 staging 或 production，SQL metadata contract、owner／other／anon、claim mutation 與 slug 並行測試仍是發布阻擋條件。M4 也刻意保留 legacy 匿名讀取相容性；staging `ADDITIVE_ONLY` 綠燈不能被解讀為已完成公開資料切換，正式啟用前必須讓 `REQUIRE_SNAPSHOT_CUTOVER` 通過。執行與停止條件見 `EDUCRAFT_STAGING_MIGRATION_RUNBOOK.md`。

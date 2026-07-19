@@ -26,6 +26,7 @@ const requiredFiles = [
   'favicon.svg',
   'sitemap.xml',
   'robots.txt',
+  'data/source-registry.json',
 ];
 
 function check(condition, message) {

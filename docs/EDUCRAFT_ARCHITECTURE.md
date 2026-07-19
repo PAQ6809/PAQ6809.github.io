@@ -436,3 +436,32 @@ Backup normalizer 已有單元測試，但 restore UI 尚未接線；在接線�
 2. Version INSERT policy 沒有確認 parent plan owner，可建立跨帳號關聯。
 
 `educraft/supabase/migrations/20260719000100_harden_claim_and_version_ownership.sql` 提供最小修正；兩項都已在 transaction rollback 中驗證，但尚未套用 production。部署順序仍維持「審核 migration → staging → RLS／RPC contract → 人工 production 核准 → 前端 smoke」。
+
+## 12. M4 已落地的來源與公開快照契約
+
+### 12.1 來源 registry 與只讀監測
+
+`educraft/data/source-registry.json` 是 Phase 1 的來源 metadata 權威清冊；第一批只收錄既有產品使用的 5 個官方索引入口。每筆固定 publisher、canonical URL、來源類型、狀態、人工審核狀態、版本標籤、取得時間、權利網址、預期 content type 及 SHA-256 visible-text digest。
+
+`educraft/scripts/source-registry.mjs` 同時提供 schema 驗證與只讀監測。監測會限制 HTTPS、redirect、回應大小與 timeout，並比較 HTTP 狀態、最終 URL、content type、digest、授權與 rights URL。它只輸出報告，不修改 registry；外部暫時故障也不會被誤當成內容撤回。`license=unknown` 永遠是人工審核項，不能由官方來源或可下載性推論成開放授權。
+
+每日 GitHub workflow 只上傳 30 天 artifact，不提交檔案、不部署、不自動更新課綱。v1 digest 為降低動態表單與 script 雜訊，刻意只雜湊可見文字；如果未來要逐條課綱或偵測只變更 href 的情況，必須加入來源專用 parser 與對應 fixture。
+
+### 12.2 公開快照決策
+
+ADR-002 在 M4 採用 additive current-snapshot table：
+
+- 私人 `educraft_lesson_plans` 持續是編輯來源；發布 RPC 只讀 owner 的私人教案，不修改私人 Markdown／JSON。
+- `educraft_lesson_plan_publications` 只複製公開 allowlist 欄位，不包含 `plan_json`、citations、tags、私人 profile、`source_plan_id` 或 owner UUID 的公開 view 投影。
+- `public_slug` 與 `source_plan_id` 都由 UNIQUE constraint 保護；同一私人教案只有一個 current snapshot，重發增加 revision，slug 在此階段不可變。
+- 匿名與登入者只能讀取未撤回且作者公開名片仍為 listed 的 snapshot；一般 client 沒有 table write，發布與撤回只能走 owner-check RPC。
+- RPC 為 `SECURITY DEFINER`，固定空 `search_path`，明確撤銷 PUBLIC／anon execute 後只授權 authenticated。table grants 與 RLS 同時收斂。
+- 現有 `educraft_public_lesson_plans` 與前端保持不變。只有 migration 在 staging 通過 SQL metadata、owner／other／anon、並行 slug 與撤回測試後，才能以 feature flag 切換讀寫路徑。
+
+對應 migration 是 `20260719000200_add_public_lesson_plan_snapshots.sql`；metadata contract 位於 `educraft/supabase/tests/public_lesson_plan_snapshots_contract.sql`。兩者目前只存在 version control，尚未套用 remote database。
+
+### 12.3 PWA cache 隔離
+
+Service Worker activate 只能刪除名稱以 `educraft-` 開頭且不是當前版本的 cache。不得遍歷刪除同一 GitHub Pages origin 上其他應用的 cache。獨立 PWA 測試會先植入一個舊 EduCraft cache 與一個無關 cache，驗證前者被清除、後者與內容保留，再進入完全離線的公開庫路由並確認 app shell、manifest 與遮罩狀態。
+
+Playwright 測試是瀏覽器自動化證據，不等於真實 iPhone Safari 驗收。背景恢復、加入主畫面、iOS Service Worker 更新與觸控攔截仍依 `EDUCRAFT_IPHONE_SAFARI_ACCEPTANCE.md` 人工簽核。
