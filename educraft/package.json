@@ -1,0 +1,17 @@
+{
+  "name": "educraft-quality-gates",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:static": "node scripts/validate-site.mjs",
+    "check:sw-cache": "node scripts/check-sw-cache.mjs",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

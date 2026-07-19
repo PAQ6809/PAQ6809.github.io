@@ -1,0 +1,61 @@
+name: EduCraft CI
+
+on:
+  push:
+    paths:
+      - "educraft/**"
+      - ".github/dependabot.yml"
+      - ".github/workflows/educraft-ci.yml"
+  pull_request:
+    paths:
+      - "educraft/**"
+      - ".github/dependabot.yml"
+      - ".github/workflows/educraft-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: educraft-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: educraft/package-lock.json
+
+      - name: Install test dependency
+        working-directory: educraft
+        run: npm ci
+
+      - name: Check JavaScript, HTML, CSS and required files
+        working-directory: educraft
+        run: npm run check:static
+
+      - name: Enforce service worker cache version contract
+        working-directory: educraft
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+        run: npm run check:sw-cache
+
+      - name: Install Playwright browsers
+        working-directory: educraft
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run browser acceptance tests
+        working-directory: educraft
+        run: npm run test:e2e
