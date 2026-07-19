@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const migrationRoot = path.join(siteRoot, 'supabase', 'migrations');
 const contractPath = path.join(siteRoot, 'supabase', 'tests', 'public_lesson_plan_snapshots_contract.sql');
+const sourceGovernanceContractPath = path.join(siteRoot, 'supabase', 'tests', 'source_governance_contract.sql');
 const failures = [];
 
 function requireMatch(source, pattern, message) {
@@ -87,6 +88,44 @@ if (!snapshotFile) {
     requireMatch(contract, /has_function_privilege[\s\S]*?educraft_publish_lesson_plan_snapshot/i, 'Snapshot SQL contract must assert publish RPC privileges');
   } catch {
     failures.push('Missing public snapshot SQL metadata contract');
+  }
+}
+
+const sourceGovernanceFile = files.find(file => file.endsWith('_add_source_governance.sql'));
+if (!sourceGovernanceFile) {
+  failures.push('Missing source governance migration');
+} else {
+  const source = await readFile(path.join(migrationRoot, sourceGovernanceFile), 'utf8');
+
+  requireMatch(source, /create\s+table\s+educraft_private\.educraft_source_reviewers/i, `${sourceGovernanceFile}: reviewer membership must be service-managed`);
+  forbidMatch(source, /(?:raw_user_meta_data|user_metadata)/i, `${sourceGovernanceFile}: reviewer authorization must not trust user-editable metadata`);
+  for (const table of ['educraft_source_observations', 'educraft_source_reviews', 'educraft_lesson_source_impacts']) {
+    requireMatch(source, new RegExp(`alter\\s+table\\s+public\\.${table}\\s+enable\\s+row\\s+level\\s+security`, 'i'), `${sourceGovernanceFile}: ${table} must enable RLS`);
+    requireMatch(source, new RegExp(`alter\\s+table\\s+public\\.${table}\\s+force\\s+row\\s+level\\s+security`, 'i'), `${sourceGovernanceFile}: ${table} must force RLS`);
+  }
+  requireMatch(source, /create\s+view\s+public\.educraft_source_review_statuses\s+with\s*\(\s*security_invoker\s*=\s*true\s*,\s*security_barrier\s*=\s*true\s*\)/i, `${sourceGovernanceFile}: public source status view must be a security-invoker barrier`);
+  requireMatch(source, /decision\s*=\s*any\s*\(\s*array\s*\[[\s\S]*?'approved_metadata_only'[\s\S]*?'approved_reusable'[\s\S]*?'rejected'[\s\S]*?'needs_changes'/i, `${sourceGovernanceFile}: metadata approval and reusable approval must be distinct decisions`);
+  requireMatch(source, /is_reusable\s+boolean\s+generated\s+always\s+as\s*\([\s\S]*?decision\s*=\s*'approved_reusable'[\s\S]*?'cc by 4\.0'[\s\S]*?\)\s+stored/i, `${sourceGovernanceFile}: reuse state must require reusable approval and an allowlisted license`);
+  requireMatch(source, /decision\s*<>\s*'approved_reusable'[\s\S]*?confirmed_license[\s\S]*?'cc by 4\.0'[\s\S]*?rights_url\s+is\s+not\s+null/i, `${sourceGovernanceFile}: reusable approval must require an allowlisted license and rights URL`);
+  requireMatch(source, /create\s+or\s+replace\s+function\s+public\.educraft_can_review_sources\(\)[\s\S]*?security\s+definer[\s\S]*?set\s+search_path\s*=\s*''/i, `${sourceGovernanceFile}: reviewer capability RPC must be SECURITY DEFINER with an empty search_path`);
+  requireMatch(source, /create\s+or\s+replace\s+function\s+public\.educraft_review_source[\s\S]*?security\s+definer[\s\S]*?set\s+search_path\s*=\s*''/i, `${sourceGovernanceFile}: source review RPC must be SECURITY DEFINER with an empty search_path`);
+  requireMatch(source, /from\s+educraft_private\.educraft_source_reviewers[\s\S]*?reviewer\.user_id\s*=\s*v_uid[\s\S]*?reviewer\.is_active/i, `${sourceGovernanceFile}: review RPC must require active service-managed membership`);
+  requireMatch(source, /confirmed_license_and_rights_required/i, `${sourceGovernanceFile}: review RPC must reject unknown licensing approval`);
+  requireMatch(source, /create\s+policy\s+educraft_lesson_source_impacts_read_own[\s\S]*?plan\.user_id\s*=\s*auth\.uid\(\)/i, `${sourceGovernanceFile}: impact reads must verify lesson-plan ownership`);
+  requireMatch(source, /create\s+or\s+replace\s+function\s+public\.educraft_acknowledge_lesson_source_impact[\s\S]*?plan\.user_id\s*=\s*v_uid/i, `${sourceGovernanceFile}: acknowledge RPC must verify lesson-plan ownership`);
+  requireMatch(source, /revoke\s+all\s+on\s+table\s+public\.educraft_lesson_source_impacts[\s\S]*?from\s+public\s*,\s*anon\s*,\s*authenticated/i, `${sourceGovernanceFile}: impact write privileges must be revoked explicitly`);
+  requireMatch(source, /grant\s+execute\s+on\s+function\s+public\.educraft_review_source[^;]*to\s+authenticated\s*;/i, `${sourceGovernanceFile}: authenticated reviewers must use the review RPC`);
+  forbidMatch(source, /grant\s+[^;]*(?:insert|update|delete|all)[^;]*on\s+table\s+public\.educraft_(?:source_observations|source_reviews|lesson_source_impacts)[^;]*to\s+(?:anon|authenticated)\s*;/i, `${sourceGovernanceFile}: browser roles must not receive direct governance writes`);
+
+  try {
+    const contract = await readFile(sourceGovernanceContractPath, 'utf8');
+    requireMatch(contract, /^begin\s*;/im, 'Source governance SQL contract must run in a transaction');
+    requireMatch(contract, /^rollback\s*;/im, 'Source governance SQL contract must roll back');
+    requireMatch(contract, /relrowsecurity\s+and\s+relation\.relforcerowsecurity/i, 'Source governance SQL contract must assert RLS and FORCE RLS');
+    requireMatch(contract, /raw_user_meta_data\|user_metadata/i, 'Source governance SQL contract must reject metadata-based reviewer authorization');
+    requireMatch(contract, /educraft_acknowledge_lesson_source_impact/i, 'Source governance SQL contract must assert owner acknowledgement privileges');
+  } catch {
+    failures.push('Missing source governance SQL metadata contract');
   }
 }
 

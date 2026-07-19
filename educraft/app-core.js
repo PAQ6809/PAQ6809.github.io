@@ -6,6 +6,7 @@ const CONFIG = {
   resourcesEndpoint: 'https://goedzzhhvvnfczgnkqlv.supabase.co/functions/v1/educraft-resources',
   generateEndpoint: 'https://goedzzhhvvnfczgnkqlv.supabase.co/functions/v1/educraft-generate-plan',
   baseUrl: 'https://paq6809.github.io/educraft/',
+  sourceGovernanceRemote: false,
 };
 
 const NAV = [

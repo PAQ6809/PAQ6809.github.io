@@ -465,3 +465,32 @@ ADR-002 在 M4 採用 additive current-snapshot table：
 Service Worker activate 只能刪除名稱以 `educraft-` 開頭且不是當前版本的 cache。不得遍歷刪除同一 GitHub Pages origin 上其他應用的 cache。獨立 PWA 測試會先植入一個舊 EduCraft cache 與一個無關 cache，驗證前者被清除、後者與內容保留，再進入完全離線的公開庫路由並確認 app shell、manifest 與遮罩狀態。
 
 Playwright 測試是瀏覽器自動化證據，不等於真實 iPhone Safari 驗收。背景恢復、加入主畫面、iOS Service Worker 更新與觸控攔截仍依 `EDUCRAFT_IPHONE_SAFARI_ACCEPTANCE.md` 人工簽核。
+
+## 13. M5 來源治理與教案影響模型
+
+### 13.1 前端唯讀基線
+
+`educraft/app-governance.js` 是來源治理的單一擴充模組。它在既有「資料來源與授權」頁呈現 registry 狀態，不增加一般教師導覽項目；registry 無法載入時保留既有官方連結，不留下無限 skeleton。`reviewStatus=approved` 只表示來源版本已核對，`license=unknown` 仍顯示為授權待確認，兩者不得合併為「可使用」。
+
+教案影響比對只接受明確 `sourceId`，或與 registry 完全相同的 canonical URL，並要求教案保存舊 `contentDigest`。新來源必須已人工核對，且 digest 確實不同才會產生 `needs_review` 提示。沒有來源 id、URL 或 digest 的舊教案不猜測關聯；來源監測 artifact、外部暫時失敗及未核對差異不會改寫教案或建立假通知。
+
+遠端治理由 `CONFIG.sourceGovernanceRemote=false` 預設關閉。直接前往 `#source-review` 只會看到唯讀 gate；開關日後只能在受保護 staging 身分矩陣通過後隨版本發布。UI 顯示／隱藏不構成授權，真正權限由資料庫 reviewer membership、RLS、grants 與 RPC 再次驗證。
+
+### 13.2 M5 additive migration
+
+`20260719000300_add_source_governance.sql` 新增下列資料邊界，但目前只存在 version control：
+
+- `educraft_private.educraft_source_reviewers`：只由 service role 管理；不讀取可由使用者修改的 `user_metadata`。
+- `educraft_source_observations`：service 記錄來源 id、digest、canonical URL、觀測授權與時間；瀏覽器只讀 allowlist 欄位。
+- `educraft_source_reviews`／`educraft_source_review_statuses`：人工決策與去識別公開狀態。決策分為 `approved_metadata_only`、`approved_reusable`、`needs_changes`、`rejected`；只有開放授權 allowlist 加 HTTPS 權利證據可成為 reusable。
+- `educraft_lesson_source_impacts`：通知綁定私人 lesson plan；authenticated 只能讀自己的通知，不能直接寫入或看到其他教師資料。
+
+`educraft_can_review_sources()`、`educraft_review_source(...)` 與 `educraft_acknowledge_lesson_source_impact(...)` 都是 authenticated-only `SECURITY DEFINER` RPC，固定空 `search_path`，由函式重新驗 reviewer 或 lesson owner；PUBLIC／anon execute 均明確撤銷。所有新 table 都啟用及強制 RLS，並以 explicit grants 收斂 Data API。
+
+來源決策不直接更新 registry、課綱或教案；日後 ingestion worker 只能以 service role 新增 observation／owner notice。SQL metadata contract 必須在 disposable staging 執行，確認 RLS、欄位 grants、unknown-license/reproduction CHECK、RPC ACL 與空 search path，才能開啟遠端功能。
+
+### 13.3 公開 snapshot 仍維持 fail-closed gate
+
+M5 沒有切換公開讀寫：現有前端仍依賴 legacy `user_id`、`methodology_json` 與 base-table visibility，而 snapshot view 使用 `author_slug`、`author_display_name`、`methodology`。只加一個前端 flag 會造成欄位錯配，且私人後續編輯仍可能留在 legacy public path，因此未通過 staging 前不實作假切換。
+
+真正 cutover 前還需 owner-only publication-state RPC、snapshot read adapter、snapshot publish／withdraw adapter、legacy published row 再確認及獨立撤權 migration。撤權後的回復必須 forward-fix snapshot，不重新開放會暴露完整私人 JSON 的 legacy view。

@@ -171,4 +171,17 @@ Transfer／rate-limit table 沒有 user policy 是刻意 deny-all，配合 clien
 
 此次驗證修復一項新增發現：舊 Service Worker activate 會刪除同 origin 的所有 cache，可能影響 `PAQ6809.github.io` 下其他應用。`sw.js` 已改成只清除舊 `educraft-*` cache，並由負向控制測試固定此邊界。
 
-尚不能關閉的風險：repository 沒有受保護的 `educraft-staging` environment、staging URL／publishable key／MCP endpoint，也未取得建立付費 Supabase branch 的核准。因此 M3／M4 SQL 都未套用 staging 或 production，SQL metadata contract、owner／other／anon、claim mutation 與 slug 並行測試仍是發布阻擋條件。M4 也刻意保留 legacy 匿名讀取相容性；staging `ADDITIVE_ONLY` 綠燈不能被解讀為已完成公開資料切換，正式啟用前必須讓 `REQUIRE_SNAPSHOT_CUTOVER` 通過。執行與停止條件見 `EDUCRAFT_STAGING_MIGRATION_RUNBOOK.md`。
+尚不能關閉的風險：repository 沒有受保護的 `educraft-staging` environment、staging URL／publishable key／MCP endpoint，也未取得建立付費 Supabase branch 的核准。因此 M3／M4／M5 SQL 都未套用 staging 或 production，SQL metadata contract、owner／other／anon、claim mutation 與 slug 並行測試仍是發布阻擋條件。M4 也刻意保留 legacy 匿名讀取相容性；staging `ADDITIVE_ONLY` 綠燈不能被解讀為已完成公開資料切換，正式啟用前必須讓 `REQUIRE_SNAPSHOT_CUTOVER` 通過。執行與停止條件見 `EDUCRAFT_STAGING_MIGRATION_RUNBOOK.md`。
+
+## 9. M5 來源治理安全驗證（2026-07-19）
+
+| 驗證項 | 證據 | 結果 |
+|---|---|---|
+| Reviewer 授權來源 | membership 位於 client 無法使用的 private schema；RPC 以 `auth.uid()` 查 active membership，不讀 `user_metadata` | 靜態通過，雙帳號待 staging |
+| 來源核對與重製分離 | decision 區分 metadata-only／reusable；table CHECK、generated `is_reusable` 與 RPC 都要求開放授權 allowlist＋HTTPS rights URL | 靜態與單元通過，SQL contract 待 staging |
+| 決策寫入邊界 | browser roles 對 observations／reviews 無直接 write；review RPC 固定空 `search_path` 並撤銷 PUBLIC／anon execute | 靜態通過，mutation 待 staging |
+| 教案通知隱私 | impact table RLS 透過 parent plan owner；一般 authenticated 只有 SELECT，確認必須走 owner-check RPC | 靜態通過，owner／other／anon 待 staging |
+| 不自動改寫教案 | migration 沒有更新 lesson content；前端比對函式不 mutate plan，且無明確 source id／URL＋digest 就不猜測 | 單元與 E2E 通過 |
+| 遠端功能 gate | `sourceGovernanceRemote=false`；匿名來源頁只讀 registry，直接審核路由無 mutation controls | E2E 通過 |
+
+M5 migration 與 metadata contract 已加入 version control，但 Windows 環境無可用 `psql`，Supabase CLI binary 亦無法啟動；因此不可宣稱 SQL contract 已執行。M3／M4／M5 仍全部未套用 staging 或 production。公開 snapshot 前端切換、legacy 撤權、真實 iPhone Safari 與來源排程首次執行仍是未關閉 gate。

@@ -7,7 +7,7 @@
 - GitHub repository 目前只有 `github-pages` environment，尚未建立受保護的 `educraft-staging` environment。
 - Repository 尚未設定 EduCraft staging URL、publishable key 或 MCP endpoint secret。
 - 本階段因此只能建立 migration、靜態契約與 read-only staging gate；不能誠實宣稱 migration 已在 staging 或 production 套用。
-- M3 migration 與 M4 public-snapshot migration 都保持未套用狀態，直到以下 gate 全部完成。
+- M3、M4 public-snapshot 與 M5 source-governance migrations 都保持未套用狀態，直到以下 gate 全部完成。
 
 Supabase 建議使用獨立 staging／preview 環境驗證 migration；branch 具有獨立資料庫、API、Auth 與 Storage，不攜帶 production data。參考 [Supabase Deployment & Branching](https://supabase.com/docs/guides/deployment) 與 [Working with branches](https://supabase.com/docs/guides/deployment/branching/working-with-branches)。
 
@@ -25,11 +25,11 @@ Supabase 建議使用獨立 staging／preview 環境驗證 migration；branch �
 ## Migration 套用順序
 
 1. 建立 staging 備份或確認 branch 可重建。
-2. 依檔名順序套用 `educraft/supabase/migrations/`，先 M3 claim／version ownership，再 M4 public snapshot。
+2. 依檔名順序套用 `educraft/supabase/migrations/`：M3 claim／version ownership → M4 public snapshot → M5 source governance。
 3. Migration 必須透過 Supabase migration history 管理；不要在 production SQL Editor 貼上未追蹤 SQL。Supabase 的建議團隊流程是本機建立／測試 migration，再由單一協調者部署 remote。[Database Migrations](https://supabase.com/docs/guides/deployment/database-migrations)
 4. 套用後執行 Security Advisor，任何新增 WARN 先停止。
-5. 以可 rollback 的資料庫連線執行 `educraft/supabase/tests/public_lesson_plan_snapshots_contract.sql`。
-6. 使用 staging 合成帳號與合成教案執行 owner／other／anon 矩陣；不得複製 production 教師資料。
+5. 以可 rollback 的資料庫連線執行 `educraft/supabase/tests/public_lesson_plan_snapshots_contract.sql` 與 `source_governance_contract.sql`。
+6. 使用 staging 合成 reviewer、owner、other、anon 帳號及合成教案執行身分矩陣；不得複製 production 教師資料。
 
 ## Read-only GitHub gate
 
@@ -58,6 +58,8 @@ M4 migration 刻意不撤銷 legacy 路徑，避免在前端切換前破壞正�
 - 同一 slug 的並行發布只有一個成功。
 - 發布不改寫私人 Markdown／JSON；撤回只撤下 snapshot，不刪除私人教案。
 - M3 claim 會建立一份私人草稿，重試不重複建立；version insert 會拒絕跨 owner。
+- 非 reviewer 不能建立來源決策；reviewer 可核准 metadata-only，未知授權不可核准 reusable；決策不改 lesson plan 內容或 `updated_at`。
+- 來源影響通知只讓 plan owner 讀取及確認；other／anon 均被拒絕，同一來源版本不重複建立 active notice。
 - Security Advisor 沒有因本次 migration 新增 RLS、mutable search path 或公開 SECURITY DEFINER 警告。
 
 ## Production 核准

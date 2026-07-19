@@ -224,10 +224,20 @@ Phase 1 不以以下結果為成功標準：
 - 已建立真實 iPhone Safari／主畫面版本驗收清單及 read-only staging contract gate。
 - GitHub 目前沒有 `educraft-staging` environment 或 staging credentials；M3／M4 migration 均未套用 staging 或 production，不能把靜態通過誤稱為資料庫 E2E 通過。
 
-### M5 下一階段目標
+### M5（2026-07-19）：來源治理、影響通知與簡潔操作
 
-1. 建立來源差異與授權的人工審核工作台，讓內容管理者核准、拒絕及留下理由；未知授權不得進入可重製索引。
-2. 建立受影響教案通知模型：課綱來源更新時只標示需重新核對，不自動改寫教師教案。
-3. 取得專案擁有者核准後建立受保護 staging，依 M3 → M4 順序套用 migration，執行 owner／other／anon、claim 冪等、發布／撤回及並行 slug 契約。
-4. staging 通過後才以 feature flag 將新版前端發布／公開查詢切到 snapshot；保留舊路徑與回復開關，不在同一步淘汰 legacy view。
-5. 完成真實 iPhone Safari 簽核、首次來源排程與 staging workflow 執行，並建立不含私人內容的錯誤監控與回復演練紀錄。
+- 「資料來源與授權」頁已直接讀取 version-controlled registry，分開顯示來源核對、授權待確認與可重製狀態；成功載入後移除重複的官方連結清單，失敗時則保留原清單作為備援。
+- 已建立隱藏的來源審核工作區與遠端開關。正式站預設唯讀；只有後端確認為 reviewer 的登入帳號才會看到入口。核准 metadata-only、核准可重製、退回或拒絕都必須留下理由。
+- 已加入 M5 additive migration 與 SQL metadata contract：reviewer membership 不信任可自行修改的 Auth metadata；來源觀測與決策 append-only；未知授權可維持 metadata-only，但資料庫會拒絕進入可重製索引。
+- 已建立 owner-only 教案來源影響通知與確認 RPC。前端只接受明確 `sourceId` 或 canonical URL 加舊 digest 的精準關聯；人工核對後的新 digest 不同時才提示，絕不猜測科目或自動改寫教案。
+- 手機側欄已加入 `inert`、`aria-hidden`、焦點移入／回復、Tab 限制與 Escape 關閉；另支援 `prefers-reduced-motion`。來源審核採頁內表單，不新增 modal 或一般教師側欄項目。
+- 靜態、單元、桌機 Chromium、Mobile WebKit、PWA cache 及幽靈遮罩回歸測試均已加入。實機 iPhone、SQL metadata contract 與身分矩陣仍需在受保護 staging 執行。
+- M3／M4／M5 migrations 均未套用 staging 或 production；來源遠端審核開關維持關閉，公開教案仍使用 legacy 前端路徑。未通過 staging 前不建立 snapshot feature flag 或撤除 legacy 權限。
+
+### M6 下一階段目標
+
+1. 建立 10–20 位國小教師封閉測試：完成「建立／匯入 → 修改 → 保存 → 匯出」任務，記錄完成率、阻礙、教案可用性與 P0/P1 問題。
+2. 建立小型黃金樣本回歸集，覆蓋核心科目、年級、十種教案風格、多語草稿、課綱核對、DOCX／PDF／Markdown 匯出；失敗只產生工單，不自動改公開內容。
+3. 以同一份結構化教案最小衍生學習單與 Rubric 草稿，保留來源、教師校訂與 private-by-default；暫不擴張成完整 PPT、LMS 或學生資料平台。
+4. 取得專案擁有者明確核准後，建立受保護 staging，依 M3 → M4 → M5 套用 migration，執行 reviewer／owner／other／anon、claim 冪等、通知確認、發布／撤回及並行 slug 契約。
+5. 建立最小 production 監控與事件演練：只記錄去識別化錯誤、路由／匯出／MCP 成功率，驗證備份還原與回復步驟；真實 iPhone Safari 完成人工簽核。

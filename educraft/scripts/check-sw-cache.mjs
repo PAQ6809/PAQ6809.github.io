@@ -49,7 +49,9 @@ const requiredCore = [
   './app-account.js',
   './app-styles.js',
   './app-chatgpt.js',
+  './app-governance.js',
   './mobile-overlay-fix.js',
+  './data/source-registry.json',
   './manifest.webmanifest',
   './favicon.svg',
 ];

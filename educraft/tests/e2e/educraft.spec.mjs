@@ -198,21 +198,86 @@ test('公開教案庫與私人資料邊界說明可見', async ({ page }) => {
   await expect(page.locator('.public-empty')).toContainText('目前沒有符合條件的公開教案');
 });
 
+test('來源頁分開顯示來源核對與授權狀態', async ({ page }) => {
+  await page.goto('./#sources');
+  await expect(page.getByRole('heading', { name: '資料來源、授權與政策' })).toBeVisible();
+  const registry = page.locator('#source-registry-status');
+  await expect(registry.getByRole('heading', { name: '官方來源狀態' })).toBeVisible();
+  await expect(registry.locator('.source-registry-row')).toHaveCount(5);
+  await expect(registry).toContainText('5 已核對');
+  await expect(registry).toContainText('5 授權待確認');
+  await expect(registry).toContainText('0 可重製索引');
+  await expect(page.getByRole('button', { name: '開啟人工審核' })).toHaveCount(0);
+});
+
+test('未啟用 staging 前人工審核工作區保持唯讀', async ({ page }) => {
+  await page.goto('./#source-review');
+  await expect(page.getByRole('heading', { name: '來源人工審核' })).toBeVisible();
+  await expect(page.locator('#source-review-workspace')).toContainText('正式審核服務尚未啟用');
+  await expect(page.locator('[data-source-review-form]')).toHaveCount(0);
+});
+
+test('已核對的來源版本變更只提示重新核對並可開啟教案', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('educraft:v2:plans', JSON.stringify([{
+      id: 'affected-plan',
+      title: '需要核對的水循環教案',
+      subject: '自然科學',
+      grade: 5,
+      contentMarkdown: '# 水循環',
+      planJson: {},
+      citations: [{
+        sourceId: 'naer-curriculum-general-guidelines',
+        contentDigest: 'a'.repeat(64),
+      }],
+      status: 'draft',
+      visibility: 'private',
+      createdAt: '2026-07-19T00:00:00.000Z',
+      updatedAt: '2026-07-19T00:00:00.000Z',
+    }]));
+  });
+  await page.goto('./#curriculum');
+  const notice = page.locator('#curriculum-impact-region');
+  await expect(notice).toContainText('1 份教案需要重新核對課綱來源');
+  await expect(notice).toContainText('需要核對的水循環教案');
+  await notice.getByRole('button', { name: '開啟教案' }).click();
+  await expect(page.locator('#editor-title')).toHaveValue('需要核對的水循環教案');
+});
+
 test('Mobile Safari 導覽關閉後不留下幽靈遮罩', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-safari', 'Mobile Safari regression only');
   await page.goto('./#dashboard');
   await expect(page.getByRole('heading', { name: '今天想備哪一堂課？' })).toBeVisible();
 
   const backdrop = page.locator('#nav-backdrop');
+  const sidebar = page.locator('#sidebar');
   await expect(backdrop).toBeHidden();
+  await expect(sidebar).toHaveAttribute('aria-hidden', 'true');
+  await expect(sidebar).toHaveAttribute('inert', '');
   await expect(page.locator('dialog[open]')).toHaveCount(0);
 
   await page.locator('#open-nav').click();
-  await expect(page.locator('#sidebar')).toHaveClass(/\bopen\b/);
+  await expect(sidebar).toHaveClass(/\bopen\b/);
+  await expect(sidebar).toHaveAttribute('aria-hidden', 'false');
+  await expect(sidebar).not.toHaveAttribute('inert', '');
+  await expect(page.locator('#open-nav')).toHaveAttribute('aria-expanded', 'true');
   await expect(backdrop).toBeVisible();
+  await expect(sidebar.locator(':focus')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await expect(backdrop).toBeHidden();
+  await expect(page.locator('#open-nav')).toBeFocused();
+
+  await page.locator('#open-nav').click();
+  await page.locator('[data-route="dashboard"]').click();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await expect(backdrop).toBeHidden();
+
+  await page.locator('#open-nav').click();
   await page.locator('[data-route="public-library"]').click();
   await expect(page.getByRole('heading', { name: '公開教案庫' })).toBeVisible();
   await expect(backdrop).toBeHidden();
+  await expect(sidebar).toHaveAttribute('inert', '');
 
   await page.evaluate(() => {
     document.querySelector('#auth-dialog').setAttribute('open', '');
