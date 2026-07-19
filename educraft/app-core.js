@@ -40,14 +40,21 @@ const OFFICIAL_SOURCES = [
   {title:'教育大市集 API 說明', url:'https://market.cloud.edu.tw/developzone/resources_search.jsp', type:'API'},
 ];
 
-const STORAGE = { plans:'educraft:v2:plans', current:'educraft:v2:current', favorites:'educraft:v2:favorites', preferences:'educraft:v2:preferences', migrated:'educraft:v2:migrated' };
+const STORAGE = { plans:'educraft:v2:plans', current:'educraft:v2:current', favorites:'educraft:v2:favorites', preferences:'educraft:v2:preferences' };
 const state = {
-  route: 'dashboard', session: null, plans: readJson(STORAGE.plans, []), favorites: readJson(STORAGE.favorites, []),
+  route: 'dashboard', session: null, plans: readStoredPlans(), favorites: readJson(STORAGE.favorites, []),
   currentPlanId: localStorage.getItem(STORAGE.current) || '', resources: [], resourceMeta: null, resourceQuery: '',
   sync: '本機模式', supabase: null, autosaveTimer: null, cloudTimer: null,
 };
 
 function readJson(key, fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value ?? fallback; } catch { return fallback; } }
+function readStoredPlans() {
+  const current = localStorage.getItem(STORAGE.plans);
+  let plans;
+  if (current !== null) try { plans = JSON.parse(current); } catch { /* fall back to the untouched legacy copy */ }
+  if (!Array.isArray(plans)) plans = readJson('educraft:plans', []);
+  return globalThis.EduCraftLessonPlanNormalizer?.normalizeLessonPlans(plans) || plans;
+}
 function writeJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 function uid() { return crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 function nowIso() { return new Date().toISOString(); }
@@ -57,7 +64,15 @@ function formatDate(value) { try { return new Intl.DateTimeFormat('zh-TW',{dateS
 function toast(message, type='') { const el=document.createElement('div'); el.className=`toast ${type}`; el.textContent=message; document.querySelector('#toast-region').append(el); setTimeout(()=>el.remove(),4200); }
 function currentPlan() { return state.plans.find(p => p.id === state.currentPlanId) || state.plans[0] || null; }
 function setCurrentPlan(id) { state.currentPlanId=id; localStorage.setItem(STORAGE.current,id); }
-function persistPlans() { writeJson(STORAGE.plans,state.plans); }
+function persistPlans() {
+  const normalize = globalThis.EduCraftLessonPlanNormalizer?.normalizeLessonPlan;
+  if (normalize) state.plans = state.plans.map((plan,index)=>{
+    const normalized=normalize(plan,{index});
+    if(plan && typeof plan==='object' && !Array.isArray(plan))return Object.assign(plan,normalized);
+    return normalized;
+  });
+  writeJson(STORAGE.plans,state.plans);
+}
 function persistFavorites() { writeJson(STORAGE.favorites,state.favorites); }
 function downloadBlob(content, type, filename) { const blob=content instanceof Blob?content:new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000); }
 function debounce(fn, wait=700) { let t; return (...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),wait)}; }
@@ -79,7 +94,6 @@ function closeNav(){document.querySelector('#sidebar').classList.remove('open');
 function openNav(){document.querySelector('#sidebar').classList.add('open');document.querySelector('#nav-backdrop').hidden=false;}
 
 async function init() {
-  migrateLegacy();
   bindGlobal(); updateOnlineUi(); renderRoute();
   document.documentElement.dataset.routerReady='true';
   if (window.supabase?.createClient) {
@@ -94,7 +108,6 @@ async function init() {
   if(state.session) syncCloud();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
-function migrateLegacy(){if(localStorage.getItem(STORAGE.migrated))return;const old=readJson('educraft:plans',[]);if(!state.plans.length&&old.length){state.plans=old.map(r=>({id:r.id||uid(),title:r.title||r.plan?.title||r.plan?.meta?.input?.topic||'未命名教案',subject:r.plan?.meta?.input?.subject||'',grade:r.plan?.meta?.input?.grade||null,topic:r.plan?.meta?.input?.topic||'',language:r.plan?.meta?.input?.language||'繁體中文',contentMarkdown:r.content||planToMarkdown(r.plan||{}),planJson:r.plan||{},tags:r.tags||[],status:'draft',citations:r.plan?.citations||[],versions:[],createdAt:r.createdAt||nowIso(),updatedAt:nowIso(),sourceMode:'template'}));persistPlans();}localStorage.setItem(STORAGE.migrated,'1');}
 function bindGlobal(){
   addEventListener('hashchange',()=>renderRoute()); addEventListener('online',updateOnlineUi); addEventListener('offline',updateOnlineUi);
   document.querySelector('#open-nav').addEventListener('click',openNav); document.querySelector('#close-nav').addEventListener('click',closeNav); document.querySelector('#nav-backdrop').addEventListener('click',closeNav);

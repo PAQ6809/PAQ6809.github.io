@@ -1,5 +1,5 @@
-const CACHE = 'educraft-v9-20260719-runtime-safety';
-const CORE = ['./','./index.html','./styles.css','./community.css?v=20260718-1','./chatgpt.css?v=20260718-1','./mobile-overlay-fix.css?v=20260718-2','./app-core.js','./app-library.js','./app-editor.js','./app-sync.js','./app-account.js?v=20260718-1','./app-styles.js?v=20260718-1','./app-chatgpt.js?v=20260718-1','./mobile-overlay-fix.js?v=20260718-3','./manifest.webmanifest','./favicon.svg'];
+const CACHE = 'educraft-v10-20260719-plan-schema-v1';
+const CORE = ['./','./index.html','./styles.css','./community.css?v=20260718-1','./chatgpt.css?v=20260718-1','./mobile-overlay-fix.css?v=20260718-2','./lesson-plan-normalizer.js','./app-core.js','./app-library.js','./app-editor.js','./app-sync.js','./app-account.js?v=20260718-1','./app-styles.js?v=20260718-1','./app-chatgpt.js?v=20260718-1','./mobile-overlay-fix.js?v=20260718-3','./manifest.webmanifest','./favicon.svg'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {

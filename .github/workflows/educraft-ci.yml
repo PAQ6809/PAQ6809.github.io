@@ -46,6 +46,10 @@ jobs:
         working-directory: educraft
         run: npm run check:static
 
+      - name: Run lesson-plan schema unit tests
+        working-directory: educraft
+        run: npm run test:unit
+
       - name: Enforce service worker cache version contract
         working-directory: educraft
         env:

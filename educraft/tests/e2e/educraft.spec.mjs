@@ -132,7 +132,6 @@ test('複製公開教案時副本固定為私人', async ({ page }) => {
     };
     localStorage.setItem('educraft:v2:plans', JSON.stringify([plan]));
     localStorage.setItem('educraft:v2:current', plan.id);
-    localStorage.setItem('educraft:v2:migrated', '1');
   });
 
   await page.goto('./#editor');
@@ -145,6 +144,35 @@ test('複製公開教案時副本固定為私人', async ({ page }) => {
   expect(copy).toMatchObject({ visibility: 'private', publicSlug: '', publishedAt: null, versions: [] });
   expect(copy).not.toHaveProperty('cloudId');
   expect(copy).not.toHaveProperty('cloudUpdatedAt');
+});
+
+test('舊版教案可唯讀載入且不在啟動時寫回', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('educraft:plans', JSON.stringify([{
+      title: '舊版相容教案',
+      content: '# 保留的舊版 Markdown',
+      createdAt: '2026-01-02T03:04:05.000Z',
+      plan: { meta: { input: { subject: '自然科學', grade: 5, topic: '水循環' } } },
+      futureField: { keep: true },
+    }, null]));
+  });
+
+  await page.goto('./#my-plans');
+  await expect(page.getByRole('heading', { name: '舊版相容教案' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '待修復的舊版教案' })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('educraft:v2:plans'))).toBeNull();
+
+  await page.locator('article.plan-row').filter({ hasText: '舊版相容教案' }).getByRole('button', { name: '開啟' }).click();
+  await page.locator('#editor-title').fill('明確儲存後的教案');
+  await expect(page.locator('#editor-save-state')).toContainText('已儲存於本機');
+
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('educraft:v2:plans')));
+  const saved = stored.find(plan => plan.title === '明確儲存後的教案');
+  const quarantined = stored.find(plan => plan.title === '待修復的舊版教案');
+  expect(saved).toMatchObject({ schemaVersion: 1, visibility: 'private' });
+  expect(saved.planJson.meta.schemaVersion).toBe(1);
+  expect(saved.review).toMatchObject({ curriculum: 'unverified', privacy: 'unverified' });
+  expect(quarantined).toMatchObject({ legacyRawValue: null, visibility: 'private' });
 });
 
 test('帳號頁提供登入與註冊表單', async ({ page }) => {

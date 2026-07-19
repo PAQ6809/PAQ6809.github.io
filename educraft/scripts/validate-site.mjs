@@ -20,6 +20,7 @@ const requiredFiles = [
   'app-styles.js',
   'app-chatgpt.js',
   'mobile-overlay-fix.js',
+  'lesson-plan-normalizer.js',
   'sw.js',
   'manifest.webmanifest',
   'favicon.svg',

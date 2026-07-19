@@ -188,19 +188,37 @@ Phase 1 不以以下結果為成功標準：
 - [ ] GitHub Actions 可重現執行 JavaScript 語法、HTML/CSS 基本、關鍵檔案及 service worker cache version 檢查。
 - [ ] Playwright 最小 E2E 覆蓋五個指定情境，且不依賴真實教師帳號或寫入正式資料。
 - [ ] Dependabot 或 Renovate 與 CodeQL 已設定；更新 PR 仍需人工審核，不自動部署高風險變更。
-- [ ] PR 只包含文件與品質基礎設施；沒有 Supabase migration、正式資料修改或功能重寫。
+- [ ] M1 commit 只包含文件與品質基礎設施；M3 後續 commit 可加入經 rollback 驗證的 migration，但 CI／GitHub Pages 不得自動套用或修改正式資料。
 - [ ] PR 說明列出測試結果、未完成風險、後端待驗證契約及下一階段工單。
 
 ## 12. Phase 1 完成前的必要工單
 
 1. ✅ 複製教案已固定 private-by-default，並留下公開來源副本的回歸測試。
 2. ✅ 核心路由已在等待 `getSession()` 前啟用；`data-router-ready`／`data-app-ready` 與延遲 session 測試固定核心及擴充模組契約。
-3. 驗證並記錄 Supabase RLS、公開 view 與跨帳號存取矩陣。
+3. ✅ 已驗證並記錄 Supabase RLS、公開 view 與跨帳號存取矩陣；發現的 claim／version 缺口已進入待套用 migration。
 4. 對 MCP initialize、tools contract、24 小時到期、一次性認領與私人落地建立端對端測試。
-5. 以相容性測試固定結構化教案 schema，規劃既有 `planJson`／Markdown 的唯讀相容與遷移策略。
+5. ✅ 已以相容性測試固定結構化教案 schema，並實作既有 `planJson`／Markdown 的唯讀相容與不自動回寫策略。
 6. 建立課綱及來源清冊，區分正式、待核對、示範與失效來源。
 7. 對模板產生、多語草稿、十種風格與匯出格式建立小型黃金樣本回歸測試。
 8. 完成 10–20 位國小教師的封閉測試、問題分級與 P1 排序。
 9. 定義正式站錯誤回報、回復版本、備份還原與重大隱私事件處理流程。
 
 任何新串接或大型功能必須先回答：它是否直接改善上述 P0 任務？若不能以教師任務或風險降低驗證，Phase 1 不做。
+
+## 13. Phase 1 執行紀錄
+
+### M3（2026-07-19）：資料契約與後端邊界
+
+- 已加入教案 schema v1 normalizer 與 fixture 單元測試；舊資料只在記憶體正規化，沒有載入即批次回寫。
+- 已完成 live Supabase relation、RLS、role grant、公開 view、RPC 與 owner／other／anon 讀取矩陣，證據見 `EDUCRAFT_BACKEND_VERIFICATION.md`。
+- 已完成 MCP health、initialize、tools/list、options 與草稿建立的可重跑 contract；mutation 預設停用且不輸出 transfer secret。
+- 已發現 claim RPC 名稱衝突與 version ownership policy 缺口；修正已用 transaction rollback 驗證，並收入 version-controlled migration，但本 PR 不自動套用 production。
+- 已確認現行公開 view 不是欄位 allowlist snapshot；在修正前不得擴大公開教案資料導入。
+
+### M4 下一階段目標
+
+1. 建立課綱／來源 registry，固定來源狀態、canonical URL、授權、版本、digest 與人工核准欄位。
+2. 加入來源健康、授權缺漏與版本差異的排程檢查；只建立審核結果，不自動修改正式課綱或教案。
+3. 設計公開教案 snapshot／欄位 allowlist 與唯一 slug migration，先完成匿名資料最小化測試。
+4. 將 PWA／Service Worker smoke 序列化，補上真實 iPhone Safari 的快取更新與幽靈遮罩驗收清單。
+5. 依 staging → contract tests → 人工核准順序套用 M3 backend migration；不得由 GitHub Pages workflow 直接改 production schema。

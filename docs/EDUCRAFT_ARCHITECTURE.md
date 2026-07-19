@@ -407,3 +407,32 @@ repo 現況主要依 UI toast 與少量 `console.error`，沒有可確認的集�
 | ADR-010 公開衍生關係 | 複製／改作教案的 attribution、授權相容與 parent lineage | 開放社群 remix 前 |
 
 Phase 1 的完成定義是：上述契約可被測試、現有資料與正式站持續可用、任何後端未知均被列為待驗證，而不是一次完成所有目標資料表或重寫前端。
+
+## 11. M3 已落地的相容層與後端基線
+
+### 11.1 教案 v0→v1 normalizer
+
+`educraft/lesson-plan-normalizer.js` 是目前唯一的前端相容層：
+
+- v2 localStorage key 存在時優先讀取；只有 key 不存在才 fallback 至 legacy `educraft:plans`。
+- 正規化只在記憶體執行，不在 app init 批次寫回，也不設定假遷移完成旗標。
+- v0 的 Markdown、legacy `plan`／`content` alias、未知 root／nested 欄位及 backup container 均保留。
+- 已完整符合 v1 的輸入，正規化後 JSON 表示不變。
+- 缺少 legacy id 時使用穩定的讀取期 id；教師明確儲存後才由既有保存流程決定正式 id。
+- 無法解析的 primitive／null 舊資料會包成私人「待修復」教案並保留 `legacyRawValue`，避免渲染崩潰或靜默刪除。
+- `visibility` 預設 `private`，課綱、語言、隱私與授權 review 預設 `unverified`。
+
+所有既有保存入口最後都經過 `persistPlans()`；該邊界在實際寫入 v2 localStorage 前正規化 state，並保留呼叫端的物件引用。因此新建、編輯、還原與雲端合併不必等到下次重載才取得 schema v1 欄位。
+
+Backup normalizer 已有單元測試，但 restore UI 尚未接線；在接線與 E2E 完成前，不能宣稱所有備份都已自動升級。
+
+### 11.2 Live backend snapshot
+
+2026-07-19 的 live 驗證確認：私人教案的 owner／other／anon SELECT 邊界正常；transfer 與 rate-limit table 對 client roles deny-all；公開教師名片不暴露私人欄位。完整限制、矩陣與可重跑命令記錄於 `EDUCRAFT_BACKEND_VERIFICATION.md`。
+
+同一次驗證發現兩個必須先修復的 production 契約：
+
+1. Claim RPC 的 `ON CONFLICT (user_id, client_id)` 與輸出欄位同名，造成正向認領失敗。
+2. Version INSERT policy 沒有確認 parent plan owner，可建立跨帳號關聯。
+
+`educraft/supabase/migrations/20260719000100_harden_claim_and_version_ownership.sql` 提供最小修正；兩項都已在 transaction rollback 中驗證，但尚未套用 production。部署順序仍維持「審核 migration → staging → RLS／RPC contract → 人工 production 核准 → 前端 smoke」。
