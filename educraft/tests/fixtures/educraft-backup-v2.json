@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "exportedAt": "2026-07-19T08:00:00.000Z",
+  "plans": [
+    {
+      "id": "backup-legacy-plan",
+      "content": "# 備份舊教案\n\n這段不能被重建。",
+      "plan": {
+        "title": "備份舊教案",
+        "meta": {
+          "input": {
+            "grade": 3,
+            "subject": "社會",
+            "topic": "家鄉"
+          }
+        },
+        "backupOnlyJson": {
+          "keep": true
+        }
+      },
+      "unknownPlanField": "保留"
+    }
+  ],
+  "favorites": [
+    {
+      "id": "favorite-1",
+      "title": "收藏資源",
+      "unknownFavoriteField": "保留"
+    }
+  ],
+  "preferences": {
+    "language": "繁體中文",
+    "unknownPreference": {
+      "keep": true
+    }
+  },
+  "futureBackupField": {
+    "rawMarkdown": "# 備份容器內容\n逐字保留",
+    "rawJson": {
+      "deep": [
+        "keep"
+      ]
+    }
+  }
+}

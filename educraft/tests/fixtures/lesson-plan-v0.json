@@ -1,0 +1,68 @@
+{
+  "title": "舊版水循環教案",
+  "content": "# 舊版水循環教案\n\n<div data-note=\"保留原文\">教師手動 Markdown</div>\n\n- 不可由 planJson 重建",
+  "plan": {
+    "title": "舊版水循環教案",
+    "meta": {
+      "input": {
+        "grade": 5,
+        "subject": "自然科學",
+        "topic": "水循環",
+        "language": "繁體中文"
+      },
+      "generatedBy": "legacy-template-7",
+      "futureMeta": {
+        "keep": true
+      }
+    },
+    "sessions": [
+      {
+        "number": 1,
+        "stages": [
+          {
+            "name": "探究",
+            "minutes": 20,
+            "unknownStageField": "保留"
+          }
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "title": "官方來源",
+        "url": "https://example.edu/resource",
+        "license": "unknown",
+        "futureCitationField": 17
+      }
+    ],
+    "customUnknown": {
+      "nested": [
+        {
+          "raw": "原樣保留"
+        }
+      ]
+    },
+    "originalMarkdownSnapshot": "# JSON 內的快照\n不要覆寫根層 Markdown"
+  },
+  "tags": [
+    "水循環",
+    "legacy"
+  ],
+  "createdAt": "2024-02-03T04:05:06.000Z",
+  "legacyRoot": {
+    "nested": {
+      "keep": "未知根層欄位"
+    }
+  },
+  "backupPayload": {
+    "version": 2,
+    "rawMarkdown": "# 備份中的 Markdown\n保持逐字一致",
+    "rawJson": {
+      "unknown": [
+        1,
+        2,
+        3
+      ]
+    }
+  }
+}

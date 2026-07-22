@@ -4,12 +4,14 @@ const EDUCRAFT_OUTPUT_LANGUAGES = ['繁體中文','English','日本語','한국�
 const EDUCRAFT_SPECIALTIES = ['國語文','英語文','數學','自然科學','社會','生活課程','藝術','健康與體育','綜合活動','雙語教學','特殊教育','資訊教育','閱讀教育','本土語文','跨領域教學'];
 
 for (const language of EDUCRAFT_OUTPUT_LANGUAGES) if (!LANGUAGES.includes(language)) LANGUAGES.push(language);
-if (!NAV.some(x=>x[0]==='public-library')) NAV.splice(1,0,['public-library','◉','公開教案庫']);
-if (!NAV.some(x=>x[0]==='account')) NAV.push(['account','♙','個人／公開資料檔']);
+if (!NAV.some(x=>x[0]==='public-library')) NAV.push(['public-library','◉','公開教案']);
 
 function currentPublicRoute(){
   if(state.route.startsWith('public-plan/')) return 'public-library';
   if(state.route.startsWith('public-profile/')) return 'public-library';
+  if(state.route.startsWith('claim/')) return 'chatgpt-app';
+  if(state.route==='editor') return 'my-plans';
+  if(['sources','legal','source-review'].includes(state.route)) return 'curriculum';
   return state.route;
 }
 

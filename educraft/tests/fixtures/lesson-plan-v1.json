@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "plan-v1-existing",
+  "title": "既有 v1 教案",
+  "subject": "數學",
+  "grade": 4,
+  "topic": "分數",
+  "language": "繁體中文",
+  "outputLanguage": "繁體中文",
+  "teachingStyle": "explicit",
+  "tone": "教師實務版",
+  "status": "completed",
+  "visibility": "private",
+  "sourceMode": "manual",
+  "contentMarkdown": "# 既有 v1 教案\n\n教師修改後的內容。",
+  "planJson": {
+    "meta": {
+      "schemaVersion": 1,
+      "input": {},
+      "generatedBy": "manual"
+    },
+    "sessions": [],
+    "futurePlanJson": {
+      "keep": "v1-unknown"
+    }
+  },
+  "citations": [],
+  "tags": [],
+  "versions": [],
+  "provenance": {
+    "origin": "manual",
+    "parentPlanId": null,
+    "toolVersion": null,
+    "inputDigest": null,
+    "futureProvenance": "keep"
+  },
+  "review": {
+    "curriculum": "verified",
+    "language": "unverified",
+    "privacy": "verified",
+    "licensing": "unverified",
+    "futureReview": "keep"
+  },
+  "createdAt": "2026-07-01T01:02:03.000Z",
+  "updatedAt": "2026-07-02T01:02:03.000Z",
+  "futureRoot": {
+    "keep": true
+  }
+}

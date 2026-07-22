@@ -16,22 +16,23 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://goedzzhhvvnfczgnkqlv.supabase.co">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260722-1">
   <link rel="stylesheet" href="./mobile-overlay-fix.css?v=20260718-2">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
-  <script defer src="./app-core.js"></script>
-  <script defer src="./app-library.js"></script>
+  <script defer src="./lesson-plan-normalizer.js"></script>
+  <script defer src="./app-core.js?v=20260722-1"></script>
+  <script defer src="./app-library.js?v=20260722-1"></script>
   <script defer src="./app-editor.js"></script>
   <script defer src="./app-sync.js"></script>
-  <script defer src="./mobile-overlay-fix.js?v=20260718-3"></script>
+  <script defer src="./mobile-overlay-fix.js?v=20260722-1"></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要內容</a>
   <div id="app" class="app-shell">
     <aside id="sidebar" class="sidebar" aria-label="主要導覽">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">🎓</div>
+        <div class="brand-mark" aria-hidden="true">E</div>
         <div><strong>EduCraft</strong><span>教案工坊</span></div>
         <button id="close-nav" class="icon-btn mobile-only" aria-label="關閉導覽">✕</button>
       </div>
@@ -44,11 +45,11 @@
     <div id="nav-backdrop" class="nav-backdrop" hidden aria-hidden="true"></div>
     <section class="workspace">
       <header class="topbar">
-        <button id="open-nav" class="icon-btn mobile-only" aria-label="開啟導覽">☰</button>
+        <button id="open-nav" class="icon-btn mobile-only" aria-label="開啟導覽" aria-controls="sidebar" aria-expanded="false">☰</button>
         <form id="global-search-form" class="global-search" role="search">
-          <label class="sr-only" for="global-search">搜尋資源與教案</label>
+          <label class="sr-only" for="global-search">搜尋教育資源</label>
           <span aria-hidden="true">⌕</span>
-          <input id="global-search" maxlength="80" autocomplete="off" placeholder="搜尋教案、資源、課綱索引…">
+          <input id="global-search" maxlength="80" autocomplete="off" placeholder="搜尋教育資源">
         </form>
         <div class="top-actions">
           <span id="sync-indicator" class="sync-indicator" aria-live="polite">本機模式</span>

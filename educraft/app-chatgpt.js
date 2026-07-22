@@ -25,34 +25,17 @@
     return previousRenderRoute();
   };
 
-  const previousDashboard = renderDashboard;
-  renderDashboard = function () {
-    previousDashboard();
-    const actions = document.querySelector('.hero-actions');
-    if (actions && !actions.querySelector('[data-chatgpt-app]')) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'btn btn-ghost';
-      button.style.cssText = 'color:#fff;border-color:rgba(255,255,255,.5)';
-      button.dataset.chatgptApp = 'true';
-      button.textContent = '✦ 使用 ChatGPT 共備';
-      button.addEventListener('click', () => navigate('chatgpt-app'));
-      actions.append(button);
-    }
-  };
-
   const previousGenerator = renderGenerator;
   renderGenerator = function () {
     previousGenerator();
     const page = document.querySelector('#main-content .page');
-    const form = document.querySelector('#generator-form');
-    if (page && form && !document.querySelector('#chatgpt-generator-entry')) {
-      const notice = document.createElement('div');
-      notice.id = 'chatgpt-generator-entry';
-      notice.className = 'notice success';
-      notice.innerHTML = '<strong>想用對話慢慢共備？</strong> ChatGPT 可以先追問班級需求，再呼叫 EduCraft 工具整理、檢核並匯入私人教案檔。 <button type="button" class="btn btn-secondary btn-sm">前往 ChatGPT 共備</button>';
-      notice.querySelector('button').addEventListener('click', () => navigate('chatgpt-app'));
-      form.before(notice);
+    const header = page?.querySelector('.page-header');
+    if (header && !header.querySelector('[data-chatgpt-app]')) {
+      const actions = document.createElement('div');
+      actions.className = 'header-actions';
+      actions.innerHTML = '<button type="button" class="btn btn-secondary" data-chatgpt-app>改用 ChatGPT 共備</button>';
+      actions.querySelector('button').addEventListener('click', () => navigate('chatgpt-app'));
+      header.append(actions);
     }
   };
 

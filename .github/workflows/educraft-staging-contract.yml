@@ -1,0 +1,84 @@
+name: EduCraft staging contract gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Run read-only contracts against the protected EduCraft staging environment
+        required: true
+        type: choice
+        options:
+          - CANCEL
+          - RUN_READ_ONLY_STAGING_CONTRACTS
+      snapshot_mode:
+        description: Validate the additive snapshot, or require legacy anonymous paths to be disabled
+        required: true
+        type: choice
+        options:
+          - ADDITIVE_ONLY
+          - REQUIRE_SNAPSHOT_CUTOVER
+
+concurrency:
+  group: educraft-staging-contract
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  staging-contract:
+    if: inputs.confirmation == 'RUN_READ_ONLY_STAGING_CONTRACTS'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: educraft-staging
+    env:
+      EDUCRAFT_SUPABASE_URL: ${{ secrets.EDUCRAFT_SUPABASE_URL }}
+      EDUCRAFT_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EDUCRAFT_SUPABASE_PUBLISHABLE_KEY }}
+      EDUCRAFT_MCP_ENDPOINT: ${{ secrets.EDUCRAFT_MCP_ENDPOINT }}
+      EDUCRAFT_EXPECT_PUBLIC_SNAPSHOT: "1"
+      EDUCRAFT_REQUIRE_SNAPSHOT_CUTOVER: ${{ inputs.snapshot_mode == 'REQUIRE_SNAPSHOT_CUTOVER' && '1' || '0' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: educraft/package-lock.json
+
+      - name: Install verification dependency
+        working-directory: educraft
+        run: npm ci
+
+      - name: Refuse missing or production targets
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const productionHost = 'goedzzhhvvnfczgnkqlv.supabase.co';
+          const targets = [
+            ['Supabase', process.env.EDUCRAFT_SUPABASE_URL],
+            ['MCP', process.env.EDUCRAFT_MCP_ENDPOINT],
+          ];
+          for (const [label, value] of targets) {
+            if (!value) throw new Error(`${label} staging target is missing`);
+            const target = new URL(value);
+            if (target.protocol !== 'https:') throw new Error(`${label} staging target must use HTTPS`);
+            if (target.hostname === productionHost) throw new Error(`${label} target points to production`);
+            console.log(`TARGET ${label} ${target.hostname}${target.pathname}`);
+          }
+          if (!process.env.EDUCRAFT_SUPABASE_PUBLISHABLE_KEY) {
+            throw new Error('Staging publishable key is missing');
+          }
+          NODE
+
+      - name: Check migration safety contracts
+        working-directory: educraft
+        run: npm run check:migrations
+
+      - name: Run read-only staging API contracts
+        working-directory: educraft
+        run: npm run verify:backend
