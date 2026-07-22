@@ -111,12 +111,12 @@
     const script=document.createElement('script');script.src=src;script.async=false;script.onload=resolve;script.onerror=reject;document.head.append(script);
   });
 
-  loadCss('./community.css?v=20260718-1');
+  loadCss('./community.css?v=20260722-1');
   loadCss('./chatgpt.css?v=20260718-1');
   Promise.resolve()
-    .then(()=>loadScript('./app-account.js?v=20260718-1'))
-    .then(()=>loadScript('./app-styles.js?v=20260718-1'))
-    .then(()=>loadScript('./app-chatgpt.js?v=20260718-1'))
+    .then(()=>loadScript('./app-account.js?v=20260722-1'))
+    .then(()=>loadScript('./app-styles.js?v=20260722-1'))
+    .then(()=>loadScript('./app-chatgpt.js?v=20260722-1'))
     .then(()=>loadScript('./app-governance.js?v=20260719-1'))
     .then(()=>{
       const accountButton=document.querySelector('#auth-button');

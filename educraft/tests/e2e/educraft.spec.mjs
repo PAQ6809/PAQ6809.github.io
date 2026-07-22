@@ -82,6 +82,19 @@ test('首頁可載入核心備課工作台', async ({ page }) => {
   await expect(page).toHaveTitle(/EduCraft 教案工坊/);
   await expect(page.getByRole('heading', { name: '今天想備哪一堂課？' })).toBeVisible();
   await expect(page.locator('#main-content')).toContainText('教師備課工作台');
+  await expect(page.locator('#main-content h1')).toHaveCount(1);
+  await expect(page.locator('#main-content').getByRole('button', { name: '建立教案', exact: true })).toHaveCount(1);
+  await expect(page.locator('#main-content').getByRole('button', { name: '使用 ChatGPT 共備', exact: true })).toHaveCount(1);
+  await expect(page.locator('.quick-card')).toHaveCount(0);
+});
+
+test('主要導覽只有不重複的核心工作入口', async ({ page }) => {
+  await page.goto('./#dashboard');
+  await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true');
+  const routes = await page.locator('#nav-list [data-route]').evaluateAll(items => items.map(item => item.dataset.route));
+  expect(routes).toEqual(['dashboard', 'generator', 'my-plans', 'resources', 'curriculum', 'public-library', 'chatgpt-app']);
+  expect(new Set(routes).size).toBe(routes.length);
+  expect(routes).not.toEqual(expect.arrayContaining(['editor', 'sources', 'settings', 'account']));
 });
 
 test('首頁 ChatGPT 共備入口可進入設定頁', async ({ page }) => {
@@ -198,6 +211,34 @@ test('公開教案庫與私人資料邊界說明可見', async ({ page }) => {
   await expect(page.locator('.public-empty')).toContainText('目前沒有符合條件的公開教案');
 });
 
+test('教案產生器先顯示核心欄位並收合進階條件', async ({ page }) => {
+  await page.goto('./#generator');
+  await expect(page.getByRole('heading', { name: '建立教案' })).toBeVisible();
+  await expect(page.locator('#gen-grade')).toBeVisible();
+  await expect(page.locator('#gen-subject')).toBeVisible();
+  await expect(page.locator('#gen-topic')).toBeVisible();
+  await expect(page.locator('#gen-style')).toBeVisible();
+  await expect(page.locator('#generate-submit')).toBeVisible();
+
+  const advanced = page.locator('details.advanced-options');
+  await expect(advanced).not.toHaveAttribute('open', '');
+  await expect(page.locator('#gen-context')).toBeHidden();
+  await advanced.getByText('班級條件與進階設定').click();
+  await expect(advanced).toHaveAttribute('open', '');
+  await expect(page.locator('#gen-context')).toBeVisible();
+  await expect(page.locator('#gen-needs')).toBeVisible();
+  await expect(page.locator('#gen-equipment')).toBeVisible();
+});
+
+test('移出導覽的舊網址仍可直接使用', async ({ page }) => {
+  await page.goto('./#settings');
+  await expect(page.getByRole('heading', { name: '設定' })).toBeVisible();
+  await page.goto('./#sources');
+  await expect(page.getByRole('heading', { name: '資料來源、授權與政策' })).toBeVisible();
+  await page.goto('./#editor');
+  await expect(page.getByRole('heading', { name: '教案編輯器' })).toBeVisible();
+});
+
 test('來源頁分開顯示來源核對與授權狀態', async ({ page }) => {
   await page.goto('./#sources');
   await expect(page.getByRole('heading', { name: '資料來源、授權與政策' })).toBeVisible();
@@ -296,4 +337,29 @@ test('Mobile Safari 導覽關閉後不留下幽靈遮罩', async ({ page }, test
     .filter(element => element.matches('#nav-backdrop, dialog'))
     .map(element => element.id || element.tagName));
   expect(centerOverlays).toEqual([]);
+});
+
+test('Mobile Safari 核心頁面沒有水平溢位或殘留遮罩', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-safari', 'Mobile Safari layout regression only');
+  for (const route of ['dashboard', 'generator', 'account', 'public-library', 'chatgpt-app']) {
+    await page.goto(`./#${route}`);
+    await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true');
+    await expect(page.locator('#main-content')).toBeVisible();
+    await expect(page.locator('#nav-backdrop')).toBeHidden();
+    await expect(page.locator('#sidebar')).toHaveAttribute('inert', '');
+    const layout = await page.evaluate(() => ({
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth,
+      bodyNavOpen: document.body.classList.contains('nav-open'),
+      htmlNavOpen: document.documentElement.classList.contains('nav-open'),
+      centerOverlays: document
+        .elementsFromPoint(window.innerWidth / 2, window.innerHeight / 2)
+        .filter(element => element.matches('#nav-backdrop, dialog'))
+        .map(element => element.id || element.tagName),
+    }));
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+    expect(layout.bodyNavOpen).toBe(false);
+    expect(layout.htmlNavOpen).toBe(false);
+    expect(layout.centerOverlays).toEqual([]);
+  }
 });
