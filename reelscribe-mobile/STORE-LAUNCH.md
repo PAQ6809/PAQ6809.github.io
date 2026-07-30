@@ -1,6 +1,6 @@
 # ReelScribe Store Launch Workflow
 
-Last reviewed against official store documentation: 2026-07-13
+Last reviewed against official store documentation: 2026-07-30
 
 ## Current engineering status
 
@@ -173,12 +173,21 @@ ReelScribe is an offline-first transcription utility. No login is required. Revi
 
 ## Android release flow
 
+Current Google Play target API requirement, re-checked against the official Android/Play documentation on 2026-07-30:
+
+- Starting **2026-08-31**, new apps and app updates must target **Android 16 / API level 36 or higher** for standard phone/tablet distribution.
+- Existing apps must target Android 15 / API level 35 or higher to remain available to new users on devices running Android versions above the app's target level.
+- Google documents an extension path to 2026-11-01, but ReelScribe must not rely on that extension as its normal release plan.
+- Before signing a release AAB, CI and the generated Gradle project must provide evidence that `targetSdkVersion` is at least 36 and that all native/third-party SDKs remain compatible.
+
+Official reference: https://developer.android.com/google/play/requirements/target-sdk
+
 1. Create and verify a Google Play developer account.
 2. Accept the distribution agreement and pay the one-time registration fee.
 3. Complete personal/organization identity requirements and any required device/closed-testing steps.
 4. Confirm the application ID.
 5. Generate and securely back up the upload key; enable Play App Signing.
-6. Re-check the target API requirement shown in Play Console at submission time.
+6. For submissions on or after 2026-08-31, target Android 16 / API 36 or higher; re-check the official requirement again immediately before submission.
 7. Lock model byte sizes/SHA-256 and run `npm run preflight:release`.
 8. Build a signed Android App Bundle (`.aab`).
 9. Run unit tests, lint, dependency review and the Play pre-launch report.
