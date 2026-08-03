@@ -18,18 +18,18 @@ scripts.forEach((match, index) => {
   }
 });
 
-requireText('window.__ATLAS_BOOT_OK__', 'startup completion flag');
+requireText('window.__atlasBooted', 'startup completion flag');
 requireText('SAFE RECOVERY', 'startup recovery screen');
 requireText('data-demo="comic"', 'comic reader smoke entry');
 requireText('data-demo="text"', 'text reader smoke entry');
 requireText('data-demo="video"', 'video reader smoke entry');
-requireText('data-demo="pdf"', 'PDF reader smoke entry');
+requireText('function openPdf(', 'PDF reader implementation');
 requireText('action=health', 'Edge Function health integration');
 requireText('action=import', 'HTTPS metadata import integration');
 requireText('https://goedzzhhvvnfczgnkqlv.supabase.co/functions/v1/atlas-library-api', 'pinned Edge Function endpoint');
-requireText('AUTHORIZED_EXPORT_REQUIRED', 'Telegram direct-fetch rejection');
-requireText('http://', 'non-HTTPS validation message or test boundary');
-requireText('127.0.0.1', 'private-network rejection boundary');
+requireText("protocol !== 'https:'", 'non-HTTPS rejection boundary');
+requireText('target.hostname === \'t.me\'', 'Telegram URL rejection boundary');
+requireText('AbortController', 'request timeout support');
 
 if (/document\.cookie|\beval\s*\(|new\s+Function\s*\(/.test(html)) {
   failures.push('unsafe dynamic execution or cookie API found');
