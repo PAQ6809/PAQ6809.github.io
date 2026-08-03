@@ -5,6 +5,17 @@ on:
     paths:
       - 'atlas-reader-live/**'
       - 'scripts/atlas-reader-check.mjs'
+      - 'scripts/atlas-edge-smoke.mjs'
+      - 'scripts/atlas-reader-smoke.spec.mjs'
+      - '.github/workflows/atlas-reader-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'atlas-reader-live/**'
+      - 'scripts/atlas-reader-check.mjs'
+      - 'scripts/atlas-edge-smoke.mjs'
+      - 'scripts/atlas-reader-smoke.spec.mjs'
       - '.github/workflows/atlas-reader-check.yml'
   workflow_dispatch:
 
@@ -24,5 +35,95 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Run Atlas Reader regression checks
+      - name: Run static regression checks
         run: node scripts/atlas-reader-check.mjs
+
+  edge-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run Edge Function request matrix
+        run: node scripts/atlas-edge-smoke.mjs
+
+  mobile-browser-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Start local Atlas Reader
+        run: |
+          python3 -m http.server 4173 --directory atlas-reader-live >/tmp/atlas-reader-http.log 2>&1 &
+          echo $! >/tmp/atlas-reader-http.pid
+      - name: Install pinned Playwright runner
+        run: |
+          mkdir -p /tmp/atlas-e2e
+          cp scripts/atlas-reader-smoke.spec.mjs /tmp/atlas-e2e/
+          cd /tmp/atlas-e2e
+          npm init -y >/dev/null 2>&1
+          npm install --ignore-scripts --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run iPhone browser smoke test
+        run: |
+          cd /tmp/atlas-e2e
+          ATLAS_TARGET=http://127.0.0.1:4173 npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: atlas-reader-smoke-diagnostics
+          path: |
+            /tmp/atlas-e2e/test-results
+            /tmp/atlas-reader-http.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  production-smoke:
+    if: github.event_name == 'push'
+    needs:
+      - static-regression
+      - edge-regression
+      - mobile-browser-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Wait for GitHub Pages propagation
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsSL https://atlas-reader.vercel.app | grep -q 'window.__atlasBooted'; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Production did not expose the new Atlas Reader build in time.' >&2
+          exit 1
+      - name: Install pinned Playwright runner
+        run: |
+          mkdir -p /tmp/atlas-e2e
+          cp scripts/atlas-reader-smoke.spec.mjs /tmp/atlas-e2e/
+          cd /tmp/atlas-e2e
+          npm init -y >/dev/null 2>&1
+          npm install --ignore-scripts --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run production iPhone smoke test
+        run: |
+          cd /tmp/atlas-e2e
+          ATLAS_TARGET=https://atlas-reader.vercel.app ATLAS_EXPECT_API=true npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
+      - name: Upload production diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: atlas-reader-production-smoke-diagnostics
+          path: /tmp/atlas-e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7
