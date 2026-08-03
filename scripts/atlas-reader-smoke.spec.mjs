@@ -2,7 +2,7 @@ import { test, expect, devices } from '@playwright/test';
 
 const target = process.env.ATLAS_TARGET || 'http://127.0.0.1:4173';
 
-test.use({ ...devices['iPhone 13'] });
+test.use({ ...devices['Pixel 7'] });
 
 test('mobile startup, search, import, and readers', async ({ page }) => {
   const pageErrors = [];
