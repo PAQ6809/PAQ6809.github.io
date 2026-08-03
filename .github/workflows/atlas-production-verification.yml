@@ -1,0 +1,42 @@
+name: Atlas production verification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/atlas-production-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verify GitHub Pages propagation
+        run: node scripts/atlas-production-probe.mjs
+      - name: Install pinned Playwright runner
+        run: |
+          mkdir -p /tmp/atlas-e2e
+          cp scripts/atlas-reader-smoke.spec.mjs /tmp/atlas-e2e/
+          cd /tmp/atlas-e2e
+          npm init -y >/dev/null 2>&1
+          npm install --ignore-scripts --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify public Vercel entry and mobile flows
+        run: |
+          cd /tmp/atlas-e2e
+          ATLAS_TARGET=https://atlas-reader.vercel.app ATLAS_EXPECT_API=true npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: atlas-production-verification-diagnostics
+          path: /tmp/atlas-e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7
