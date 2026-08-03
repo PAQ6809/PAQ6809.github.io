@@ -1,18 +1,433 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5,user-scalable=yes">
-<meta name="theme-color" content="#0b0d12">
-<meta name="description" content="授權內容搜尋與專業閱讀平台">
-<title>Atlas Reader</title>
-<style>
-:root{--bg:#f4f6fa;--surface:#fff;--ink:#101828;--muted:#667085;--line:#d9e0ea;--accent:#245eea;--accent2:#163da8;--ok:#087443;--bad:#b42318;--shadow:0 18px 50px rgba(16,24,40,.09)}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden}button,input{font:inherit}button{cursor:pointer}.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--ink);font-weight:850;font-size:18px}.brand b{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent);color:#fff}.actions{display:flex;gap:8px}.btn{border:1px solid #cdd5df;background:#fff;color:var(--ink);border-radius:11px;padding:10px 14px;font-weight:750}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn:disabled{opacity:.55;cursor:wait}.hero{max-width:1180px;margin:auto;padding:64px 22px 30px}.ey{display:inline-block;font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--accent)}.hero h1{font-size:clamp(38px,7vw,72px);line-height:1.03;letter-spacing:-.045em;max-width:900px;margin:16px 0}.hero p{max-width:850px;color:var(--muted);font-size:18px;line-height:1.75}.wrap{max-width:1180px;margin:auto;padding:0 22px 80px}.search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.search input,.dialog input{width:100%;border:1px solid #cdd5df;border-radius:11px;padding:13px 14px;background:#fff;color:var(--ink);outline:none}.search input:focus,.dialog input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,94,234,.13)}.status{margin:12px 2px 20px;color:var(--muted);min-height:24px}.status.ok{color:var(--ok)}.status.err{color:var(--bad)}.grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 8px 26px rgba(16,24,40,.05)}.side{align-self:start;position:sticky;top:82px}.side h3{margin:0 0 8px}.side p{color:var(--muted);line-height:1.6;font-size:14px}.badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:850;background:#ecfdf3;color:#067647}.badge.off{background:#f2f4f7;color:#475467}.demo{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px;margin-top:10px}.demo b{display:block;margin-bottom:4px}.demo span{font-size:13px;color:var(--muted)}.empty{padding:44px 20px;text-align:center;color:var(--muted);border:1px dashed #cdd5df;border-radius:13px}.result{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:14px;align-items:start;padding:14px;border:0;border-top:1px solid #eef1f5;background:transparent;width:100%;text-align:left;color:inherit}.result:first-child{border-top:0}.thumb{display:grid;place-items:center;width:64px;height:84px;border-radius:8px;background:#e8edf5;color:#475467;font-size:12px;font-weight:900;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover}.result h3{margin:2px 0 6px;font-size:18px}.result p{margin:0 0 8px;color:var(--muted);line-height:1.5}.meta{font-size:13px;color:#475467}.score{font-size:12px;font-weight:900;color:var(--accent);background:#edf3ff;border-radius:999px;padding:6px 8px}.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.64)}.dialog{width:min(720px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.28)}.dialog h2{margin:0 0 14px}.box{white-space:pre-wrap;margin:12px 0 16px;padding:14px;border-radius:12px;background:#f4f7fb;color:#475467;line-height:1.6;min-height:76px}.check{display:flex;gap:9px;align-items:flex-start;margin:12px 0;color:#475467;line-height:1.45}.drop{display:block;border:2px dashed #b8c3d2;border-radius:14px;padding:22px;text-align:center;background:#f8fafc}.drop input{display:block;margin:12px auto 0;max-width:100%}.reader-active{height:100%;overflow:hidden;background:#000;overscroll-behavior:none}.comic-reader{position:fixed;inset:0;z-index:500;background:#000;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y pinch-zoom;scroll-behavior:smooth}.comic-top{position:fixed;top:0;left:0;right:0;z-index:520;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 10px;background:linear-gradient(#000e,transparent);color:#fff;transition:opacity .2s}.comic-top.hidden{opacity:0;pointer-events:none}.comic-pages{width:100%;max-width:1200px;margin:0 auto;background:#000}.comic-page{width:100%;min-height:100svh;display:grid;place-items:center;background:#000;overflow:hidden}.comic-page img,.comic-page svg{display:block;width:100%;max-width:100%;height:auto;min-height:100svh;object-fit:contain;object-position:center;margin:0 auto;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;transform:none}.comic-count{font-variant-numeric:tabular-nums;background:#000a;border:1px solid #ffffff33;border-radius:999px;padding:7px 10px}.comic-exit{border:1px solid #ffffff44;background:#000a;color:#fff;border-radius:999px;padding:8px 12px}.comic-hint{position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:520;background:#000b;color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;pointer-events:none;transition:opacity .5s}.comic-hint.hide{opacity:0}.pdf-reader{position:fixed;inset:0;z-index:500;background:#111}.pdf-reader iframe{width:100%;height:100%;border:0;padding-top:56px}.text-reader{position:fixed;inset:0;z-index:500;overflow:auto;background:#f4ecd9;color:#342e25}.text-reader article{max-width:760px;margin:auto;padding:90px 24px 120px;font-family:Georgia,"Noto Serif TC",serif}.text-reader h1{font-size:clamp(34px,7vw,58px)}.text-reader p{font-size:20px;line-height:1.9;white-space:pre-wrap}.reader-bar{position:fixed;top:0;left:0;right:0;z-index:520;display:flex;justify-content:space-between;align-items:center;padding:max(10px,env(safe-area-inset-top)) 12px 10px;background:rgba(15,19,27,.94);color:#fff}.reader-bar button{border:1px solid #ffffff44;background:#202938;color:#fff;border-radius:999px;padding:8px 12px}.fatal{max-width:760px;margin:70px auto;padding:24px}.fatal pre{white-space:pre-wrap;background:#fff3f2;padding:14px;border-radius:12px;color:var(--bad)}@media(max-width:780px){.hero{padding-top:42px}.grid{grid-template-columns:1fr}.side{position:static}.result{grid-template-columns:56px minmax(0,1fr)}.thumb{width:56px;height:76px}.score{display:none}}@media(max-width:520px){.hero{padding:38px 16px 22px}.hero h1{font-size:43px}.hero p{font-size:16px}.wrap{padding:0 16px 70px}.search{grid-template-columns:1fr}.search .btn{width:100%}.panel{padding:12px}.dialog{padding:18px}.result{padding:12px 4px}.result h3{font-size:16px}.comic-pages{max-width:100vw}.comic-page img,.comic-page svg{width:100vw;max-width:100vw}}</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5,user-scalable=yes">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="授權內容搜尋、網址解析與專業閱讀平台">
+  <meta name="referrer" content="no-referrer">
+  <title>Atlas Reader</title>
+  <style>
+    :root{--bg:#f4f6fa;--surface:#fff;--ink:#101828;--muted:#667085;--line:#d9e0ea;--accent:#245eea;--ok:#087443;--warn:#b54708;--bad:#b42318;--shadow:0 18px 50px rgba(16,24,40,.09)}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden}button,input{font:inherit}button{cursor:pointer}.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--ink);font-weight:850;font-size:18px}.brand b{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent);color:#fff}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #cdd5df;background:#fff;color:var(--ink);border-radius:11px;padding:10px 14px;font-weight:750}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn:disabled{opacity:.55;cursor:wait}.hero{max-width:1180px;margin:auto;padding:64px 22px 30px}.ey{display:inline-block;font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--accent)}.hero h1{font-size:clamp(38px,7vw,72px);line-height:1.03;letter-spacing:-.045em;max-width:900px;margin:16px 0}.hero p{max-width:850px;color:var(--muted);font-size:18px;line-height:1.75}.wrap{max-width:1180px;margin:auto;padding:0 22px 80px}.search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.search input,.dialog input{width:100%;border:1px solid #cdd5df;border-radius:11px;padding:13px 14px;background:#fff;color:var(--ink);outline:none}.search input:focus,.dialog input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,94,234,.13)}.status{margin:12px 2px 20px;color:var(--muted);min-height:24px}.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.err{color:var(--bad)}.grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 8px 26px rgba(16,24,40,.05)}.side{align-self:start;position:sticky;top:82px}.side h3{margin:10px 0 8px}.side p{color:var(--muted);line-height:1.6;font-size:14px}.badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:850;background:#ecfdf3;color:#067647}.badge.off{background:#f2f4f7;color:#475467}.badge.warn{background:#fff6ed;color:#b54708}.demo{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px;margin-top:10px}.demo b{display:block;margin-bottom:4px}.demo span{font-size:13px;color:var(--muted)}.empty{padding:44px 20px;text-align:center;color:var(--muted);border:1px dashed #cdd5df;border-radius:13px}.result{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:14px;align-items:start;padding:14px;border:0;border-top:1px solid #eef1f5;background:transparent;width:100%;text-align:left;color:inherit}.result:first-child{border-top:0}.thumb{display:grid;place-items:center;width:64px;height:84px;border-radius:8px;background:#e8edf5;color:#475467;font-size:12px;font-weight:900;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover}.result h3{margin:2px 0 6px;font-size:18px}.result p{margin:0 0 8px;color:var(--muted);line-height:1.5}.meta{font-size:13px;color:#475467}.score{font-size:12px;font-weight:900;color:var(--accent);background:#edf3ff;border-radius:999px;padding:6px 8px}.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.64)}.dialog{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.28)}.dialog h2{margin:0 0 14px}.dialog h3{margin:20px 0 8px}.box{white-space:pre-wrap;margin:12px 0 16px;padding:14px;border-radius:12px;background:#f4f7fb;color:#475467;line-height:1.6;min-height:76px}.check{display:flex;gap:9px;align-items:flex-start;margin:12px 0;color:#475467;line-height:1.45}.drop{display:block;border:2px dashed #b8c3d2;border-radius:14px;padding:18px;text-align:center;background:#f8fafc;margin-top:10px}.drop input{display:block;margin:12px auto 0;max-width:100%}.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.reader-active{height:100%;overflow:hidden;background:#000;overscroll-behavior:none}.comic-reader{position:fixed;inset:0;z-index:500;background:#000;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y pinch-zoom;scroll-behavior:smooth}.comic-top{position:fixed;top:0;left:0;right:0;z-index:520;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 10px;background:linear-gradient(#000e,transparent);color:#fff;transition:opacity .2s}.comic-top.hidden{opacity:0;pointer-events:none}.comic-pages{width:100%;max-width:1200px;margin:0 auto;background:#000}.comic-page{width:100%;min-height:100svh;display:grid;place-items:center;background:#000;overflow:hidden}.comic-page img,.comic-page svg{display:block;width:100%;max-width:100%;height:auto;min-height:100svh;object-fit:contain;object-position:center;margin:0 auto;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;transform:none}.comic-count{font-variant-numeric:tabular-nums;background:#000a;border:1px solid #ffffff33;border-radius:999px;padding:7px 10px}.comic-exit{border:1px solid #ffffff44;background:#000a;color:#fff;border-radius:999px;padding:8px 12px}.comic-hint{position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:520;background:#000b;color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;pointer-events:none;transition:opacity .5s}.comic-hint.hide{opacity:0}.frame-reader,.video-reader{position:fixed;inset:0;z-index:500;background:#111}.frame-reader iframe{width:100%;height:100%;border:0;padding-top:58px}.video-reader{display:grid;place-items:center;padding:74px 16px 20px}.video-reader video{width:min(1200px,100%);max-height:calc(100svh - 100px);background:#000}.text-reader{position:fixed;inset:0;z-index:500;overflow:auto;background:#f4ecd9;color:#342e25}.text-reader article{max-width:760px;margin:auto;padding:90px 24px 120px;font-family:Georgia,"Noto Serif TC",serif}.text-reader h1{font-size:clamp(34px,7vw,58px)}.text-reader p{font-size:20px;line-height:1.9;white-space:pre-wrap}.reader-bar{position:fixed;top:0;left:0;right:0;z-index:520;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 10px;background:rgba(15,19,27,.94);color:#fff}.reader-bar button{border:1px solid #ffffff44;background:#202938;color:#fff;border-radius:999px;padding:8px 12px}.fatal{max-width:760px;margin:70px auto;padding:24px}.fatal pre{white-space:pre-wrap;background:#fff3f2;padding:14px;border-radius:12px;color:var(--bad)}
+    @media(max-width:780px){.hero{padding-top:42px}.grid{grid-template-columns:1fr}.side{position:static}.result{grid-template-columns:56px minmax(0,1fr)}.thumb{width:56px;height:76px}.score{display:none}}
+    @media(max-width:520px){.hero{padding:38px 16px 22px}.hero h1{font-size:43px}.hero p{font-size:16px}.wrap{padding:0 16px 70px}.search,.row{grid-template-columns:1fr}.search .btn,.row .btn{width:100%}.panel{padding:12px}.dialog{padding:18px}.result{padding:12px 4px}.result h3{font-size:16px}.comic-pages{max-width:100vw}.comic-page img,.comic-page svg{width:100vw;max-width:100vw}.actions .btn{padding:9px 10px}}
+  </style>
 </head>
 <body>
-<div id="app"><main class="fatal"><small>ATLAS READER</small><h1>正在啟動授權內容模式</h1><p>所有索引與閱讀都在此裝置完成。</p></main></div>
-<script>
-(function(){'use strict';var app=document.getElementById('app');var state={query:'',items:[],results:[]};var objectUrls=[];function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}function cleanupUrls(){objectUrls.forEach(function(u){try{URL.revokeObjectURL(u)}catch(_){}});objectUrls=[]}function makeUrl(file){var u=URL.createObjectURL(file);objectUrls.push(u);return u}function header(){return '<header class="top"><button class="brand" type="button" data-go="home"><b>A</b>Atlas Reader</button><div class="actions"><button class="btn" type="button" data-go="import">匯入授權資料</button></div></header>'}function home(){document.documentElement.classList.remove('reader-active');document.body.classList.remove('reader-active');app.innerHTML=header()+'<section class="hero"><span class="ey">AUTHORIZED CONTENT MODE</span><h1>搜尋你有權使用的漫畫與文件。</h1><p>原有公開圖書資源已停用。現在只索引你在本機選取的 Telegram Desktop 匯出檔、圖片、PDF 與文字內容；檔案不會上傳到 Atlas Reader。</p></section><main class="wrap"><section class="search"><input id="q" autocomplete="off" value="'+esc(state.query)+'" placeholder="搜尋標題、貼文文字或相關關鍵字"><button id="search" class="btn primary" type="button">搜尋</button></section><div id="status" class="status">'+(state.items.length?'已載入 '+state.items.length+' 筆本機資料。':'尚未匯入授權資料。')+'</div><div class="grid"><aside class="panel side"><span class="badge">本機處理</span><h3>來源狀態</h3><p>公開圖書來源已離線。第三方 Telegram 頻道不會被代登入或硬抓；請使用頻道管理員匯出檔、Bot/API 授權或你合法持有的檔案。</p><button class="demo" data-demo="comic"><b>全螢幕直向漫畫閱讀器</b><span>鎖定水平位移、滿版、圖片不漂移</span></button><button class="demo" data-demo="text"><b>長文閱讀器</b><span>適合 Telegram 匯出文字與小說</span></button></aside><section class="panel"><div id="results">'+renderResults()+'</div></section></div></main>';document.getElementById('search').onclick=search;document.getElementById('q').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();search()}}}function renderResults(){var list=state.results.length||state.query?state.results:state.items;if(!list.length)return '<div class="empty">按「匯入授權資料」選擇 Telegram 匯出 JSON／HTML、圖片、PDF 或文字檔。</div>';return list.map(function(item){var thumb=item.images&&item.images[0]?'<img src="'+esc(item.images[0])+'" alt="">':esc((item.type||'FILE').slice(0,4).toUpperCase());return '<button class="result" type="button" data-open="'+esc(item.id)+'"><span class="thumb">'+thumb+'</span><div><h3>'+esc(item.title)+'</h3><p>'+esc(item.text||'沒有文字摘要')+'</p><div class="meta">'+esc(item.source||'本機授權來源')+' · '+esc(item.type)+'</div></div><span class="score">'+Math.round((item.score||1)*100)+'</span></button>'}).join('')}function tokenize(s){return String(s||'').toLowerCase().replace(/[\p{P}\p{S}\s]+/gu,' ').trim().split(/\s+/).filter(Boolean)}function bigrams(s){var t=String(s||'').replace(/\s+/g,'');var out=[];for(var i=0;i<t.length-1;i++)out.push(t.slice(i,i+2));return out}function score(item,q){var hay=(item.title+' '+item.text).toLowerCase(),terms=tokenize(q),sum=0;terms.forEach(function(term){if(hay.indexOf(term)>=0)sum+=3});bigrams(q).forEach(function(bg){if(hay.indexOf(bg)>=0)sum+=1});return sum}function search(){var q=document.getElementById('q').value.trim();state.query=q;if(!q){state.results=[];home();return}state.results=state.items.map(function(item){var s=score(item,q);return Object.assign({},item,{score:s})}).filter(function(item){return item.score>0}).sort(function(a,b){return b.score-a.score});home();var st=document.getElementById('status');if(st){st.className='status '+(state.results.length?'ok':'err');st.textContent=state.results.length?'找到 '+state.results.length+' 筆相關資料。':'沒有找到相符資料。'}}function openImport(){if(document.getElementById('modal'))return;document.body.insertAdjacentHTML('beforeend','<div class="modal" id="modal"><section class="dialog"><h2>匯入授權資料</h2><label class="drop"><b>選擇檔案或 Telegram Desktop 匯出目錄</b><span>支援 JSON、HTML、TXT、PDF 與多張圖片。桌面瀏覽器可選整個資料夾。</span><input id="files" type="file" multiple webkitdirectory accept=".json,.html,.htm,.txt,.pdf,image/*"></label><label class="check"><input id="rights" type="checkbox">我確認自己擁有、管理或已取得這些內容的索引與閱讀權限。</label><div class="box" id="ibox">資料會在目前瀏覽器中解析，不會上傳。</div><button class="btn primary" id="doImport" type="button">開始匯入</button> <button class="btn" id="close" type="button">關閉</button></section></div>');document.getElementById('close').onclick=closeImport;document.getElementById('doImport').onclick=importFiles}function closeImport(){var m=document.getElementById('modal');if(m)m.remove()}function flatText(v){if(typeof v==='string')return v;if(Array.isArray(v))return v.map(function(x){return typeof x==='string'?x:(x&&x.text)||''}).join('');return ''}function importTelegramJson(data,fileMap){var out=[];(data.messages||[]).forEach(function(m){var text=flatText(m.text),file=m.file||m.photo||m.thumbnail||'',images=[];if(file&&fileMap[file])images.push(makeUrl(fileMap[file]));var title=text.trim().split(/\n/)[0].slice(0,80)||('Telegram 貼文 '+(m.id||''));out.push({id:'tg-'+(m.id||Math.random()),title:title,text:text.slice(0,1200),type:images.length?'comic':'telegram-post',source:data.name||'Telegram 匯出',images:images})});return out}function importHtml(html){var doc=new DOMParser().parseFromString(html,'text/html'),nodes=doc.querySelectorAll('.message,article,.post'),out=[];nodes.forEach(function(n,i){var text=(n.textContent||'').replace(/\s+/g,' ').trim();if(text)out.push({id:'html-'+Date.now()+'-'+i,title:text.slice(0,80),text:text.slice(0,1200),type:'telegram-post',source:'HTML 匯出',images:[]})});return out}async function importFiles(){var input=document.getElementById('files'),box=document.getElementById('ibox'),btn=document.getElementById('doImport');if(!document.getElementById('rights').checked){box.textContent='請先確認你擁有或已取得內容使用權限。';return}var files=Array.from(input.files||[]);if(!files.length){box.textContent='請先選擇檔案。';return}btn.disabled=true;box.textContent='正在建立本機索引…';var map={};files.forEach(function(f){map[f.webkitRelativePath||f.name]=f;map[f.name]=f});var added=[],images=files.filter(function(f){return f.type.indexOf('image/')===0});if(images.length){added.push({id:'comic-'+Date.now(),title:'本機漫畫 '+new Date().toLocaleString(),text:images.map(function(f){return f.name}).join(' '),type:'comic',source:'本機圖片',images:images.sort(function(a,b){return a.name.localeCompare(b.name,undefined,{numeric:true})}).map(makeUrl)})}for(var i=0;i<files.length;i++){var f=files[i];try{if(f.name.toLowerCase().endsWith('.json')){var data=JSON.parse(await f.text());added=added.concat(importTelegramJson(data,map))}else if(/\.html?$/i.test(f.name)){added=added.concat(importHtml(await f.text()))}else if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){added.push({id:'pdf-'+Date.now()+'-'+i,title:f.name,text:'本機 PDF 文件',type:'pdf',source:'本機檔案',url:makeUrl(f),images:[]})}else if(f.type.indexOf('text/')===0||/\.txt$/i.test(f.name)){var text=await f.text();added.push({id:'text-'+Date.now()+'-'+i,title:f.name,text:text.slice(0,20000),type:'text',source:'本機檔案',images:[]})}}catch(err){console.warn('Skip file',f.name,err)}}state.items=state.items.concat(added);state.results=[];state.query='';box.textContent='匯入完成：'+added.length+' 筆。';setTimeout(function(){closeImport();home()},500)}function demoComic(){var colors=['#f6efe7','#e9f0f8','#f7e8eb','#eef5e8'];var pages=colors.map(function(c,i){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1700"><rect width="100%" height="100%" fill="'+c+'"/><rect x="70" y="70" width="1060" height="1560" rx="24" fill="white" stroke="#202737" stroke-width="10"/><text x="600" y="790" text-anchor="middle" font-family="sans-serif" font-size="86" font-weight="800" fill="#202737">Atlas Reader</text><text x="600" y="930" text-anchor="middle" font-family="sans-serif" font-size="64" fill="#202737">直向滾動 '+(i+1)+' / 4</text></svg>')});openComic({title:'漫畫閱讀器示範',images:pages})}function openItem(id){var item=state.items.find(function(x){return x.id===id});if(!item)return;if(item.type==='comic'||(item.images&&item.images.length))openComic(item);else if(item.type==='pdf')openPdf(item);else openText(item)}function openComic(item){document.documentElement.classList.add('reader-active');document.body.classList.add('reader-active');var imgs=(item.images||[]).map(function(src,i){return '<section class="comic-page" data-page="'+(i+1)+'"><img src="'+esc(src)+'" alt="第 '+(i+1)+' 頁" draggable="false"></section>'}).join('');app.innerHTML='<main class="comic-reader" id="comicReader"><header class="comic-top" id="comicTop"><button class="comic-exit" data-go="home">完成</button><b>'+esc(item.title||'漫畫')+'</b><span class="comic-count" id="comicCount">1 / '+(item.images||[]).length+'</span></header><div class="comic-pages">'+imgs+'</div><div class="comic-hint" id="comicHint">上下滾動閱讀 · 點一下隱藏工具列</div></main>';var reader=document.getElementById('comicReader'),top=document.getElementById('comicTop'),count=document.getElementById('comicCount'),hint=document.getElementById('comicHint'),timer;reader.addEventListener('click',function(e){if(e.target.closest('button'))return;top.classList.toggle('hidden');hint.classList.add('hide')});reader.addEventListener('scroll',function(){clearTimeout(timer);timer=setTimeout(function(){var pages=Array.from(reader.querySelectorAll('.comic-page')),best=1,min=Infinity;pages.forEach(function(p,i){var d=Math.abs(p.getBoundingClientRect().top-reader.getBoundingClientRect().top);if(d<min){min=d;best=i+1}});count.textContent=best+' / '+pages.length},80)},{passive:true});setTimeout(function(){hint.classList.add('hide')},2600)}function openPdf(item){document.documentElement.classList.add('reader-active');document.body.classList.add('reader-active');app.innerHTML='<main class="pdf-reader"><header class="reader-bar"><button data-go="home">完成</button><b>'+esc(item.title)+'</b><span></span></header><iframe src="'+esc(item.url)+'" title="PDF"></iframe></main>'}function openText(item){document.documentElement.classList.add('reader-active');document.body.classList.add('reader-active');app.innerHTML='<main class="text-reader"><header class="reader-bar"><button data-go="home">完成</button><b>'+esc(item.title)+'</b><span></span></header><article><h1>'+esc(item.title)+'</h1><p>'+esc(item.text||'')+'</p></article></main>'}document.addEventListener('click',function(e){var el=e.target.closest('[data-go],[data-demo],[data-open]');if(!el)return;if(el.dataset.go==='home')home();else if(el.dataset.go==='import')openImport();else if(el.dataset.demo==='comic')demoComic();else if(el.dataset.demo==='text')openText({title:'長文閱讀器示範',text:'這是授權內容模式。\n\n你可以匯入 Telegram Desktop 匯出檔、TXT、PDF 或圖片。搜尋與閱讀都在目前裝置完成。'});else if(el.dataset.open)openItem(el.dataset.open)});window.addEventListener('error',function(e){app.innerHTML='<main class="fatal"><span class="ey">SAFE RECOVERY</span><h1>前端程式發生錯誤</h1><pre>'+esc(e.message||'未知錯誤')+'</pre><button class="btn primary" onclick="location.reload()">重新整理</button></main>'});window.addEventListener('beforeunload',cleanupUrls);home()})();
-</script>
+  <div id="app"><main class="fatal"><small>ATLAS READER</small><h1>正在啟動授權內容模式</h1><p>所有索引與閱讀都在此裝置完成。</p></main></div>
+  <script>
+    window.__atlasBooted = false;
+    window.setTimeout(function () {
+      if (window.__atlasBooted) return;
+      var target = document.getElementById('app');
+      if (target) target.innerHTML = '<main class="fatal"><span class="ey">SAFE RECOVERY</span><h1>Atlas Reader 未能完成啟動</h1><p>請重新整理；若問題持續，維護巡檢會保留這次啟動失敗的可診斷訊息。</p><button class="btn primary" onclick="location.reload()">重新整理</button></main>';
+    }, 4000);
+  </script>
+  <script>
+  (function () {
+    'use strict';
+
+    var API_BASE = 'https://goedzzhhvvnfczgnkqlv.supabase.co/functions/v1/atlas-library-api';
+    var API_KEY = 'sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN';
+    var app = document.getElementById('app');
+    var objectUrls = [];
+    var state = {
+      query: '',
+      items: [],
+      results: [],
+      apiStatus: 'checking',
+      apiMessage: '正在檢查解析服務…'
+    };
+
+    function esc(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+      });
+    }
+
+    function makeObjectUrl(file) {
+      var url = URL.createObjectURL(file);
+      objectUrls.push(url);
+      return url;
+    }
+
+    function cleanupObjectUrls() {
+      objectUrls.forEach(function (url) {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+      });
+      objectUrls = [];
+    }
+
+    function demoComicPages() {
+      return ['#f6efe7', '#e9f0f8', '#f7e8eb', '#eef5e8'].map(function (color, index) {
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1700"><rect width="100%" height="100%" fill="' + color + '"/><rect x="70" y="70" width="1060" height="1560" rx="24" fill="white" stroke="#202737" stroke-width="10"/><text x="600" y="790" text-anchor="middle" font-family="sans-serif" font-size="86" font-weight="800" fill="#202737">Atlas Reader</text><text x="600" y="930" text-anchor="middle" font-family="sans-serif" font-size="64" fill="#202737">直向滾動 ' + (index + 1) + ' / 4</text></svg>';
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      });
+    }
+
+    function buildSamples() {
+      return [
+        {
+          id: 'sample-comic', title: 'Atlas 漫畫閱讀器示範',
+          text: '四頁授權示範內容，可測試手機直向滿版閱讀與頁碼追蹤。',
+          type: 'comic', source: 'Atlas 內建授權範例', images: demoComicPages(), score: 1
+        },
+        {
+          id: 'sample-novel', title: 'Atlas 小說閱讀器示範',
+          text: '這是一段可搜尋、可開啟的長文示範。Atlas Reader 只處理你有權使用的內容，並優先在目前裝置建立索引。\n\n手機版保留舒適行距、可捲動版面與安全返回控制。',
+          type: 'text', source: 'Atlas 內建授權範例', images: [], score: 1
+        },
+        {
+          id: 'sample-video', title: 'Atlas 影片閱讀器示範',
+          text: 'CC0 測試影片，用來驗證手機與桌面影片閱讀器可以開啟、播放與返回。',
+          type: 'video', source: 'MDN CC0 測試媒體',
+          url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', images: [], score: 1
+        }
+      ];
+    }
+
+    function loadPersistedUrlItems() {
+      try {
+        var value = JSON.parse(localStorage.getItem('atlas-reader-url-items-v1') || '[]');
+        return Array.isArray(value) ? value.filter(function (item) { return item && item.id && item.url; }).slice(0, 100) : [];
+      } catch (_) { return []; }
+    }
+
+    function persistUrlItems() {
+      try {
+        var safe = state.items.filter(function (item) { return item.persist === true && item.url; }).slice(-100);
+        localStorage.setItem('atlas-reader-url-items-v1', JSON.stringify(safe));
+      } catch (_) {}
+    }
+
+    function header() {
+      return '<header class="top"><button class="brand" type="button" data-go="home"><b>A</b>Atlas Reader</button><div class="actions"><button class="btn" type="button" data-go="import">匯入檔案／網址</button></div></header>';
+    }
+
+    function apiBadge() {
+      if (state.apiStatus === 'ok') return '<span class="badge">解析服務正常</span>';
+      if (state.apiStatus === 'error') return '<span class="badge warn">解析服務降級</span>';
+      return '<span class="badge off">檢查解析服務</span>';
+    }
+
+    function home() {
+      document.documentElement.classList.remove('reader-active');
+      document.body.classList.remove('reader-active');
+      app.innerHTML = header() +
+        '<section class="hero"><span class="ey">AUTHORIZED CONTENT MODE</span><h1>搜尋、解析並閱讀你有權使用的內容。</h1><p>搜尋會立即回傳內建授權範例與你匯入的資料。檔案在目前裝置解析；網址只回傳安全中繼資料，不代登入、不繞過權限，也不保存第三方內容。</p></section>' +
+        '<main class="wrap"><section class="search"><input id="q" autocomplete="off" value="' + esc(state.query) + '" placeholder="搜尋 Atlas、漫畫、小說、影片或已匯入內容"><button id="search" class="btn primary" type="button">搜尋</button></section>' +
+        '<div id="status" class="status" aria-live="polite">' + statusText() + '</div>' +
+        '<div class="grid"><aside class="panel side">' + apiBadge() + '<h3>來源與閱讀器</h3><p>' + esc(state.apiMessage) + '</p>' +
+        '<button class="demo" data-demo="comic"><b>漫畫閱讀器</b><span>手機直向滿版、鎖定水平漂移</span></button>' +
+        '<button class="demo" data-demo="text"><b>小說閱讀器</b><span>長文版面與舒適行距</span></button>' +
+        '<button class="demo" data-demo="video"><b>影片閱讀器</b><span>原生播放控制與全螢幕支援</span></button></aside>' +
+        '<section class="panel"><div id="results">' + renderResults() + '</div></section></div></main>';
+
+      document.getElementById('search').onclick = runSearch;
+      document.getElementById('q').onkeydown = function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); runSearch(); }
+      };
+    }
+
+    function statusText() {
+      if (state.query) return state.results.length ? '找到 ' + state.results.length + ' 筆相關資料。' : '沒有找到相符資料。';
+      return '目前可搜尋 ' + state.items.length + ' 筆資料（含 3 筆內建授權範例）。';
+    }
+
+    function renderResults() {
+      var list = state.query ? state.results : state.items;
+      if (!list.length) return '<div class="empty">尚無可顯示資料。請匯入你有權使用的檔案或網址。</div>';
+      return list.map(function (item) {
+        var thumb = item.images && item.images[0] ? '<img src="' + esc(item.images[0]) + '" alt="">' : esc(String(item.type || 'FILE').slice(0, 5).toUpperCase());
+        return '<button class="result" type="button" data-open="' + esc(item.id) + '"><span class="thumb">' + thumb + '</span><div><h3>' + esc(item.title) + '</h3><p>' + esc(item.text || '沒有文字摘要') + '</p><div class="meta">' + esc(item.source || '授權來源') + ' · ' + esc(item.type) + '</div></div><span class="score">' + Math.round((item.score || 1) * 100) + '</span></button>';
+      }).join('');
+    }
+
+    function normalize(value) {
+      return String(value || '').toLocaleLowerCase('zh-Hant').normalize('NFKC');
+    }
+
+    function tokens(value) {
+      return normalize(value).replace(/[\p{P}\p{S}\s]+/gu, ' ').trim().split(/\s+/).filter(Boolean);
+    }
+
+    function bigrams(value) {
+      var text = normalize(value).replace(/\s+/g, '');
+      var output = [];
+      for (var index = 0; index < text.length - 1; index += 1) output.push(text.slice(index, index + 2));
+      return output;
+    }
+
+    function searchScore(item, query) {
+      var title = normalize(item.title);
+      var haystack = normalize((item.title || '') + ' ' + (item.text || '') + ' ' + (item.source || '') + ' ' + (item.type || ''));
+      var score = 0;
+      tokens(query).forEach(function (term) {
+        if (title.indexOf(term) >= 0) score += 6;
+        else if (haystack.indexOf(term) >= 0) score += 3;
+      });
+      bigrams(query).forEach(function (pair) { if (haystack.indexOf(pair) >= 0) score += 1; });
+      return score;
+    }
+
+    function runSearch() {
+      var input = document.getElementById('q');
+      var query = input ? input.value.trim() : '';
+      state.query = query;
+      if (!query) { state.results = []; home(); return; }
+      state.results = state.items.map(function (item) {
+        return Object.assign({}, item, { score: searchScore(item, query) });
+      }).filter(function (item) { return item.score > 0; }).sort(function (a, b) {
+        return b.score - a.score || String(a.title).localeCompare(String(b.title), 'zh-Hant');
+      });
+      home();
+      var status = document.getElementById('status');
+      if (status) status.className = 'status ' + (state.results.length ? 'ok' : 'err');
+    }
+
+    function openImport() {
+      if (document.getElementById('modal')) return;
+      document.body.insertAdjacentHTML('beforeend',
+        '<div class="modal" id="modal"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="import-title"><h2 id="import-title">匯入授權資料</h2>' +
+        '<h3>解析網址</h3><div class="row"><input id="importUrl" type="url" inputmode="url" placeholder="https://example.com/document.pdf"><button class="btn primary" id="parseUrl" type="button">解析網址</button></div>' +
+        '<p class="meta">只接受 HTTPS 公開網址；不代登入、不攜帶 Cookie、不繞過付費或權限。</p>' +
+        '<h3>選擇本機檔案</h3><label class="drop"><b>選擇 JSON、HTML、TXT、PDF、圖片或影片</b><input id="files" type="file" multiple accept=".json,.html,.htm,.txt,.pdf,image/*,video/*"></label>' +
+        '<label class="drop"><b>選擇 Telegram Desktop 匯出目錄</b><input id="folder" type="file" multiple webkitdirectory></label>' +
+        '<label class="check"><input id="rights" type="checkbox">我確認自己擁有、管理或已取得這些內容的索引與閱讀權限。</label>' +
+        '<div class="box" id="ibox">資料會在目前瀏覽器中解析；網址服務只讀取受限大小的中繼資料。</div>' +
+        '<button class="btn primary" id="doImport" type="button">匯入檔案</button> <button class="btn" id="close" type="button">關閉</button></section></div>');
+      document.getElementById('close').onclick = closeImport;
+      document.getElementById('doImport').onclick = importFiles;
+      document.getElementById('parseUrl').onclick = importUrl;
+      document.getElementById('importUrl').onkeydown = function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); importUrl(); }
+      };
+    }
+
+    function closeImport() {
+      var modal = document.getElementById('modal');
+      if (modal) modal.remove();
+    }
+
+    function flattenTelegramText(value) {
+      if (typeof value === 'string') return value;
+      if (Array.isArray(value)) return value.map(function (entry) {
+        return typeof entry === 'string' ? entry : (entry && entry.text) || '';
+      }).join('');
+      return '';
+    }
+
+    function importTelegramJson(data, fileMap) {
+      var output = [];
+      (data.messages || []).forEach(function (message) {
+        var text = flattenTelegramText(message.text);
+        var fileName = message.file || message.photo || message.thumbnail || '';
+        var images = [];
+        if (fileName && fileMap[fileName] && fileMap[fileName].type.indexOf('image/') === 0) images.push(makeObjectUrl(fileMap[fileName]));
+        var firstLine = text.trim().split(/\r?\n/)[0];
+        output.push({
+          id: 'tg-' + (message.id || crypto.randomUUID()),
+          title: firstLine.slice(0, 80) || ('Telegram 貼文 ' + (message.id || '')),
+          text: text.slice(0, 20000),
+          type: images.length ? 'comic' : 'text',
+          source: data.name || 'Telegram 匯出', images: images, score: 1
+        });
+      });
+      return output;
+    }
+
+    function importHtml(html, fileName) {
+      var documentValue = new DOMParser().parseFromString(html, 'text/html');
+      var nodes = documentValue.querySelectorAll('.message,article,.post');
+      var output = [];
+      nodes.forEach(function (node, index) {
+        var text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        if (text) output.push({ id: 'html-' + Date.now() + '-' + index, title: text.slice(0, 80), text: text.slice(0, 20000), type: 'text', source: fileName || 'HTML 匯出', images: [], score: 1 });
+      });
+      if (!output.length) {
+        var bodyText = (documentValue.body && documentValue.body.textContent || '').replace(/\s+/g, ' ').trim();
+        if (bodyText) output.push({ id: 'html-' + Date.now(), title: documentValue.title || fileName || 'HTML 文件', text: bodyText.slice(0, 20000), type: 'text', source: fileName || 'HTML 檔案', images: [], score: 1 });
+      }
+      return output;
+    }
+
+    async function importFiles() {
+      var box = document.getElementById('ibox');
+      var button = document.getElementById('doImport');
+      if (!document.getElementById('rights').checked) { box.textContent = '請先確認你擁有或已取得內容使用權限。'; return; }
+      var files = Array.from(document.getElementById('files').files || []).concat(Array.from(document.getElementById('folder').files || []));
+      if (!files.length) { box.textContent = '請先選擇檔案或目錄。'; return; }
+      button.disabled = true;
+      box.textContent = '正在建立本機索引…';
+      var fileMap = {};
+      files.forEach(function (file) { fileMap[file.webkitRelativePath || file.name] = file; fileMap[file.name] = file; });
+      var added = [];
+      var looseImages = files.filter(function (file) { return file.type.indexOf('image/') === 0; });
+      if (looseImages.length) {
+        added.push({
+          id: 'comic-' + Date.now(), title: '本機漫畫 ' + new Date().toLocaleString(),
+          text: looseImages.map(function (file) { return file.name; }).join(' '), type: 'comic', source: '本機圖片',
+          images: looseImages.sort(function (a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true }); }).map(makeObjectUrl), score: 1
+        });
+      }
+      for (var index = 0; index < files.length; index += 1) {
+        var file = files[index];
+        try {
+          if (/\.json$/i.test(file.name)) added = added.concat(importTelegramJson(JSON.parse(await file.text()), fileMap));
+          else if (/\.html?$/i.test(file.name)) added = added.concat(importHtml(await file.text(), file.name));
+          else if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) added.push({ id: 'pdf-' + Date.now() + '-' + index, title: file.name, text: '本機 PDF 文件', type: 'pdf', source: '本機檔案', url: makeObjectUrl(file), images: [], score: 1 });
+          else if (file.type.indexOf('video/') === 0) added.push({ id: 'video-' + Date.now() + '-' + index, title: file.name, text: '本機影片', type: 'video', source: '本機檔案', url: makeObjectUrl(file), images: [], score: 1 });
+          else if (file.type.indexOf('text/') === 0 || /\.txt$/i.test(file.name)) added.push({ id: 'text-' + Date.now() + '-' + index, title: file.name, text: (await file.text()).slice(0, 20000), type: 'text', source: '本機檔案', images: [], score: 1 });
+        } catch (error) { console.warn('Atlas Reader skipped file', file.name, error); }
+      }
+      state.items = state.items.concat(added);
+      state.results = [];
+      state.query = '';
+      box.textContent = '匯入完成：' + added.length + ' 筆。';
+      window.setTimeout(function () { closeImport(); home(); }, 450);
+    }
+
+    function mapViewerType(value) {
+      return ({ 'comic-reader': 'comic', 'image-reader': 'comic', 'pdf-reader': 'pdf', 'text-reader': 'text', 'video-reader': 'video' })[value] || 'link';
+    }
+
+    async function importUrl() {
+      var input = document.getElementById('importUrl');
+      var button = document.getElementById('parseUrl');
+      var box = document.getElementById('ibox');
+      var raw = input.value.trim();
+      if (!raw) { box.textContent = '請輸入 HTTPS 網址。'; return; }
+      button.disabled = true;
+      box.textContent = '正在安全解析網址中繼資料…';
+      try {
+        var response = await fetch(API_BASE + '?action=import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': API_KEY },
+          body: JSON.stringify({ url: raw })
+        });
+        var data = await response.json().catch(function () { return {}; });
+        if (!response.ok || !data.ok) throw new Error(data.message || data.code || ('HTTP ' + response.status));
+        var item = {
+          id: 'url-' + Date.now(), title: data.title || data.fileName || data.url,
+          text: data.description || data.preview || ('已解析 ' + (data.contentType || '網址內容')),
+          type: mapViewerType(data.viewerType), source: data.hostname || '公開 HTTPS 網址',
+          url: data.url, images: data.viewerType === 'image-reader' ? [data.url] : [], score: 1, persist: true,
+          contentType: data.contentType || '', importedAt: new Date().toISOString()
+        };
+        state.items.push(item);
+        persistUrlItems();
+        state.query = '';
+        state.results = [];
+        box.textContent = '解析完成：' + item.title + '（' + item.type + '）。';
+        window.setTimeout(function () { closeImport(); home(); }, 650);
+      } catch (error) {
+        box.textContent = '解析失敗：' + (error && error.message ? error.message : '未知錯誤');
+      } finally { button.disabled = false; }
+    }
+
+    function openItem(id) {
+      var item = state.items.find(function (entry) { return entry.id === id; });
+      if (!item) return;
+      if (item.type === 'comic' || (item.images && item.images.length)) openComic(item);
+      else if (item.type === 'pdf') openFrame(item, 'PDF');
+      else if (item.type === 'video') openVideo(item);
+      else if (item.type === 'text') openText(item);
+      else if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
+    }
+
+    function enterReader() {
+      document.documentElement.classList.add('reader-active');
+      document.body.classList.add('reader-active');
+    }
+
+    function openComic(item) {
+      enterReader();
+      var images = item.images || [];
+      var pages = images.map(function (src, index) { return '<section class="comic-page" data-page="' + (index + 1) + '"><img src="' + esc(src) + '" alt="第 ' + (index + 1) + ' 頁" draggable="false"></section>'; }).join('');
+      app.innerHTML = '<main class="comic-reader" id="comicReader"><header class="comic-top" id="comicTop"><button class="comic-exit" data-go="home">完成</button><b>' + esc(item.title || '漫畫') + '</b><span class="comic-count" id="comicCount">1 / ' + images.length + '</span></header><div class="comic-pages">' + pages + '</div><div class="comic-hint" id="comicHint">上下滾動閱讀 · 點一下隱藏工具列</div></main>';
+      var reader = document.getElementById('comicReader');
+      var top = document.getElementById('comicTop');
+      var count = document.getElementById('comicCount');
+      var hint = document.getElementById('comicHint');
+      var timer;
+      reader.addEventListener('click', function (event) { if (event.target.closest('button')) return; top.classList.toggle('hidden'); hint.classList.add('hide'); });
+      reader.addEventListener('scroll', function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          var pageNodes = Array.from(reader.querySelectorAll('.comic-page'));
+          var best = 1;
+          var minimum = Infinity;
+          pageNodes.forEach(function (page, index) {
+            var distance = Math.abs(page.getBoundingClientRect().top - reader.getBoundingClientRect().top);
+            if (distance < minimum) { minimum = distance; best = index + 1; }
+          });
+          count.textContent = best + ' / ' + pageNodes.length;
+        }, 80);
+      }, { passive: true });
+      setTimeout(function () { hint.classList.add('hide'); }, 2600);
+    }
+
+    function openFrame(item, label) {
+      enterReader();
+      app.innerHTML = '<main class="frame-reader"><header class="reader-bar"><button data-go="home">完成</button><b>' + esc(item.title) + '</b><span>' + esc(label || '') + '</span></header><iframe src="' + esc(item.url) + '" title="' + esc(item.title) + '" referrerpolicy="no-referrer"></iframe></main>';
+    }
+
+    function openVideo(item) {
+      enterReader();
+      app.innerHTML = '<main class="video-reader"><header class="reader-bar"><button data-go="home">完成</button><b>' + esc(item.title) + '</b><span>VIDEO</span></header><video src="' + esc(item.url) + '" controls playsinline preload="metadata" referrerpolicy="no-referrer"></video></main>';
+    }
+
+    function openText(item) {
+      enterReader();
+      app.innerHTML = '<main class="text-reader"><header class="reader-bar"><button data-go="home">完成</button><b>' + esc(item.title) + '</b><span>TEXT</span></header><article><h1>' + esc(item.title) + '</h1><p>' + esc(item.text || '') + '</p></article></main>';
+    }
+
+    async function checkApiHealth() {
+      try {
+        var controller = new AbortController();
+        var timeout = setTimeout(function () { controller.abort(); }, 5000);
+        var response = await fetch(API_BASE + '?action=health', { headers: { 'apikey': API_KEY }, signal: controller.signal });
+        clearTimeout(timeout);
+        var data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || ('HTTP ' + response.status));
+        state.apiStatus = 'ok';
+        state.apiMessage = '解析服務正常，版本 ' + (data.version || 'unknown') + '；公開圖書來源維持停用。';
+      } catch (error) {
+        state.apiStatus = 'error';
+        state.apiMessage = '解析服務暫時無法使用；本機檔案搜尋與閱讀器仍可正常運作。';
+      }
+      if (!document.querySelector('.modal') && !document.querySelector('.reader-active')) home();
+    }
+
+    document.addEventListener('click', function (event) {
+      var element = event.target.closest('[data-go],[data-demo],[data-open]');
+      if (!element) return;
+      if (element.dataset.go === 'home') home();
+      else if (element.dataset.go === 'import') openImport();
+      else if (element.dataset.demo === 'comic') openItem('sample-comic');
+      else if (element.dataset.demo === 'text') openItem('sample-novel');
+      else if (element.dataset.demo === 'video') openItem('sample-video');
+      else if (element.dataset.open) openItem(element.dataset.open);
+    });
+
+    window.addEventListener('error', function (event) {
+      console.error('Atlas Reader fatal error', event.error || event.message);
+      app.innerHTML = '<main class="fatal"><span class="ey">SAFE RECOVERY</span><h1>前端程式發生錯誤</h1><pre>' + esc(event.message || '未知錯誤') + '</pre><button class="btn primary" onclick="location.reload()">重新整理</button></main>';
+    });
+    window.addEventListener('unhandledrejection', function (event) { console.error('Atlas Reader rejected promise', event.reason); });
+    window.addEventListener('beforeunload', cleanupObjectUrls);
+
+    try {
+      state.items = buildSamples().concat(loadPersistedUrlItems());
+      window.__atlasBooted = true;
+      home();
+      checkApiHealth();
+    } catch (error) {
+      console.error('Atlas Reader startup failed', error);
+      throw error;
+    }
+  })();
+  </script>
 </body>
 </html>
