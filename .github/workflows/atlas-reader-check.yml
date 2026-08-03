@@ -1,0 +1,28 @@
+name: Atlas Reader check
+
+on:
+  pull_request:
+    paths:
+      - 'atlas-reader-live/**'
+      - 'scripts/atlas-reader-check.mjs'
+      - '.github/workflows/atlas-reader-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-reader-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run Atlas Reader regression checks
+        run: node scripts/atlas-reader-check.mjs
