@@ -28,6 +28,9 @@ test('mobile startup, search, import, and readers', async ({ page }) => {
   await page.goto(target, { waitUntil: 'networkidle' });
   await expect(page.getByRole('heading', { name: '搜尋、解析並閱讀你有權使用的內容。' })).toBeVisible({ timeout: 4000 });
   await expect(page.getByText('SAFE RECOVERY')).toHaveCount(0);
+  if (process.env.ATLAS_EXPECT_API === 'true') {
+    await expect(page.getByText('解析服務正常')).toBeVisible({ timeout: 10000 });
+  }
 
   const searchInput = page.getByPlaceholder(/搜尋 Atlas/);
   await searchInput.fill('漫畫');
