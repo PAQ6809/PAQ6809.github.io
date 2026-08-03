@@ -34,22 +34,22 @@ test('mobile startup, search, import, and readers', async ({ page }) => {
 
   const searchInput = page.getByPlaceholder(/搜尋 Atlas/);
   await searchInput.fill('漫畫');
-  await page.getByRole('button', { name: '搜尋' }).click();
+  await page.getByRole('button', { name: '搜尋', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Atlas 漫畫閱讀器示範' })).toBeVisible();
 
   await page.getByRole('heading', { name: 'Atlas 漫畫閱讀器示範' }).click();
   await expect(page.locator('.comic-reader')).toBeVisible();
-  await page.getByRole('button', { name: '完成' }).click();
+  await page.getByRole('button', { name: '完成', exact: true }).click();
 
   await page.locator('[data-demo="text"]').click();
   await expect(page.locator('.text-reader')).toBeVisible();
-  await page.getByRole('button', { name: '完成' }).click();
+  await page.getByRole('button', { name: '完成', exact: true }).click();
 
   await page.locator('[data-demo="video"]').click();
   await expect(page.locator('.video-reader video')).toBeVisible();
-  await page.getByRole('button', { name: '完成' }).click();
+  await page.getByRole('button', { name: '完成', exact: true }).click();
 
-  await page.getByRole('button', { name: '匯入檔案／網址' }).click();
+  await page.getByRole('button', { name: '匯入檔案／網址', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.locator('#importUrl').fill('https://example.com/document.pdf');
   await page.locator('#parseUrl').click();
@@ -58,9 +58,9 @@ test('mobile startup, search, import, and readers', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'URL 匯入測試文件' })).toBeVisible();
   await page.getByRole('heading', { name: 'URL 匯入測試文件' }).click();
   await expect(page.locator('.frame-reader iframe')).toBeVisible();
-  await page.getByRole('button', { name: '完成' }).click();
+  await page.getByRole('button', { name: '完成', exact: true }).click();
 
-  await page.getByRole('button', { name: '匯入檔案／網址' }).click();
+  await page.getByRole('button', { name: '匯入檔案／網址', exact: true }).click();
   await page.locator('#files').setInputFiles({
     name: 'smoke.pdf',
     mimeType: 'application/pdf',
@@ -73,7 +73,7 @@ test('mobile startup, search, import, and readers', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'smoke.pdf' })).toBeVisible();
   await page.getByRole('heading', { name: 'smoke.pdf' }).click();
   await expect(page.locator('.frame-reader iframe')).toBeVisible();
-  await page.getByRole('button', { name: '完成' }).click();
+  await page.getByRole('button', { name: '完成', exact: true }).click();
 
   expect(pageErrors).toEqual([]);
 });
