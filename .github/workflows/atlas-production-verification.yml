@@ -40,3 +40,5 @@ jobs:
           path: /tmp/atlas-e2e/test-results
           if-no-files-found: ignore
           retention-days: 7
+
+# Verification rerun after exact production API selector fix.
