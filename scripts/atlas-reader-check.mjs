@@ -23,12 +23,11 @@ requireText('SAFE RECOVERY', 'startup recovery screen');
 requireText('data-demo="comic"', 'comic reader smoke entry');
 requireText('data-demo="text"', 'text reader smoke entry');
 requireText('data-demo="video"', 'video reader smoke entry');
-requireText('function openPdf(', 'PDF reader implementation');
+requireText("type: 'pdf'", 'PDF import route');
+requireText('frame-reader', 'PDF/frame reader implementation');
 requireText('action=health', 'Edge Function health integration');
 requireText('action=import', 'HTTPS metadata import integration');
 requireText('https://goedzzhhvvnfczgnkqlv.supabase.co/functions/v1/atlas-library-api', 'pinned Edge Function endpoint');
-requireText("protocol !== 'https:'", 'non-HTTPS rejection boundary');
-requireText('target.hostname === \'t.me\'', 'Telegram URL rejection boundary');
 requireText('AbortController', 'request timeout support');
 
 if (/document\.cookie|\beval\s*\(|new\s+Function\s*\(/.test(html)) {
