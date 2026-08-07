@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-08T04:00:00+08:00",
+  "generated_at": "2026-08-08T04:25:00+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -10,13 +10,52 @@
     "separate_layers": ["raw_fact", "calculated_indicator", "rule_interpretation", "risk_limitations"]
   },
   "sources": [
-    {"name":"TWSE OpenAPI","url":"https://openapi.twse.com.tw/","authority":"primary","scope":"listed quotes, indices, valuation, margin, revenue, material information, company profile, statements, funds"},
-    {"name":"Taipei Exchange OpenAPI","url":"https://www.tpex.org.tw/openapi/","authority":"primary","scope":"OTC quotes, valuation, margin, institutional trading"},
-    {"name":"MOPS","url":"https://mops.twse.com.tw/mops/web/index","authority":"primary","scope":"statutory corporate disclosures"},
-    {"name":"TAIFEX","url":"https://www.taifex.com.tw/","authority":"primary","scope":"futures, options, institutional derivatives data"}
+    {
+      "name": "TWSE OpenAPI",
+      "url": "https://openapi.twse.com.tw/",
+      "authority": "primary",
+      "endpoints": {
+        "listed_quotes": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+        "indices": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
+        "valuation": "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL",
+        "margin": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
+        "monthly_revenue": "https://openapi.twse.com.tw/v1/opendata/t187ap05_L",
+        "material_information": "https://openapi.twse.com.tw/v1/opendata/t187ap04_L",
+        "company_profile": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+        "income_statement": "https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci",
+        "balance_sheet": "https://openapi.twse.com.tw/v1/opendata/t187ap07_L_ci",
+        "funds": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L"
+      }
+    },
+    {
+      "name": "Taipei Exchange OpenAPI",
+      "url": "https://www.tpex.org.tw/openapi/",
+      "authority": "primary",
+      "endpoints": {
+        "otc_quotes_runtime": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes",
+        "otc_daily_close_reference": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+        "valuation": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_peratio_analysis",
+        "margin": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance",
+        "institutional_daily": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_daily_trading"
+      },
+      "note": "TWSE and TPEx are separate markets; values are never silently merged without retaining market identity."
+    },
+    {
+      "name": "MOPS",
+      "url": "https://mops.twse.com.tw/mops/web/index",
+      "authority": "primary",
+      "scope": "statutory corporate disclosures, material information, financial reports and investor relations references"
+    },
+    {
+      "name": "TAIFEX",
+      "url": "https://www.taifex.com.tw/",
+      "authority": "primary",
+      "scope": "futures, options and institutional derivatives data"
+    }
   ],
   "deployment_scope": {
-    "github_pages_repo":"PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "github_pages_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "github_pages_source_updated_in_this_chat": true,
     "cloudflare_worker_source_verified": false,
     "lumen_script_source_verified": false
   }
