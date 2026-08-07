@@ -1,0 +1,23 @@
+{
+  "name": "Lumen Taiwan Equity Research Platform",
+  "generated_at": "2026-08-08T04:00:00+08:00",
+  "policy": {
+    "financial_values_require_source": true,
+    "show_source_data_date": true,
+    "show_fetch_timestamp": true,
+    "no_silent_fallback": true,
+    "missing_value_labels": ["尚未取得", "資料延遲", "待驗證"],
+    "separate_layers": ["raw_fact", "calculated_indicator", "rule_interpretation", "risk_limitations"]
+  },
+  "sources": [
+    {"name":"TWSE OpenAPI","url":"https://openapi.twse.com.tw/","authority":"primary","scope":"listed quotes, indices, valuation, margin, revenue, material information, company profile, statements, funds"},
+    {"name":"Taipei Exchange OpenAPI","url":"https://www.tpex.org.tw/openapi/","authority":"primary","scope":"OTC quotes, valuation, margin, institutional trading"},
+    {"name":"MOPS","url":"https://mops.twse.com.tw/mops/web/index","authority":"primary","scope":"statutory corporate disclosures"},
+    {"name":"TAIFEX","url":"https://www.taifex.com.tw/","authority":"primary","scope":"futures, options, institutional derivatives data"}
+  ],
+  "deployment_scope": {
+    "github_pages_repo":"PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "cloudflare_worker_source_verified": false,
+    "lumen_script_source_verified": false
+  }
+}
