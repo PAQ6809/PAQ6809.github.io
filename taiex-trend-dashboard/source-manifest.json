@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-08T04:25:00+08:00",
+  "generated_at": "2026-08-08T04:42:00+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -22,9 +22,10 @@
         "monthly_revenue": "https://openapi.twse.com.tw/v1/opendata/t187ap05_L",
         "material_information": "https://openapi.twse.com.tw/v1/opendata/t187ap04_L",
         "company_profile": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
-        "income_statement": "https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci",
-        "balance_sheet": "https://openapi.twse.com.tw/v1/opendata/t187ap07_L_ci",
-        "funds": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L"
+        "funds": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+        "income_statement_families": "t187ap06_L_ci|basi|bd|fh|ins|mim",
+        "balance_sheet_families": "t187ap07_L_ci|basi|bd|fh|ins|mim",
+        "institutional_stock_detail": "https://www.twse.com.tw/rwd/zh/fund/T86"
       }
     },
     {
@@ -32,31 +33,47 @@
       "url": "https://www.tpex.org.tw/openapi/",
       "authority": "primary",
       "endpoints": {
-        "otc_quotes_runtime": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes",
-        "otc_daily_close_reference": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+        "otc_quotes": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes",
         "valuation": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_peratio_analysis",
         "margin": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance",
-        "institutional_daily": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_daily_trading"
+        "institutional_summary": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_summary",
+        "institutional_trust_stock_detail": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_trading",
+        "institutional_foreign_stock_detail": "https://www.tpex.org.tw/openapi/v1/tpex_3insti_qfii_trading",
+        "monthly_revenue": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O",
+        "material_information": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap04_O",
+        "company_profile": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+        "income_statement_families": "mopsfin_t187ap06_O_ci|basi|bd|fh|ins|mim",
+        "balance_sheet_families": "mopsfin_t187ap07_O_ci|basi|bd|fh|ins|mim"
       },
-      "note": "TWSE and TPEx are separate markets; values are never silently merged without retaining market identity."
+      "note": "TWSE and TPEx are separate markets; Lumen always retains market identity. Missing per-stock institutional categories are shown as missing rather than inferred."
     },
     {
       "name": "MOPS",
       "url": "https://mops.twse.com.tw/mops/web/index",
       "authority": "primary",
-      "scope": "statutory corporate disclosures, material information, financial reports and investor relations references"
+      "scope": "statutory corporate disclosures, material information and financial reports"
     },
     {
-      "name": "TAIFEX",
-      "url": "https://www.taifex.com.tw/",
+      "name": "TAIFEX OpenAPI",
+      "url": "https://openapi.taifex.com.tw/",
       "authority": "primary",
-      "scope": "futures, options and institutional derivatives data"
+      "endpoints": {
+        "swagger": "https://openapi.taifex.com.tw/swagger.json",
+        "institutional_derivatives": "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersGeneralBytheDate",
+        "put_call_ratio": "https://openapi.taifex.com.tw/v1/PutCallRatio"
+      },
+      "interpretation_limit": "Institutional categories are aggregates of many institutions and must not be presented as one institution or one unanimous strategy."
     }
   ],
+  "runtime": {
+    "latest_data_policy": "market-critical endpoints are fetched with no-store on page load and manual refresh",
+    "technical_history": "six months of official OHLC when available",
+    "workspace": "LocalStorage multi-workspace plus JSON and URL-fragment transfer; not represented as cloud sync",
+    "external_news": "discovery only; financial numbers must be re-verified against primary sources"
+  },
   "deployment_scope": {
-    "github_pages_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "canonical_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated_in_this_chat": true,
-    "cloudflare_worker_source_verified": false,
-    "lumen_script_source_verified": false
+    "cloudflare_lumen_script_writable_source_verified": false
   }
 }
