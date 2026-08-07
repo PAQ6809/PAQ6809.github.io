@@ -74,7 +74,7 @@ function deleteWorkspace() {
   const state=workspaceState();
   if (Object.keys(state.items).length<=1) {toast('至少保留一個工作區。');return;}
   const ws=state.items[state.active];
-  if (!confirm(`刪除「${ws.name}」？此動作只影響目前瀏覽器。`)) return;
+  if (!confirm(`刪除「${ws.name}」？此動作會從目前工作區移除；若已登入雲端同步，也會刪除自己的對應雲端副本。`)) return;
   delete state.items[state.active];
   state.active=Object.keys(state.items)[0];
   saveWorkspaceState(state);renderWorkspace();
@@ -159,11 +159,11 @@ function renderWorkList() {
     ['ok','重大訊息 / 新聞入口','官方重大訊息為主；外部新聞只做資料發現。'],
     ['ok','TAIFEX 結構化資料','OAS 三大法人與 Put/Call Ratio；解析失敗時顯示原始資料或失敗狀態。'],
     ['ok','透明情緒指標','只用可列出來源的市場 / 法人資料，固定規則計算。'],
-    ['ok','多工作區持久化','同瀏覽器多工作區、筆記、watchlist、JSON 匯出匯入與 URL fragment 搬移。'],
+    ['ok','多工作區持久化','本機多工作區、筆記、watchlist、JSON 匯出匯入與 URL fragment 搬移。'],
+    ['ok','私人雲端跨裝置同步','Supabase Auth + lumen_workspaces RLS；每個登入帳號只能讀寫自己的工作區，本機模式仍可獨立使用。'],
     ['ok','來源 / 時間 / 失敗透明','金融資料保留 canonical source；缺值不猜。'],
-    ['wait','真正雲端跨裝置同步','需要一個已確認可寫的 Auth / DB backend；目前不會偽裝成已完成。'],
     ['wait','lumen-script.pages.dev 正式部署','目前可直接寫的是 GitHub Pages canonical source；Cloudflare Pages 專案尚未連接到本對話。'],
-    ['wait','每日 08:30 / 21:30 ChatGPT 維護排程','由本對話排程狀態決定；網站 runtime 本身每次開啟都重新讀官方最新資料。']
+    ['wait','每日 08:30 / 21:30 ChatGPT 維護排程','工作內容與時程已設定；啟用狀態受目前 active task 配額限制。']
   ];
   document.getElementById('workList').innerHTML=tasks.map(([status,title,detail])=>`<div class="work"><span class="dot ${status}"></span><div><b>${title}</b><small>${detail}</small></div></div>`).join('');
 }
