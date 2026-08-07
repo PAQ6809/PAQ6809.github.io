@@ -161,38 +161,27 @@ function monthStartDates(count=6) {
   return out;
 }
 
+function normalizeHistoryRows(data) {
+  return (Array.isArray(data)?data:[]).map(row=>({
+    date:pick(row,['日期','Date','date']),
+    open:number(pick(row,['開盤價','開盤','Open','OpeningPrice'])),
+    high:number(pick(row,['最高價','最高','High','HighestPrice'])),
+    low:number(pick(row,['最低價','最低','Low','LowestPrice'])),
+    close:number(pick(row,['收盤價','收盤','Close','ClosingPrice'])),
+    volume:number(pick(row,['成交股數','成交量','TradeVolume','TradingShares']))
+  })).filter(row=>row.date && Number.isFinite(row.close));
+}
+
 async function historyMonth(q,y,m) {
   if (q.market==='上市') {
     const date=`${y}${String(m).padStart(2,'0')}01`;
     const url=`https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=${date}&stockNo=${encodeURIComponent(q.code)}&response=json`;
-    const data=await getData(`TWSE歷史 ${q.code} ${date}`,url,{cache:true});
-    if (!data || Array.isArray(data)) return {url,rows:[]};
-    const fields=data.fields||[], rows=(data.data||[]).map(arr=>{
-      const o={};fields.forEach((f,i)=>o[f]=arr[i]);
-      return {
-        date:pick(o,['日期']),
-        open:number(pick(o,['開盤價'])),high:number(pick(o,['最高價'])),low:number(pick(o,['最低價'])),
-        close:number(pick(o,['收盤價'])),volume:number(pick(o,['成交股數']))
-      };
-    }).filter(r=>Number.isFinite(r.close));
+    const rows=normalizeHistoryRows(await getData(`TWSE歷史 ${q.code} ${date}`,url,{cache:true}));
     return {url,rows};
   }
   const date=`${y}/${String(m).padStart(2,'0')}/01`;
   const url=`https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock?date=${encodeURIComponent(date)}&code=${encodeURIComponent(q.code)}&response=json`;
-  const raw=await getData(`TPEx歷史 ${q.code} ${y}${m}`,url,{cache:true});
-  let data=raw;
-  if (Array.isArray(raw)) return {url,rows:[]};
-  const tables=data?.tables||[];
-  const table=tables.find(t=>Array.isArray(t.data)&&t.data.length) || {};
-  const fields=table.fields||[];
-  const rows=(table.data||[]).map(arr=>{
-    const o={};fields.forEach((f,i)=>o[f]=arr[i]);
-    return {
-      date:pick(o,['日期']),
-      open:number(pick(o,['開盤','開盤價'])),high:number(pick(o,['最高','最高價'])),low:number(pick(o,['最低','最低價'])),
-      close:number(pick(o,['收盤','收盤價'])),volume:number(pick(o,['成交股數','成交量']))
-    };
-  }).filter(r=>Number.isFinite(r.close));
+  const rows=normalizeHistoryRows(await getData(`TPEx歷史 ${q.code} ${y}${m}`,url,{cache:true}));
   return {url,rows};
 }
 
