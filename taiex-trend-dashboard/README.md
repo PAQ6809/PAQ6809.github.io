@@ -23,11 +23,11 @@ Lumen 是以「來源優先、資訊去重、時間透明」為核心的台股�
 - TAIFEX OAS 三大法人與 Put/Call Ratio
 - 上市 / 上櫃官方重大訊息與 MOPS 入口
 - 透明情緒指標：只使用可列出來源的市場 / 法人資料
-- 多本機工作區、watchlist、研究筆記、JSON 匯出 / 匯入
-- URL fragment 跨裝置搬移工作區，不把本機資料偽裝成雲端同步
+- 多本機工作區、watchlist、研究筆記、JSON 匯出 / 匯入與 URL fragment 搬移
+- Supabase Auth 私人雲端同步；`lumen_workspaces` 啟用 RLS，每個登入帳號只能存取自己的工作區
 - 來源健康狀態、原始來源連結、功能狀態與失敗標示
 
-前端已由單一巨大 runtime + patch 改成 canonical 模組：`lumen-core.js`、`lumen-market.js`、`lumen-stock-a.js`、`lumen-stock-b.js`、`lumen-derivatives.js`、`lumen-workspace.js`、`lumen-boot.js`。`lumen.js` 只負責按順序載入模組，不再放第二份業務邏輯。
+前端已由單一巨大 runtime + patch 改成 canonical 模組：`lumen-core.js`、`lumen-market.js`、`lumen-stock-a.js`、`lumen-stock-b.js`、`lumen-derivatives.js`、`lumen-workspace.js`、`lumen-cloud.js`、`lumen-boot.js`。`lumen.js` 只負責按順序載入模組，不再放第二份業務邏輯。
 
 ## Canonical financial sources
 
@@ -69,6 +69,14 @@ Lumen 是以「來源優先、資訊去重、時間透明」為核心的台股�
 
 完整 machine-readable 清單與政策見 `source-manifest.json`。
 
+## 工作區與雲端同步
+
+- 未登入：LocalStorage 多工作區、watchlist、筆記、JSON 備份與 URL fragment 搬移都可獨立使用。
+- 登入：Supabase Auth session 只用於私人工作區同步；本機與雲端以 `updatedAt` 做雙向合併。
+- 雲端表：`public.lumen_workspaces`。
+- 權限：RLS 開啟，只授權 `authenticated`，並建立 owner-only SELECT / INSERT / UPDATE / DELETE policy；`anon` 沒有資料表權限。
+- 前端只使用 Supabase publishable key；不包含 service-role key、資料庫連線字串或其他 server-side secrets。
+
 ## Transparency rules
 
 1. 原始事實、Lumen 計算指標、規則解讀、風險限制分層。
@@ -82,8 +90,7 @@ Lumen 是以「來源優先、資訊去重、時間透明」為核心的台股�
 
 ## 仍受外部條件限制的項目
 
-- 真正的帳號制跨裝置雲端同步需要一個已確認可寫的 Auth / DB backend。目前提供本機多工作區、JSON 與 URL fragment 搬移，不會誤標成雲端同步。
-- `lumen-script.pages.dev` 的 Cloudflare Pages 可寫專案尚未連接，因此目前能確認更新的是 GitHub Pages canonical source。
+- `lumen-script.pages.dev` 的 Cloudflare Pages 可寫專案尚未連接，因此目前能確認更新的是 GitHub canonical source；不虛構 Cloudflare 已部署。
 - ChatGPT 的 Lumen 每日 08:30 / 21:30 Asia/Taipei 雙時段維護排程已完整設定，但帳號目前已有 5 個啟用中任務，Lumen 任務仍停用，需釋出一個 active task slot 才能啟用。
 - 本對話沒有本機 Codex scheduler 控制能力，因此不能直接刪除電腦上的 Codex 排程；GitHub repository 內也沒有找到需要搬移的 Lumen cron workflow。
 
