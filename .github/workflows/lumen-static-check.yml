@@ -22,42 +22,79 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
-          node --check taiex-trend-dashboard/lumen.js
-          node --check taiex-trend-dashboard/lumen-runtime-fixes.js
+          set -euo pipefail
+          for file in \
+            taiex-trend-dashboard/lumen.js \
+            taiex-trend-dashboard/lumen-core.js \
+            taiex-trend-dashboard/lumen-market.js \
+            taiex-trend-dashboard/lumen-stock-a.js \
+            taiex-trend-dashboard/lumen-stock-b.js \
+            taiex-trend-dashboard/lumen-derivatives.js \
+            taiex-trend-dashboard/lumen-workspace.js \
+            taiex-trend-dashboard/lumen-boot.js
+          do
+            node --check "$file"
+          done
 
       - name: Validate source manifest and page contract
         shell: python
         run: |
           import json
+          import re
           from pathlib import Path
 
           root = Path('taiex-trend-dashboard')
+          modules = [
+              'lumen-core.js',
+              'lumen-market.js',
+              'lumen-stock-a.js',
+              'lumen-stock-b.js',
+              'lumen-derivatives.js',
+              'lumen-workspace.js',
+              'lumen-boot.js',
+          ]
           required_files = [
               root / 'index.html',
               root / 'lumen.css',
               root / 'lumen.js',
-              root / 'lumen-runtime-fixes.js',
               root / 'source-manifest.json',
               root / 'README.md',
+              root / 'REFRACTOR-STATUS.md',
+              *[root / name for name in modules],
           ]
           missing = [str(p) for p in required_files if not p.exists()]
           if missing:
               raise SystemExit(f'Missing required Lumen files: {missing}')
 
+          obsolete = root / 'lumen-runtime-fixes.js'
+          if obsolete.exists():
+              raise SystemExit('Obsolete duplicate runtime patch still exists')
+
           html = (root / 'index.html').read_text(encoding='utf-8')
           required_ids = [
               'nav', 'marketDate', 'fetchTime', 'sourceHealth',
-              'marketKpis', 'indexRows', 'marketInterpretation', 'hotRows',
-              'stockSearch', 'stockDetail', 'stockKpis', 'stockTabs', 'stockPanel',
-              'etfRows', 'marginListed', 'marginOtc', 'watchList', 'sourceCards', 'workList'
+              'marketKpis', 'indexRows', 'marketSentiment', 'hotRows', 'hotSource',
+              'stockSearch', 'stockSearchButton', 'stockDetail', 'stockKpis', 'stockTabs', 'stockPanel',
+              'etfRows', 'etfSource',
+              'marginListed', 'marginOtc', 'taifexInstitutional', 'putCallPanel',
+              'workspaceSelect', 'watchList', 'workspaceNote', 'sourceCards', 'workList'
           ]
           missing_ids = [x for x in required_ids if f'id="{x}"' not in html]
           if missing_ids:
               raise SystemExit(f'Missing required DOM ids: {missing_ids}')
 
-          for asset in ['./lumen.css', './lumen.js', './lumen-runtime-fixes.js']:
-              if asset not in html:
-                  raise SystemExit(f'index.html does not reference {asset}')
+          if './lumen.css' not in html or './lumen.js' not in html:
+              raise SystemExit('index.html is missing the canonical CSS or JS loader')
+          if 'lumen-runtime-fixes.js' in html:
+              raise SystemExit('index.html still references obsolete runtime patch')
+
+          loader = (root / 'lumen.js').read_text(encoding='utf-8')
+          missing_modules = [name for name in modules if f'./{name}' not in loader]
+          if missing_modules:
+              raise SystemExit(f'Loader is missing canonical modules: {missing_modules}')
+          positions = [loader.index(f'./{name}') for name in modules]
+          if positions != sorted(positions):
+              raise SystemExit('Canonical modules are not loaded in dependency order')
 
           manifest = json.loads((root / 'source-manifest.json').read_text(encoding='utf-8'))
           policy = manifest.get('policy', {})
@@ -69,14 +106,27 @@ jobs:
               raise SystemExit('Source transparency policy is incomplete or disabled')
 
           primary = {s.get('name') for s in manifest.get('sources', []) if s.get('authority') == 'primary'}
-          required_primary = {'TWSE OpenAPI', 'Taipei Exchange OpenAPI', 'MOPS', 'TAIFEX'}
+          required_primary = {'TWSE OpenAPI', 'Taipei Exchange OpenAPI', 'MOPS', 'TAIFEX OpenAPI'}
           if not required_primary.issubset(primary):
               raise SystemExit(f'Missing primary financial sources: {required_primary-primary}')
 
-          runtime = (root / 'lumen-runtime-fixes.js').read_text(encoding='utf-8')
-          if "pick(t,['漲跌百分比'])" not in runtime:
-              raise SystemExit('Signed percentage correction is missing')
-          if "window.renderEtfs=etfs" not in runtime:
-              raise SystemExit('ETF filter compatibility alias is missing')
+          manifest_text = json.dumps(manifest, ensure_ascii=False)
+          required_domains = ['openapi.twse.com.tw', 'www.tpex.org.tw', 'mops.twse.com.tw', 'openapi.taifex.com.tw']
+          missing_domains = [domain for domain in required_domains if domain not in manifest_text]
+          if missing_domains:
+              raise SystemExit(f'Missing official source domains: {missing_domains}')
 
-          print('Lumen static contract OK')
+          combined = '\n'.join((root / name).read_text(encoding='utf-8') for name in modules)
+          required_contracts = [
+              r'financial_values_require_source',
+              r'PutCallRatio',
+              r'MarketDataOfMajorInstitutionalTradersGeneralBytheDate',
+              r'mopsfin_t187ap05_O',
+              r'T86',
+              r'LocalStorage|localStorage',
+          ]
+          missing_contracts = [pattern for pattern in required_contracts if not re.search(pattern, combined + manifest_text)]
+          if missing_contracts:
+              raise SystemExit(f'Missing Lumen runtime/source contracts: {missing_contracts}')
+
+          print('Lumen modular source-first contract OK')
