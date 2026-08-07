@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-08T04:42:00+08:00",
+  "generated_at": "2026-08-08T05:10:00+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -67,8 +67,17 @@
   ],
   "runtime": {
     "latest_data_policy": "market-critical endpoints are fetched with no-store on page load and manual refresh",
-    "technical_history": "six months of official OHLC when available",
-    "workspace": "LocalStorage multi-workspace plus JSON and URL-fragment transfer; not represented as cloud sync",
+    "technical_history": "six months of official OHLC when available; fields+data and table response shapes are normalized before indicator calculation",
+    "workspace_local": "LocalStorage multi-workspace plus JSON and URL-fragment transfer",
+    "workspace_cloud": {
+      "provider": "Supabase",
+      "project_url": "https://goedzzhhvvnfczgnkqlv.supabase.co",
+      "table": "public.lumen_workspaces",
+      "auth": "Supabase Auth",
+      "access": "authenticated users only; RLS owner-only select/insert/update/delete",
+      "merge": "last-updated workspace wins during two-way sync",
+      "server_secret_in_frontend": false
+    },
     "external_news": "discovery only; financial numbers must be re-verified against primary sources"
   },
   "deployment_scope": {
