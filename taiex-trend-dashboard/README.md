@@ -74,8 +74,17 @@ Lumen 是以「來源優先、資訊去重、時間透明」為核心的台股�
 - 未登入：LocalStorage 多工作區、watchlist、筆記、JSON 備份與 URL fragment 搬移都可獨立使用。
 - 登入：Supabase Auth session 只用於私人工作區同步；本機與雲端以 `updatedAt` 做雙向合併。
 - 雲端表：`public.lumen_workspaces`。
-- 權限：RLS 開啟，只授權 `authenticated`，並建立 owner-only SELECT / INSERT / UPDATE / DELETE policy；`anon` 沒有資料表權限。
+- 權限：RLS 已驗證為開啟，只授權 `authenticated`，並建立 owner-only SELECT / INSERT / UPDATE / DELETE policy；`anon` 沒有資料表權限。
 - 前端只使用 Supabase publishable key；不包含 service-role key、資料庫連線字串或其他 server-side secrets。
+
+## 自動更新
+
+ChatGPT 內的 `Lumen 雙時段更新` 已啟用，時區為 `Asia/Taipei`，每天固定執行兩次：
+
+- 08:30：美股收盤後 / 台股開盤前，更新隔夜市場、台股盤前所需資料與來源狀態。
+- 21:30：台股收盤後 / 美股開盤前，更新台股收盤、法人/籌碼/財報事件與下一交易日研究資料。
+
+排程要求每次重新檢查資料來源日期、抓取時間、延遲狀態、斷鏈與重複資訊；不會把前一交易日資料冒充當日即時行情。
 
 ## Transparency rules
 
@@ -91,8 +100,7 @@ Lumen 是以「來源優先、資訊去重、時間透明」為核心的台股�
 ## 仍受外部條件限制的項目
 
 - `lumen-script.pages.dev` 的 Cloudflare Pages 可寫專案尚未連接，因此目前能確認更新的是 GitHub canonical source；不虛構 Cloudflare 已部署。
-- ChatGPT 的 Lumen 每日 08:30 / 21:30 Asia/Taipei 雙時段維護排程已完整設定，但帳號目前已有 5 個啟用中任務，Lumen 任務仍停用，需釋出一個 active task slot 才能啟用。
-- 本對話沒有本機 Codex scheduler 控制能力，因此不能直接刪除電腦上的 Codex 排程；GitHub repository 內也沒有找到需要搬移的 Lumen cron workflow。
+- 本對話沒有本機 Codex scheduler 控制能力，因此不能直接刪除電腦上的 Codex 排程；GitHub repository 內沒有找到需要搬移的 Lumen cron workflow。已知的市場雙時段維護工作已移到 ChatGPT 的 `Lumen 雙時段更新`。
 
 ## Disclaimer
 
