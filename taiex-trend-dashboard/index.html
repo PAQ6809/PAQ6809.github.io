@@ -4,35 +4,260 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Lumen 台股分析平台</title>
-<meta name="description" content="Lumen 台股分析平台：官方來源驅動的上市櫃行情、估值、基本面、技術面、籌碼、ETF、產業與重大訊息研究工具。" />
+<meta name="description" content="Lumen 台股分析平台：以 TWSE、TPEx、MOPS、TAIFEX 官方來源驅動的台股行情、K 線、基本面、估值、法人、ETF、產業比較、重大訊息與透明來源中心。" />
 <meta name="theme-color" content="#0b0d10" />
-<link rel="stylesheet" href="./lumen.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230b0d10'/><path d='M15 46V18h8v20h26v8z' fill='%238fb8ff'/><path d='M30 33l8-8 6 5 7-10' fill='none' stroke='%2355d69e' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="./lumen.css" />
 </head>
 <body>
-<header class="topbar"><div class="wrap topin"><div class="brand">Lumen<small>台股分析平台 · Source-first</small></div><nav class="nav" id="nav"></nav></div></header>
+<header class="topbar">
+  <div class="wrap topin">
+    <button class="brandButton" type="button" data-view="market" aria-label="回到市場總覽">
+      <span class="brand">Lumen</span>
+      <small>台股分析平台 · source-first</small>
+    </button>
+    <nav class="nav" id="nav" aria-label="主要導覽"></nav>
+  </div>
+</header>
+
 <main>
-<section class="hero"><div class="wrap"><h1>少一點重複，多一點可驗證。</h1><p>上市、上櫃、ETF、技術面、基本面、估值、籌碼與重大訊息集中在一個研究介面。金融數字只顯示可追溯資料；取不到就明確標示，不補猜測值。</p><div class="statusline"><span class="badge" id="marketDate">最後交易日：載入中</span><span class="badge" id="fetchTime">抓取時間：—</span><span class="badge" id="sourceHealth">來源狀態：檢查中</span><span class="badge">研究資訊，不構成投資建議</span></div></div></section>
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">少一點重複，多一點可驗證</div>
+    <h1>把台股研究需要的資訊放在同一個透明介面。</h1>
+    <p>上市、上櫃、ETF、產業、技術面、基本面、估值、籌碼與衍生品以官方來源為主。取不到的資料會直接標示失敗或缺漏，不補猜測值。</p>
+    <div class="statusline">
+      <span class="badge" id="marketDate">最後交易日：載入中</span>
+      <span class="badge" id="fetchTime">本頁抓取：—</span>
+      <span class="badge" id="sourceHealth">來源狀態：檢查中</span>
+      <span class="badge">研究資訊 · 非投資建議</span>
+    </div>
+  </div>
+</section>
+
 <div class="wrap">
 <section id="view-market" class="view">
   <div class="grid g4" id="marketKpis"></div>
-  <div class="section"><div class="sectionhead"><div><h2>市場與產業</h2><p>同一指標只保留一個 canonical 卡片；詳細內容在下表。</p></div><button class="btn" onclick="refreshAll(true)">重新同步官方資料</button></div><div class="split"><div class="card"><div class="tablewrap"><table class="table"><thead><tr><th>指數 / 產業</th><th>收盤</th><th>漲跌%</th><th>資料日</th></tr></thead><tbody id="indexRows"><tr><td colspan="4" class="empty"><span class="loader"></span>載入中</td></tr></tbody></table></div><div class="source" id="indexSource"></div></div><div class="card"><h2 style="margin:0 0 10px">市場解讀</h2><div id="marketInterpretation" class="notice">等待官方指數資料。</div><div class="source">規則解讀 ≠ 原始資料。方向描述由頁面規則依指數漲跌與產業廣度計算，不是模型預測。</div></div></div></div>
-  <div class="section"><div class="sectionhead"><div><h2>成交熱門</h2><p>依官方日成交資訊排序，非推薦名單。</p></div></div><div class="tablewrap"><table class="table"><thead><tr><th>代碼 / 名稱</th><th>市場</th><th>收盤</th><th>漲跌</th><th>成交值</th><th>成交量</th></tr></thead><tbody id="hotRows"></tbody></table></div></div>
-</section>
-<section id="view-stock" class="view hidden">
-  <div class="section"><div class="card"><div class="searchrow"><input id="stockSearch" placeholder="輸入代碼或名稱，例如 2330、台積電、6488" autocomplete="off"><button class="btn primary" onclick="runStockSearch()">查詢</button></div><div id="searchHints" class="source">搜尋範圍：本次已載入的 TWSE + TPEx 官方行情。</div></div></div>
-  <div id="stockDetail" class="hidden">
-    <div class="section"><div class="sectionhead"><div><h2 id="stockTitle">個股</h2><p id="stockSubtitle"></p></div><button class="btn" id="watchBtn" onclick="toggleWatch()">加入關注</button></div><div class="grid g4" id="stockKpis"></div></div>
-    <div class="section"><div class="tabs" id="stockTabs"></div><div id="stockPanel"></div></div>
+
+  <div class="section">
+    <div class="sectionhead">
+      <div>
+        <h2>市場與產業</h2>
+        <p>市場方向、產業強弱與情緒判讀集中在此處，不在其他頁重複。</p>
+      </div>
+      <button class="btn" id="refreshButton" type="button">重新同步官方資料</button>
+    </div>
+    <div class="split">
+      <div class="card">
+        <div class="tablewrap">
+          <table class="table">
+            <thead><tr><th>指數 / 產業</th><th>收盤</th><th>漲跌%</th><th>資料日</th></tr></thead>
+            <tbody id="indexRows"><tr><td colspan="4" class="empty"><span class="loader"></span>載入中</td></tr></tbody>
+          </table>
+        </div>
+        <div class="source" id="indexSource"></div>
+      </div>
+      <div class="card">
+        <h2 class="cardtitle">透明情緒指標</h2>
+        <div id="marketSentiment" class="sentimentPanel">
+          <div class="empty"><span class="loader"></span>等待市場與衍生品資料</div>
+        </div>
+        <div class="source">Lumen 規則層：只使用可列出來源的市場漲跌、漲跌家數、TAIFEX 與 Put/Call 資訊。它是描述性指標，不是預測模型。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sectionhead">
+      <div>
+        <h2>成交熱門</h2>
+        <p>依官方成交金額排序，僅做研究導覽，不是推薦名單。</p>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table class="table">
+        <thead><tr><th>代碼 / 名稱</th><th>市場</th><th>收盤</th><th>漲跌</th><th>成交值</th><th>成交量</th></tr></thead>
+        <tbody id="hotRows"></tbody>
+      </table>
+    </div>
+    <div class="source" id="hotSource"></div>
   </div>
 </section>
-<section id="view-etf" class="view hidden"><div class="section"><div class="sectionhead"><div><h2>ETF / 基金</h2><p>基金基本資料與行情分開顯示，避免把發行資訊誤當行情。</p></div><input id="etfFilter" oninput="renderEtfs()" placeholder="篩選代碼 / 名稱" style="max-width:260px;background:#0d1116;color:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px"></div><div class="tablewrap"><table class="table"><thead><tr><th>代碼 / 名稱</th><th>市場</th><th>收盤</th><th>漲跌</th><th>基金類型 / 發行人</th></tr></thead><tbody id="etfRows"><tr><td colspan="5" class="empty">載入中</td></tr></tbody></table></div><div class="source" id="etfSource"></div></div></section>
-<section id="view-chips" class="view hidden"><div class="section"><div class="grid g2"><div class="card"><h2 style="margin-top:0">上市融資融券</h2><div id="marginListed" class="notice">載入中</div><div class="source"><a href="https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN" target="_blank" rel="noopener">TWSE MI_MARGN</a></div></div><div class="card"><h2 style="margin-top:0">上櫃融資融券</h2><div id="marginOtc" class="notice">載入中</div><div class="source"><a href="https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance" target="_blank" rel="noopener">TPEx margin balance</a></div></div></div></div><div class="section"><div class="card"><h2 style="margin-top:0">期貨 / 選擇權法人資料</h2><p class="muted">靜態 GitHub Pages 不透過不透明代理抓取 TAIFEX 網頁。這裡直接提供官方查詢入口，避免把過期截圖或第三方數字當成即時資料。</p><div class="chips"><a class="chip" href="https://www.taifex.com.tw/cht/3/futContractsDate" target="_blank" rel="noopener">各期貨契約三大法人</a><a class="chip" href="https://www.taifex.com.tw/cht/3/optContractsDate" target="_blank" rel="noopener">各選擇權契約三大法人</a><a class="chip" href="https://www.taifex.com.tw/cht/3/callsAndPutsDate" target="_blank" rel="noopener">買權 / 賣權分計</a><a class="chip" href="https://www.taifex.com.tw/cht/3/futAndOptDate" target="_blank" rel="noopener">期貨與選擇權二類</a></div><div class="notice" style="margin-top:12px"><strong>解讀限制：</strong>三大法人數字是多家機構合計互抵後的結果，不能解讀為單一法人或整類法人的一致策略。</div></div></div></section>
-<section id="view-watch" class="view hidden"><div class="section"><div class="sectionhead"><div><h2>我的關注</h2><p>目前採瀏覽器 LocalStorage；不宣稱雲端同步。</p></div></div><div id="watchList" class="grid g3"></div></div></section>
-<section id="view-sources" class="view hidden"><div class="section"><div class="sectionhead"><div><h2>來源與透明度中心</h2><p>所有金融模組的 canonical source。若 API 無法讀取，該模組顯示失敗，不使用假資料。</p></div></div><div class="grid g3" id="sourceCards"></div></div><div class="section"><div class="card"><h2 style="margin-top:0">資料標示規則</h2><div class="notice"><strong>原始事實</strong>：交易所 / MOPS / 公司官方資料。<br><strong>計算指標</strong>：由原始價格計算 MA、RSI、MACD 等，會明列計算方式。<br><strong>規則解讀</strong>：由固定條件產生，不等於預測。<br><strong>無法驗證</strong>：顯示「尚未取得 / 資料延遲 / 待驗證」，不補值。<br><strong>時間</strong>：原始資料日期與頁面抓取時間分開顯示。</div></div></div></section>
-<section id="view-work" class="view hidden"><div class="section"><div class="sectionhead"><div><h2>功能與工作清單</h2><p>這不是行銷 roadmap；狀態依目前頁面實際能力標示。</p></div></div><div class="card" id="workList"></div></div></section>
-</div></main>
-<footer class="footer"><div class="wrap">Lumen 僅供市場研究與學習。價格與財務資料可能延遲；交易前請回到原始交易所、公開資訊觀測站與公司公告核對。本站不提供保證獲利或個人化買賣建議。</div></footer>
+
+<section id="view-stock" class="view hidden">
+  <div class="section">
+    <div class="card">
+      <div class="searchrow">
+        <input id="stockSearch" placeholder="輸入代碼或名稱，例如 2330、台積電、6488" autocomplete="off" />
+        <button class="btn primary" id="stockSearchButton" type="button">查詢</button>
+      </div>
+      <div id="searchHints" class="source">搜尋範圍：目前成功載入的 TWSE + TPEx 官方行情。</div>
+    </div>
+  </div>
+
+  <div id="stockDetail" class="hidden">
+    <div class="section">
+      <div class="sectionhead">
+        <div>
+          <h2 id="stockTitle">個股</h2>
+          <p id="stockSubtitle"></p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="watchBtn" type="button">加入關注</button>
+          <button class="btn" id="copyStockLink" type="button">複製研究連結</button>
+        </div>
+      </div>
+      <div class="grid g4" id="stockKpis"></div>
+    </div>
+    <div class="section">
+      <div class="tabs" id="stockTabs"></div>
+      <div id="stockPanel"></div>
+    </div>
+  </div>
+</section>
+
+<section id="view-etf" class="view hidden">
+  <div class="section">
+    <div class="sectionhead">
+      <div>
+        <h2>ETF / 基金</h2>
+        <p>基金基本資料與價格資料分層呈現，避免把發行資料誤當行情。</p>
+      </div>
+      <input id="etfFilter" placeholder="篩選代碼 / 名稱" class="filterInput" />
+    </div>
+    <div class="tablewrap">
+      <table class="table">
+        <thead><tr><th>代碼 / 名稱</th><th>市場</th><th>收盤</th><th>漲跌</th><th>基金類型 / 發行人</th></tr></thead>
+        <tbody id="etfRows"><tr><td colspan="5" class="empty">載入中</td></tr></tbody>
+      </table>
+    </div>
+    <div class="source" id="etfSource"></div>
+  </div>
+</section>
+
+<section id="view-derivatives" class="view hidden">
+  <div class="section">
+    <div class="sectionhead">
+      <div>
+        <h2>籌碼與衍生品</h2>
+        <p>融資融券、TAIFEX 三大法人與 Put/Call Ratio 分開顯示，各自保留來源與解讀限制。</p>
+      </div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h2 class="cardtitle">上市融資融券</h2>
+        <div id="marginListed" class="notice">載入中</div>
+        <div class="source" id="marginListedSource"></div>
+      </div>
+      <div class="card">
+        <h2 class="cardtitle">上櫃融資融券</h2>
+        <div id="marginOtc" class="notice">載入中</div>
+        <div class="source" id="marginOtcSource"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="split">
+      <div class="card">
+        <h2 class="cardtitle">TAIFEX 三大法人</h2>
+        <div id="taifexInstitutional" class="notice">載入中</div>
+        <div class="source" id="taifexInstitutionalSource"></div>
+      </div>
+      <div class="card">
+        <h2 class="cardtitle">Put / Call Ratio</h2>
+        <div id="putCallPanel" class="notice">載入中</div>
+        <div class="source" id="putCallSource"></div>
+      </div>
+    </div>
+    <div class="notice riskNotice">
+      <strong>解讀限制：</strong>三大法人統計是多家機構合計互抵後的結果，不能解讀為單一法人、單一機構或整類法人的一致策略；Put/Call Ratio 也不應單獨當作進出場訊號。
+    </div>
+  </div>
+</section>
+
+<section id="view-workspace" class="view hidden">
+  <div class="section">
+    <div class="sectionhead">
+      <div>
+        <h2>研究工作區</h2>
+        <p>同一瀏覽器可建立多個本機工作區；可匯出、匯入或用 URL fragment 跨裝置搬移資料。</p>
+      </div>
+      <div class="actions">
+        <select id="workspaceSelect" class="selectInput" aria-label="研究工作區"></select>
+        <button class="btn" id="newWorkspace" type="button">新增</button>
+      </div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h2 class="cardtitle">關注清單</h2>
+        <div id="watchList" class="grid g2 compact"></div>
+      </div>
+      <div class="card">
+        <h2 class="cardtitle">研究筆記</h2>
+        <textarea id="workspaceNote" class="noteInput" rows="12" placeholder="記錄你的市場假設、待確認來源、風險與觀察事項。"></textarea>
+        <div class="source">儲存位置：目前瀏覽器 LocalStorage。頁面不會把本機資料偽裝成雲端同步。</div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="sectionhead">
+        <div>
+          <h2>搬移 / 備份</h2>
+          <p>JSON 可完整備份；分享連結將工作區資料放在 URL fragment，不會送到 Lumen 伺服器。</p>
+        </div>
+      </div>
+      <div class="actions wrapActions">
+        <button class="btn" id="exportWorkspace" type="button">下載 JSON</button>
+        <label class="btn fileButton">匯入 JSON<input id="importWorkspace" type="file" accept="application/json,.json" hidden /></label>
+        <button class="btn" id="copyWorkspaceLink" type="button">複製搬移連結</button>
+        <button class="btn danger" id="deleteWorkspace" type="button">刪除此工作區</button>
+      </div>
+      <div id="workspaceMessage" class="source"></div>
+    </div>
+  </div>
+</section>
+
+<section id="view-sources" class="view hidden">
+  <div class="section">
+    <div class="sectionhead">
+      <div>
+        <h2>來源與透明度中心</h2>
+        <p>每一類金融資料的 canonical source、讀取狀態與限制集中管理。</p>
+      </div>
+    </div>
+    <div class="grid g3" id="sourceCards"></div>
+  </div>
+
+  <div class="section">
+    <div class="split">
+      <div class="card">
+        <h2 class="cardtitle">資料標示規則</h2>
+        <div class="notice">
+          <strong>原始事實</strong>：交易所、MOPS、公司法定揭露。<br />
+          <strong>計算指標</strong>：MA、RSI、MACD、市場廣度、成交排序等。<br />
+          <strong>規則解讀</strong>：依公開數據套用固定條件產生，不等於預測。<br />
+          <strong>缺值</strong>：顯示「尚未取得 / 資料延遲 / 待驗證」，不補值。<br />
+          <strong>時間</strong>：資料日期與本頁抓取時間分開。
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="cardtitle">功能狀態</h2>
+        <div id="workList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    Lumen 僅供市場研究、資料整理與學習。價格與財務資料可能延遲或缺漏；交易前請回到交易所、公開資訊觀測站與公司官方公告核對。本站不提供保證獲利或個人化買賣建議。
+  </div>
+</footer>
+
 <script src="./lumen.js" defer></script>
-<script src="./lumen-runtime-fixes.js" defer></script>
 </body>
 </html>
