@@ -185,22 +185,25 @@ function parseCsv(text) {
   });
 }
 
+function mapFieldRows(fields, rows) {
+  return rows.map(values => {
+    if (!Array.isArray(values)) return values;
+    const out = {};
+    fields.forEach((field,i) => out[field || `col_${i+1}`] = values[i] ?? '');
+    return out;
+  });
+}
+
 function rowsOf(data) {
   if (Array.isArray(data)) return data;
   if (!data || typeof data !== 'object') return [];
-  for (const key of ['data','Data','result','results','rows','items']) {
-    if (Array.isArray(data[key])) return data[key];
-  }
+  if (Array.isArray(data.fields) && Array.isArray(data.data)) return mapFieldRows(data.fields,data.data);
   if (Array.isArray(data.tables)) {
     const table = data.tables.find(t => Array.isArray(t.data));
-    if (table) {
-      const fields = table.fields || [];
-      return table.data.map(arr => {
-        const o = {};
-        fields.forEach((f,i) => o[f] = arr[i]);
-        return o;
-      });
-    }
+    if (table) return mapFieldRows(table.fields || [],table.data);
+  }
+  for (const key of ['data','Data','result','results','rows','items']) {
+    if (Array.isArray(data[key])) return data[key];
   }
   return [];
 }
