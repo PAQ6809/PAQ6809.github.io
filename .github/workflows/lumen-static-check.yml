@@ -1,0 +1,82 @@
+name: Lumen static checks
+
+on:
+  push:
+    paths:
+      - 'taiex-trend-dashboard/**'
+      - '.github/workflows/lumen-static-check.yml'
+  pull_request:
+    paths:
+      - 'taiex-trend-dashboard/**'
+      - '.github/workflows/lumen-static-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check taiex-trend-dashboard/lumen.js
+          node --check taiex-trend-dashboard/lumen-runtime-fixes.js
+
+      - name: Validate source manifest and page contract
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          root = Path('taiex-trend-dashboard')
+          required_files = [
+              root / 'index.html',
+              root / 'lumen.css',
+              root / 'lumen.js',
+              root / 'lumen-runtime-fixes.js',
+              root / 'source-manifest.json',
+              root / 'README.md',
+          ]
+          missing = [str(p) for p in required_files if not p.exists()]
+          if missing:
+              raise SystemExit(f'Missing required Lumen files: {missing}')
+
+          html = (root / 'index.html').read_text(encoding='utf-8')
+          required_ids = [
+              'nav', 'marketDate', 'fetchTime', 'sourceHealth',
+              'marketKpis', 'indexRows', 'marketInterpretation', 'hotRows',
+              'stockSearch', 'stockDetail', 'stockKpis', 'stockTabs', 'stockPanel',
+              'etfRows', 'marginListed', 'marginOtc', 'watchList', 'sourceCards', 'workList'
+          ]
+          missing_ids = [x for x in required_ids if f'id="{x}"' not in html]
+          if missing_ids:
+              raise SystemExit(f'Missing required DOM ids: {missing_ids}')
+
+          for asset in ['./lumen.css', './lumen.js', './lumen-runtime-fixes.js']:
+              if asset not in html:
+                  raise SystemExit(f'index.html does not reference {asset}')
+
+          manifest = json.loads((root / 'source-manifest.json').read_text(encoding='utf-8'))
+          policy = manifest.get('policy', {})
+          required_policy = [
+              'financial_values_require_source', 'show_source_data_date',
+              'show_fetch_timestamp', 'no_silent_fallback'
+          ]
+          if not all(policy.get(k) is True for k in required_policy):
+              raise SystemExit('Source transparency policy is incomplete or disabled')
+
+          primary = {s.get('name') for s in manifest.get('sources', []) if s.get('authority') == 'primary'}
+          required_primary = {'TWSE OpenAPI', 'Taipei Exchange OpenAPI', 'MOPS', 'TAIFEX'}
+          if not required_primary.issubset(primary):
+              raise SystemExit(f'Missing primary financial sources: {required_primary-primary}')
+
+          runtime = (root / 'lumen-runtime-fixes.js').read_text(encoding='utf-8')
+          if "pick(t,['漲跌百分比'])" not in runtime:
+              raise SystemExit('Signed percentage correction is missing')
+          if "window.renderEtfs=etfs" not in runtime:
+              raise SystemExit('ETF filter compatibility alias is missing')
+
+          print('Lumen static contract OK')
