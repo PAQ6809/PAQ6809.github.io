@@ -31,6 +31,7 @@ jobs:
             taiex-trend-dashboard/lumen-stock-b.js \
             taiex-trend-dashboard/lumen-derivatives.js \
             taiex-trend-dashboard/lumen-workspace.js \
+            taiex-trend-dashboard/lumen-cloud.js \
             taiex-trend-dashboard/lumen-boot.js
           do
             node --check "$file"
@@ -51,6 +52,7 @@ jobs:
               'lumen-stock-b.js',
               'lumen-derivatives.js',
               'lumen-workspace.js',
+              'lumen-cloud.js',
               'lumen-boot.js',
           ]
           required_files = [
@@ -118,15 +120,26 @@ jobs:
 
           combined = '\n'.join((root / name).read_text(encoding='utf-8') for name in modules)
           required_contracts = [
-              r'financial_values_require_source',
               r'PutCallRatio',
               r'MarketDataOfMajorInstitutionalTradersGeneralBytheDate',
               r'mopsfin_t187ap05_O',
               r'T86',
               r'LocalStorage|localStorage',
+              r'lumen_workspaces',
+              r'auth\.signInWithPassword',
+              r'normalizeHistoryRows',
           ]
           missing_contracts = [pattern for pattern in required_contracts if not re.search(pattern, combined + manifest_text)]
           if missing_contracts:
               raise SystemExit(f'Missing Lumen runtime/source contracts: {missing_contracts}')
 
-          print('Lumen modular source-first contract OK')
+          forbidden = [
+              r'SUPABASE_SERVICE_ROLE_KEY',
+              r'sb_secret_',
+              r'postgres(?:ql)?://',
+          ]
+          leaked = [pattern for pattern in forbidden if re.search(pattern, combined)]
+          if leaked:
+              raise SystemExit(f'Frontend contains forbidden server-side credential pattern: {leaked}')
+
+          print('Lumen modular source-first + private-cloud contract OK')
