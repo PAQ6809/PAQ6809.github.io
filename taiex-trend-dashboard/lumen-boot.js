@@ -63,6 +63,7 @@ async function boot() {
   bindEvents();
   renderWorkspaceSelector();
   renderSources();
+  if (typeof initCloudSync==='function') await initCloudSync();
   await refreshAll(false);
 }
 
