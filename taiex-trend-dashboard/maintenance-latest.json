@@ -1,0 +1,96 @@
+{
+  "run_type": "08:30_premarket",
+  "run_at": "2026-08-08T08:30:52+08:00",
+  "market_context": {
+    "taiwan_market_state": "closed_weekend",
+    "taiwan_latest_trading_day": "2026-08-07",
+    "us_latest_session": "2026-08-07"
+  },
+  "verified_sources": [
+    {
+      "source_name": "TWSE OpenAPI - MI_INDEX",
+      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
+      "as_of": "2026-08-07",
+      "fetched_at": "2026-08-08T08:30:52+08:00",
+      "freshness": "last_close",
+      "status": "verified",
+      "observations": {
+        "TAIEX_close": 44225.91,
+        "TAIEX_change_points": -170.79,
+        "TAIEX_change_percent": -0.38,
+        "semiconductor_index_change_percent": -0.21,
+        "computer_peripherals_index_change_percent": -2.01,
+        "optoelectronics_index_change_percent": -3.01,
+        "communications_network_index_change_percent": -3.09,
+        "financial_insurance_index_change_percent": 0.99,
+        "shipping_index_change_percent": 1.29,
+        "digital_cloud_index_change_percent": 6.85
+      }
+    },
+    {
+      "source_name": "Reuters - U.S. market close",
+      "source_url": "https://www.reuters.com/business/sp-500-dow-futures-muted-ahead-jobs-data-chips-software-stocks-rise-2026-08-07/",
+      "as_of": "2026-08-07",
+      "fetched_at": "2026-08-08T08:30:52+08:00",
+      "freshness": "last_close",
+      "status": "verified_trusted_secondary",
+      "observations": {
+        "Dow_close": 54036.93,
+        "Dow_change_percent": 0.28,
+        "SP500_close": 7757.64,
+        "SP500_change_percent": 0.62,
+        "Nasdaq_close": 26690.62,
+        "Nasdaq_change_percent": 1.30,
+        "US_nonfarm_payroll_change": -23000,
+        "US_unemployment_rate_percent": 4.1,
+        "September_Fed_rate_hike_probability_percent_reported": 44
+      }
+    }
+  ],
+  "source_checks": [
+    {
+      "source_name": "TWSE OpenAPI root/schema",
+      "source_url": "https://openapi.twse.com.tw/",
+      "status": "verified",
+      "note": "Official Swagger lists STOCK_DAY_ALL, MI_INDEX, BWIBBU_ALL, MI_MARGN, MOPS-linked opendata and market calendar endpoints used by Lumen."
+    },
+    {
+      "source_name": "TPEx OpenAPI runtime endpoints",
+      "source_url": "https://www.tpex.org.tw/openapi/",
+      "status": "not_independently_verified_in_this_automation_fetch",
+      "note": "The automation web fetch layer returned an internal retrieval error for direct JSON endpoints. This is not treated as proof that TPEx is down; Lumen runtime retains explicit failure states and no silent fallback."
+    },
+    {
+      "source_name": "TAIFEX OpenAPI runtime endpoints",
+      "source_url": "https://openapi.taifex.com.tw/",
+      "status": "not_independently_verified_in_this_automation_fetch",
+      "note": "The automation web fetch layer could not parse the institutional endpoint response. This is recorded as a verification limitation, not a fabricated outage."
+    }
+  ],
+  "analysis": {
+    "facts": [
+      "TAIEX finished 2026-08-07 at 44,225.91, down 0.38%.",
+      "TWSE sector data showed defensive/value rotation: financial insurance +0.99%, shipping +1.29%, while computer peripherals -2.01%, optoelectronics -3.01%, communications network -3.09%.",
+      "U.S. equities closed higher on 2026-08-07: Dow +0.28%, S&P 500 +0.62%, Nasdaq +1.30%.",
+      "Reuters reported July U.S. nonfarm payrolls fell by 23,000 and unemployment was 4.1%."
+    ],
+    "inference": [
+      "For the next Taiwan trading session, the stronger U.S. technology close is a positive external input, but Friday's weak Taiwan electronics breadth means it should not be interpreted as a guaranteed gap-up or trend continuation.",
+      "The combination of softer U.S. labor data and lower reported September Fed hike probability supports duration/technology sentiment, while next week's U.S. inflation data remains the main macro reversal risk."
+    ],
+    "risks": [
+      "Taiwan market is closed on 2026-08-08; all Taiwan prices are last-close data from 2026-08-07, not live quotes.",
+      "TPEx and TAIFEX direct endpoint health were not independently confirmed by the automation fetch layer in this run.",
+      "Cross-market overnight strength does not guarantee Taiwan stock direction; company-specific announcements, ADR basis moves, FX and geopolitical developments may dominate at the next open."
+    ]
+  },
+  "qa": {
+    "canonical_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "lumen_branch_found": false,
+    "duplicate_runtime_status": "previously_removed_and_modularized",
+    "source_manifest_present": true,
+    "formal_cloudflare_write_access_verified": false,
+    "github_pages_source_status": "updated",
+    "formal_deployment_status": "not_synchronized_or_not_verified"
+  }
+}
