@@ -1,11 +1,13 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-08T15:57:00+08:00",
+  "generated_at": "2026-08-08T19:27:00+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
     "show_fetch_timestamp": true,
     "no_silent_fallback": true,
+    "analyze_before_repository_write": true,
+    "repeat_full_regression_every_maintenance_run": true,
     "missing_value_labels": ["尚未取得", "資料延遲", "待驗證"],
     "separate_layers": ["raw_fact", "calculated_indicator", "rule_interpretation", "risk_limitations"]
   },
@@ -65,6 +67,27 @@
       "interpretation_limit": "Institutional categories are aggregates of many institutions and must not be presented as one institution or one unanimous strategy."
     }
   ],
+  "coverage_contract": {
+    "security_universe": "All securities successfully returned by official TWSE listed and TPEx mainboard daily quote universes remain searchable by code/name with market identity preserved.",
+    "canonical_stock_layers": [
+      "daily_quote_and_OHLC",
+      "six_month_price_history",
+      "MA_RSI_MACD",
+      "company_and_industry",
+      "monthly_revenue",
+      "income_statement_summary",
+      "balance_sheet_summary",
+      "EPS_when_official_field_exists",
+      "PE_PB_dividend_yield",
+      "official_peer_comparison",
+      "institutional_and_chip_data",
+      "material_information",
+      "raw_source_links",
+      "source_date_fetch_time_and_failure_state"
+    ],
+    "qa_contract": "./qa-contract.json",
+    "failure_rule": "Any required check failure must remain visible and prevents the maintenance run from being labeled healthy/complete."
+  },
   "runtime": {
     "latest_data_policy": "market-critical endpoints are fetched with no-store on page load and manual refresh",
     "technical_history": "six months of official OHLC when available; fields+data and table response shapes are normalized before indicator calculation",
@@ -87,7 +110,9 @@
       "times": ["08:30", "21:30"],
       "enabled": true,
       "next_run_at_creation": "2026-08-08T21:30:00+08:00",
-      "latest_record": "./maintenance-latest.json"
+      "latest_record": "./maintenance-latest.json",
+      "full_regression_contract": "./qa-contract.json",
+      "repository_workflow": ".github/workflows/lumen-static-check.yml"
     }
   },
   "deployment_scope": {
