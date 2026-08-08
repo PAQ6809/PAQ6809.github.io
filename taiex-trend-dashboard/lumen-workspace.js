@@ -135,16 +135,35 @@ function sourceCard(name,description,url,prefixes) {
   return `<div class="card sourcecard"><h3>${name}</h3><p>${description}</p><div class="statusline"><span class="badge ${cls}">${stateLabel}</span></div><div class="links"><a href="${url}" target="_blank" rel="noopener noreferrer">官方來源 ↗</a></div></div>`;
 }
 
+async function renderMaintenanceStatus() {
+  const host=document.getElementById('maintenanceStatus');
+  if (!host) return;
+  try {
+    const response=await fetch('./maintenance-latest.json',{cache:'no-store'});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data=await response.json();
+    const latest=data?.market_context?.taiwan_latest_trading_day||'尚未記錄';
+    const runAt=data?.run_at ? new Date(data.run_at).toLocaleString('zh-TW') : '尚未記錄';
+    const gh=data?.qa?.github_pages_source_status||'未記錄';
+    const cf=data?.qa?.formal_cloudflare_write_access_verified===true?'已驗證可寫':'未驗證可寫／不宣稱已同步';
+    host.innerHTML=`<strong>ChatGPT 排程：已啟用</strong><br>固定時間：每天 08:30 / 21:30（Asia/Taipei）<br>最近維護：${esc(runAt)}<br>台股最新交易日：${esc(latest)}<br>GitHub source：${esc(gh)}<br>Cloudflare Pages：${esc(cf)}<br><span class="muted">本對話無法控制使用者電腦本機的 Codex scheduler；repository 內目前沒有 Lumen cron workflow 需要刪除。</span>`;
+  } catch (error) {
+    host.innerHTML=`<strong>ChatGPT 排程：已啟用</strong><br>固定時間：每天 08:30 / 21:30（Asia/Taipei）<br><span class="bad">maintenance-latest.json 讀取失敗：${esc(error.message)}</span>`;
+  }
+}
+
 function renderSources() {
   const cards=[
     sourceCard('TWSE OpenAPI','上市行情、指數、估值、融資融券、月營收、財報、基金與重大訊息。',API.twse.root,['TWSE','上市']),
     sourceCard('TPEx OpenAPI','上櫃行情、估值、融資融券、法人、月營收、財報與重大訊息。',API.tpex.root,['TPEx','上櫃']),
     sourceCard('TAIFEX OAS','期貨 / 選擇權三大法人與 Put/Call Ratio；以 Swagger 定義為準。',API.taifex.root,['TAIFEX']),
     `<div class="card sourcecard"><h3>MOPS</h3><p>公司法定申報、重大訊息、財務報告的 canonical 入口。</p><div class="statusline"><span class="badge good">官方入口</span></div><div class="links"><a href="${API.twse.mops}" target="_blank" rel="noopener noreferrer">MOPS ↗</a></div></div>`,
-    `<div class="card sourcecard"><h3>Lumen 計算層</h3><p>市場廣度、成交排序、K 線、MA / RSI / MACD、情緒規則與同業整理。</p><div class="statusline"><span class="badge good">本地透明計算</span></div><div class="links"><a href="./source-manifest.json" target="_blank" rel="noopener noreferrer">來源 manifest ↗</a></div></div>`
+    `<div class="card sourcecard"><h3>Lumen 計算層</h3><p>市場廣度、成交排序、K 線、MA / RSI / MACD、情緒規則與同業整理。</p><div class="statusline"><span class="badge good">本地透明計算</span></div><div class="links"><a href="./source-manifest.json" target="_blank" rel="noopener noreferrer">來源 manifest ↗</a></div></div>`,
+    `<div class="card sourcecard"><h3>更新與部署狀態</h3><p id="maintenanceStatus">讀取最近維護紀錄中。</p><div class="statusline"><span class="badge good">雙時段維護已啟用</span></div><div class="links"><a href="./maintenance-latest.json" target="_blank" rel="noopener noreferrer">最近維護紀錄 ↗</a></div></div>`
   ];
   document.getElementById('sourceCards').innerHTML=cards.join('');
   renderWorkList();
+  renderMaintenanceStatus();
 }
 
 function renderWorkList() {
@@ -162,8 +181,7 @@ function renderWorkList() {
     ['ok','多工作區持久化','本機多工作區、筆記、watchlist、JSON 匯出匯入與 URL fragment 搬移。'],
     ['ok','私人雲端跨裝置同步','Supabase Auth + lumen_workspaces RLS；每個登入帳號只能讀寫自己的工作區，本機模式仍可獨立使用。'],
     ['ok','來源 / 時間 / 失敗透明','金融資料保留 canonical source；缺值不猜。'],
-    ['wait','lumen-script.pages.dev 正式部署','目前可直接寫的是 GitHub Pages canonical source；Cloudflare Pages 專案尚未連接到本對話。'],
-    ['wait','每日 08:30 / 21:30 ChatGPT 維護排程','工作內容與時程已設定；啟用狀態受目前 active task 配額限制。']
+    ['ok','每日雙時段維護','ChatGPT 每天 08:30 / 21:30 Asia/Taipei 固定更新資料、分析、來源與維護紀錄。']
   ];
   document.getElementById('workList').innerHTML=tasks.map(([status,title,detail])=>`<div class="work"><span class="dot ${status}"></span><div><b>${title}</b><small>${detail}</small></div></div>`).join('');
 }
