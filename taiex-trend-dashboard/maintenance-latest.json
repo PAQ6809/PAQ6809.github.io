@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_refactor_and_schedule_migration",
-  "run_at": "2026-08-08T15:58:00+08:00",
+  "run_type": "manual_full_regression_contract_hardening",
+  "run_at": "2026-08-08T19:27:00+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -59,42 +59,44 @@
       "source_name": "TWSE OpenAPI",
       "source_url": "https://openapi.twse.com.tw/",
       "status": "canonical_primary",
-      "note": "Lumen runtime uses official TWSE endpoints for listed quotes, indices, valuation, margin, revenue, company data, financial statements and fund metadata."
+      "note": "Runtime uses TWSE official endpoints for listed quotes, indices, valuation, margin, revenue, company data, financial statements, fund metadata and listed institutional data."
     },
     {
       "source_name": "TPEx OpenAPI",
       "source_url": "https://www.tpex.org.tw/openapi/",
       "status": "canonical_primary_runtime_with_explicit_failure_state",
-      "note": "Direct endpoint health was not independently reverified by this manual web fetch. The runtime keeps explicit failure states and does not silently substitute opaque data."
+      "note": "Runtime uses TPEx official endpoints for OTC quotes, valuation, margin, institutional data, revenue, company data and financial statements. Direct endpoint health was not independently reverified in this 19:27 code-hardening pass."
     },
     {
       "source_name": "TAIFEX OpenAPI",
       "source_url": "https://openapi.taifex.com.tw/",
       "status": "canonical_primary_runtime_with_explicit_failure_state",
-      "note": "Institutional and Put/Call endpoints remain canonical. Structural parse failures are shown to the user instead of guessed."
+      "note": "Institutional and Put/Call endpoints remain canonical. Structural parse failures are shown instead of guessed."
     },
     {
       "source_name": "Supabase private workspace",
       "source_url": "https://goedzzhhvvnfczgnkqlv.supabase.co",
-      "status": "verified",
+      "status": "verified_previous_current_chat",
       "note": "public.lumen_workspaces exists with RLS enabled and owner-only authenticated SELECT/INSERT/UPDATE/DELETE policies."
     }
   ],
   "analysis": {
     "facts": [
-      "TAIEX finished 2026-08-07 at 44,225.91, down 0.38%.",
-      "TWSE sector data showed financial insurance +0.99% and shipping +1.29%, while computer peripherals -2.01%, optoelectronics -3.01% and communications network -3.09%.",
-      "U.S. equities completed the 2026-08-07 session higher: Dow +0.28%, S&P 500 +0.62%, Nasdaq +1.30%.",
-      "Reuters reported July U.S. nonfarm payrolls decreased by 23,000 and unemployment was 4.1%."
+      "The current Lumen boot module binds the required static controls for refresh, search, ETF filter, watch, copy-link and workspace actions.",
+      "The stock module exposes seven canonical stock tabs: overview, technical, fundamental, valuation, chips, events and raw sources.",
+      "A new qa-contract.json now defines the required Taiwan security coverage, stock information categories, static controls, dynamic interactions, source-link policy and failure policy.",
+      "The GitHub Actions workflow now validates the QA contract on every change under taiex-trend-dashboard/**.",
+      "The latest combined-status query for the QA workflow commit returned no status records, so CI success is not proven yet."
     ],
     "inference": [
-      "The stronger U.S. technology close is a positive external input for the next Taiwan session, but it does not erase Friday's weaker Taiwan electronics breadth.",
-      "Softer U.S. labor data reduced near-term rate-hike expectations, while upcoming U.S. inflation data remains an important reversal risk."
+      "Moving the complete regression checklist into a repository contract makes future maintenance behavior more repeatable than relying on prose alone.",
+      "Static event-binding checks materially reduce the risk of shipping a visible button that has no registered handler, but they do not replace a real browser runtime smoke test."
     ],
     "risks": [
-      "Taiwan is closed on 2026-08-08; there is no valid new Taiwan close to publish today.",
-      "Cross-market strength is not a guarantee of Taiwan market direction.",
-      "TPEx and TAIFEX direct endpoint health were not independently reverified in this manual web fetch; runtime failures remain visible rather than hidden."
+      "No live browser runtime test of the deployed site was completed in this pass, so actual network/CORS/browser behavior is not claimed fully verified.",
+      "GitHub CI has no explicit success evidence yet for the newly changed workflow.",
+      "The automation service returned errors when attempting to rewrite the existing scheduled task prompt; the existing 08:30/21:30 task remains active, but the prompt rewrite is not claimed applied.",
+      "Cloudflare Pages deployment remains unverified/uncontrolled from this conversation."
     ]
   },
   "product_state": {
@@ -103,7 +105,9 @@
     "market_data_on_page_load": "no-store for market-critical endpoints",
     "private_cloud_sync": "online_with_owner_only_rls",
     "maintenance_status_card": "online_in_source_center",
-    "financial_source_manifest": "updated_in_current_chat"
+    "financial_source_manifest": "present",
+    "full_regression_contract": "online_in_qa-contract.json",
+    "interaction_contract_enforced_by_github_actions": true
   },
   "automation": {
     "title": "Lumen 雙時段更新",
@@ -111,23 +115,33 @@
     "timezone": "Asia/Taipei",
     "times": ["08:30", "21:30"],
     "next_run": "2026-08-08T21:30:00+08:00",
-    "migrated_from": "disabled 台美股雷達"
+    "prompt_rewrite_attempt_status": "failed_tool_error_not_applied",
+    "effective_regression_enforcement": "repository qa-contract + workflow runs on each maintenance commit"
   },
   "qa": {
     "canonical_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "project_identity": "Lumen 台股分析平台",
     "story_project_excluded": true,
-    "source_manifest_present": true,
+    "qa_contract_present": true,
+    "qa_contract_version": 1,
+    "analyze_before_write_required": true,
+    "repeat_full_regression_every_update_required": true,
+    "static_control_bindings_code_inspected": true,
+    "stock_tab_contract_code_inspected": true,
+    "dynamic_navigation_contract_code_inspected": true,
+    "source_link_policy_enforced_in_ci": true,
+    "ci_explicit_success_evidence": false,
+    "ci_combined_status_records": 0,
+    "live_browser_runtime_smoke_test_completed": false,
     "formal_cloudflare_write_access_verified": false,
     "github_pages_source_status": "updated_in_current_chat",
     "formal_cloudflare_deployment_status": "not_synchronized_or_not_verified",
     "local_codex_scheduler_control_available": false,
     "github_lumen_cron_workflow_found": false,
     "current_chat_commits": [
-      "006b45edc5d857443b3fa52aefc7711c44bf528a",
-      "c03545631008b7b81de899808a4e76a2533edba0",
-      "9b40594a03ecd5f109c3783415d27f243a45442c",
-      "32b76b9a1b1e9465a5add1d1445e546086a56229"
+      "9c51e58daf4d3989be15da45939c8ef6e9b265c5",
+      "8c58a8fe96c420af5487406f6801dfda5537b024",
+      "eedbedd83325841be42f3195255df11563b88c8a"
     ]
   }
 }
