@@ -1,8 +1,8 @@
 {
-  "run_type": "08:30_premarket",
-  "run_at": "2026-08-08T08:30:52+08:00",
+  "run_type": "manual_refactor_and_schedule_migration",
+  "run_at": "2026-08-08T15:58:00+08:00",
   "project_identity": {
-    "name": "台股分析平台",
+    "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "story_project_excluded": true,
     "story_project_policy": "no_read_no_write_no_deploy_no_financial_analysis"
@@ -10,7 +10,8 @@
   "market_context": {
     "taiwan_market_state": "closed_weekend",
     "taiwan_latest_trading_day": "2026-08-07",
-    "us_latest_session": "2026-08-07"
+    "us_latest_session": "2026-08-07",
+    "note": "2026-08-08 is Saturday in Taiwan. Taiwan prices therefore remain official last-close data from 2026-08-07, not live weekend quotes."
   },
   "verified_sources": [
     {
@@ -18,8 +19,8 @@
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
       "as_of": "2026-08-07",
       "fetched_at": "2026-08-08T08:30:52+08:00",
-      "freshness": "last_close",
-      "status": "verified",
+      "freshness": "last_close_weekend",
+      "status": "verified_in_08_30_maintenance",
       "observations": {
         "TAIEX_close": 44225.91,
         "TAIEX_change_points": -170.79,
@@ -37,9 +38,9 @@
       "source_name": "Reuters - U.S. market close",
       "source_url": "https://www.reuters.com/business/sp-500-dow-futures-muted-ahead-jobs-data-chips-software-stocks-rise-2026-08-07/",
       "as_of": "2026-08-07",
-      "fetched_at": "2026-08-08T08:30:52+08:00",
-      "freshness": "last_close",
-      "status": "verified_trusted_secondary",
+      "fetched_at": "2026-08-08T15:50:00+08:00",
+      "freshness": "latest_completed_us_session",
+      "status": "reverified_trusted_secondary",
       "observations": {
         "Dow_close": 54036.93,
         "Dow_change_percent": 0.28,
@@ -55,50 +56,78 @@
   ],
   "source_checks": [
     {
-      "source_name": "TWSE OpenAPI root/schema",
+      "source_name": "TWSE OpenAPI",
       "source_url": "https://openapi.twse.com.tw/",
-      "status": "verified",
-      "note": "Official Swagger lists STOCK_DAY_ALL, MI_INDEX, BWIBBU_ALL, MI_MARGN, MOPS-linked opendata and market calendar endpoints used by the stock-analysis platform."
+      "status": "canonical_primary",
+      "note": "Lumen runtime uses official TWSE endpoints for listed quotes, indices, valuation, margin, revenue, company data, financial statements and fund metadata."
     },
     {
-      "source_name": "TPEx OpenAPI runtime endpoints",
+      "source_name": "TPEx OpenAPI",
       "source_url": "https://www.tpex.org.tw/openapi/",
-      "status": "not_independently_verified_in_this_automation_fetch",
-      "note": "The automation web fetch layer returned an internal retrieval error for direct JSON endpoints. This is not treated as proof that TPEx is down; the stock-analysis runtime retains explicit failure states and no silent fallback."
+      "status": "canonical_primary_runtime_with_explicit_failure_state",
+      "note": "Direct endpoint health was not independently reverified by this manual web fetch. The runtime keeps explicit failure states and does not silently substitute opaque data."
     },
     {
-      "source_name": "TAIFEX OpenAPI runtime endpoints",
+      "source_name": "TAIFEX OpenAPI",
       "source_url": "https://openapi.taifex.com.tw/",
-      "status": "not_independently_verified_in_this_automation_fetch",
-      "note": "The automation web fetch layer could not parse the institutional endpoint response. This is recorded as a verification limitation, not a fabricated outage."
+      "status": "canonical_primary_runtime_with_explicit_failure_state",
+      "note": "Institutional and Put/Call endpoints remain canonical. Structural parse failures are shown to the user instead of guessed."
+    },
+    {
+      "source_name": "Supabase private workspace",
+      "source_url": "https://goedzzhhvvnfczgnkqlv.supabase.co",
+      "status": "verified",
+      "note": "public.lumen_workspaces exists with RLS enabled and owner-only authenticated SELECT/INSERT/UPDATE/DELETE policies."
     }
   ],
   "analysis": {
     "facts": [
       "TAIEX finished 2026-08-07 at 44,225.91, down 0.38%.",
-      "TWSE sector data showed defensive/value rotation: financial insurance +0.99%, shipping +1.29%, while computer peripherals -2.01%, optoelectronics -3.01%, communications network -3.09%.",
-      "U.S. equities closed higher on 2026-08-07: Dow +0.28%, S&P 500 +0.62%, Nasdaq +1.30%.",
-      "Reuters reported July U.S. nonfarm payrolls fell by 23,000 and unemployment was 4.1%."
+      "TWSE sector data showed financial insurance +0.99% and shipping +1.29%, while computer peripherals -2.01%, optoelectronics -3.01% and communications network -3.09%.",
+      "U.S. equities completed the 2026-08-07 session higher: Dow +0.28%, S&P 500 +0.62%, Nasdaq +1.30%.",
+      "Reuters reported July U.S. nonfarm payrolls decreased by 23,000 and unemployment was 4.1%."
     ],
     "inference": [
-      "For the next Taiwan trading session, the stronger U.S. technology close is a positive external input, but Friday's weak Taiwan electronics breadth means it should not be interpreted as a guaranteed gap-up or trend continuation.",
-      "The combination of softer U.S. labor data and lower reported September Fed hike probability supports duration/technology sentiment, while next week's U.S. inflation data remains the main macro reversal risk."
+      "The stronger U.S. technology close is a positive external input for the next Taiwan session, but it does not erase Friday's weaker Taiwan electronics breadth.",
+      "Softer U.S. labor data reduced near-term rate-hike expectations, while upcoming U.S. inflation data remains an important reversal risk."
     ],
     "risks": [
-      "Taiwan market is closed on 2026-08-08; all Taiwan prices are last-close data from 2026-08-07, not live quotes.",
-      "TPEx and TAIFEX direct endpoint health were not independently confirmed by the automation fetch layer in this run.",
-      "Cross-market overnight strength does not guarantee Taiwan stock direction; company-specific announcements, ADR basis moves, FX and geopolitical developments may dominate at the next open."
+      "Taiwan is closed on 2026-08-08; there is no valid new Taiwan close to publish today.",
+      "Cross-market strength is not a guarantee of Taiwan market direction.",
+      "TPEx and TAIFEX direct endpoint health were not independently reverified in this manual web fetch; runtime failures remain visible rather than hidden."
     ]
+  },
+  "product_state": {
+    "duplicate_runtime_status": "removed_and_modularized",
+    "canonical_views": 6,
+    "market_data_on_page_load": "no-store for market-critical endpoints",
+    "private_cloud_sync": "online_with_owner_only_rls",
+    "maintenance_status_card": "online_in_source_center",
+    "financial_source_manifest": "updated_in_current_chat"
+  },
+  "automation": {
+    "title": "Lumen 雙時段更新",
+    "enabled": true,
+    "timezone": "Asia/Taipei",
+    "times": ["08:30", "21:30"],
+    "next_run": "2026-08-08T21:30:00+08:00",
+    "migrated_from": "disabled 台美股雷達"
   },
   "qa": {
     "canonical_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
-    "project_identity": "台股分析平台",
+    "project_identity": "Lumen 台股分析平台",
     "story_project_excluded": true,
-    "legacy_lumen_filenames_are_compatibility_only": true,
-    "duplicate_runtime_status": "previously_removed_and_modularized",
     "source_manifest_present": true,
     "formal_cloudflare_write_access_verified": false,
-    "github_pages_source_status": "updated",
-    "formal_deployment_status": "not_synchronized_or_not_verified"
+    "github_pages_source_status": "updated_in_current_chat",
+    "formal_cloudflare_deployment_status": "not_synchronized_or_not_verified",
+    "local_codex_scheduler_control_available": false,
+    "github_lumen_cron_workflow_found": false,
+    "current_chat_commits": [
+      "006b45edc5d857443b3fa52aefc7711c44bf528a",
+      "c03545631008b7b81de899808a4e76a2533edba0",
+      "9b40594a03ecd5f109c3783415d27f243a45442c",
+      "32b76b9a1b1e9465a5add1d1445e546086a56229"
+    ]
   }
 }
