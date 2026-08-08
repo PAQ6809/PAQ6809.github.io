@@ -1,26 +1,24 @@
 {
-  "run_type": "manual_full_regression_contract_hardening",
-  "run_at": "2026-08-08T19:27:00+08:00",
+  "run_type": "21:30_postmarket_full_maintenance",
+  "run_at": "2026-08-08T21:30:00+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
-    "story_project_excluded": true,
-    "story_project_policy": "no_read_no_write_no_deploy_no_financial_analysis"
+    "other_projects_modified": false
   },
   "market_context": {
     "taiwan_market_state": "closed_weekend",
     "taiwan_latest_trading_day": "2026-08-07",
     "us_latest_session": "2026-08-07",
-    "note": "2026-08-08 is Saturday in Taiwan. Taiwan prices therefore remain official last-close data from 2026-08-07, not live weekend quotes."
+    "note": "2026-08-08 is Saturday in Taiwan; Taiwan prices remain official last-close data from 2026-08-07."
   },
   "verified_sources": [
     {
       "source_name": "TWSE OpenAPI - MI_INDEX",
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
       "as_of": "2026-08-07",
-      "fetched_at": "2026-08-08T08:30:52+08:00",
-      "freshness": "last_close_weekend",
-      "status": "verified_in_08_30_maintenance",
+      "fetched_at": "2026-08-08T21:29:00+08:00",
+      "status": "verified",
       "observations": {
         "TAIEX_close": 44225.91,
         "TAIEX_change_points": -170.79,
@@ -29,119 +27,110 @@
         "computer_peripherals_index_change_percent": -2.01,
         "optoelectronics_index_change_percent": -3.01,
         "communications_network_index_change_percent": -3.09,
+        "electronic_components_index_change_percent": -1.25,
         "financial_insurance_index_change_percent": 0.99,
         "shipping_index_change_percent": 1.29,
+        "steel_index_change_percent": 1.32,
+        "green_energy_environmental_index_change_percent": 1.26,
         "digital_cloud_index_change_percent": 6.85
       }
     },
     {
       "source_name": "Reuters - U.S. market close",
-      "source_url": "https://www.reuters.com/business/sp-500-dow-futures-muted-ahead-jobs-data-chips-software-stocks-rise-2026-08-07/",
+      "source_url": "https://www.reuters.com/world/china/global-markets-global-markets-2026-08-07/",
       "as_of": "2026-08-07",
-      "fetched_at": "2026-08-08T15:50:00+08:00",
-      "freshness": "latest_completed_us_session",
-      "status": "reverified_trusted_secondary",
+      "fetched_at": "2026-08-08T21:29:00+08:00",
+      "status": "verified_trusted_secondary",
       "observations": {
-        "Dow_close": 54036.93,
-        "Dow_change_percent": 0.28,
-        "SP500_close": 7757.64,
-        "SP500_change_percent": 0.62,
-        "Nasdaq_close": 26690.62,
         "Nasdaq_change_percent": 1.30,
-        "US_nonfarm_payroll_change": -23000,
-        "US_unemployment_rate_percent": 4.1,
-        "September_Fed_rate_hike_probability_percent_reported": 44
+        "us_payroll_change_reported": -23000,
+        "comment": "U.S. stocks and bonds rallied after the softer July payroll report; technology led gains."
+      }
+    },
+    {
+      "source_name": "U.S. BLS release calendar",
+      "source_url": "https://www.bls.gov/schedule/news_release/empsit.htm",
+      "as_of": "2026-08-07",
+      "fetched_at": "2026-08-08T21:29:00+08:00",
+      "status": "verified_release_date_only",
+      "observations": {
+        "july_2026_employment_situation_release_date": "2026-08-07",
+        "next_cpi_release_date": "2026-08-12"
       }
     }
   ],
   "source_checks": [
     {
-      "source_name": "TWSE OpenAPI",
-      "source_url": "https://openapi.twse.com.tw/",
-      "status": "canonical_primary",
-      "note": "Runtime uses TWSE official endpoints for listed quotes, indices, valuation, margin, revenue, company data, financial statements, fund metadata and listed institutional data."
+      "source_name": "TWSE OpenAPI - STOCK_DAY_ALL",
+      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+      "status": "not_independently_verified_in_this_fetch_layer",
+      "note": "Direct JSON open returned an internal retrieval error in this automation fetch layer. This is not treated as proof of source outage."
     },
     {
-      "source_name": "TPEx OpenAPI",
-      "source_url": "https://www.tpex.org.tw/openapi/",
-      "status": "canonical_primary_runtime_with_explicit_failure_state",
-      "note": "Runtime uses TPEx official endpoints for OTC quotes, valuation, margin, institutional data, revenue, company data and financial statements. Direct endpoint health was not independently reverified in this 19:27 code-hardening pass."
+      "source_name": "TPEx OpenAPI - tpex_mainboard_quotes",
+      "source_url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes",
+      "status": "not_independently_verified_in_this_fetch_layer",
+      "note": "Direct JSON open returned an internal retrieval error. Runtime keeps explicit failure state; no opaque fallback is used."
     },
     {
-      "source_name": "TAIFEX OpenAPI",
-      "source_url": "https://openapi.taifex.com.tw/",
-      "status": "canonical_primary_runtime_with_explicit_failure_state",
-      "note": "Institutional and Put/Call endpoints remain canonical. Structural parse failures are shown instead of guessed."
+      "source_name": "TAIFEX OpenAPI - PutCallRatio",
+      "source_url": "https://openapi.taifex.com.tw/v1/PutCallRatio",
+      "status": "not_independently_verified_in_this_fetch_layer",
+      "note": "Direct JSON open returned an internal retrieval error; no ratio is fabricated."
     },
     {
-      "source_name": "Supabase private workspace",
-      "source_url": "https://goedzzhhvvnfczgnkqlv.supabase.co",
-      "status": "verified_previous_current_chat",
-      "note": "public.lumen_workspaces exists with RLS enabled and owner-only authenticated SELECT/INSERT/UPDATE/DELETE policies."
+      "source_name": "TAIFEX OpenAPI - institutional derivatives",
+      "source_url": "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersGeneralBytheDate",
+      "status": "not_independently_verified_in_this_fetch_layer",
+      "note": "Direct JSON open could not be independently parsed in this run; runtime retains explicit source failure handling."
     }
   ],
   "analysis": {
-    "facts": [
-      "The current Lumen boot module binds the required static controls for refresh, search, ETF filter, watch, copy-link and workspace actions.",
-      "The stock module exposes seven canonical stock tabs: overview, technical, fundamental, valuation, chips, events and raw sources.",
-      "A new qa-contract.json now defines the required Taiwan security coverage, stock information categories, static controls, dynamic interactions, source-link policy and failure policy.",
-      "The GitHub Actions workflow now validates the QA contract on every change under taiex-trend-dashboard/**.",
-      "The latest combined-status query for the QA workflow commit returned no status records, so CI success is not proven yet."
+    "raw_facts": [
+      "TAIEX closed 2026-08-07 at 44,225.91, down 0.38%.",
+      "TWSE sector data showed financial insurance +0.99%, shipping +1.29%, steel +1.32% and digital cloud +6.85%.",
+      "TWSE electronic sectors were broadly weaker: computer peripherals -2.01%, optoelectronics -3.01%, communications network -3.09%, electronic components -1.25%.",
+      "Reuters reported U.S. equities rallied on 2026-08-07 after a softer payroll report, with Nasdaq +1.30%.",
+      "BLS schedules July 2026 CPI for 2026-08-12."
     ],
-    "inference": [
-      "Moving the complete regression checklist into a repository contract makes future maintenance behavior more repeatable than relying on prose alone.",
-      "Static event-binding checks materially reduce the risk of shipping a visible button that has no registered handler, but they do not replace a real browser runtime smoke test."
+    "lumen_calculation": [
+      "Taiwan's Friday sector breadth shows a clear rotation away from several electronic groups toward financials, shipping, steel and selected non-electronic groups."
     ],
-    "risks": [
-      "No live browser runtime test of the deployed site was completed in this pass, so actual network/CORS/browser behavior is not claimed fully verified.",
-      "GitHub CI has no explicit success evidence yet for the newly changed workflow.",
-      "The automation service returned errors when attempting to rewrite the existing scheduled task prompt; the existing 08:30/21:30 task remains active, but the prompt rewrite is not claimed applied.",
-      "Cloudflare Pages deployment remains unverified/uncontrolled from this conversation."
+    "rule_interpretation": [
+      "The stronger U.S. technology close is a positive external input for the next Taiwan session, but Friday's weak Taiwan electronics breadth argues against treating it as a guaranteed broad gap-up signal.",
+      "The next major macro reversal risk is the U.S. July CPI release on 2026-08-12."
+    ],
+    "risk_limitations": [
+      "Taiwan is closed on 2026-08-08, so no new Taiwan closing prices exist today.",
+      "TPEx and TAIFEX direct endpoint health were not independently confirmed by the automation fetch layer in this run.",
+      "Cross-market strength does not guarantee Taiwan stock direction."
     ]
   },
-  "product_state": {
-    "duplicate_runtime_status": "removed_and_modularized",
-    "canonical_views": 6,
-    "market_data_on_page_load": "no-store for market-critical endpoints",
-    "private_cloud_sync": "online_with_owner_only_rls",
-    "maintenance_status_card": "online_in_source_center",
-    "financial_source_manifest": "present",
-    "full_regression_contract": "online_in_qa-contract.json",
-    "interaction_contract_enforced_by_github_actions": true
-  },
-  "automation": {
-    "title": "Lumen 雙時段更新",
-    "enabled": true,
-    "timezone": "Asia/Taipei",
-    "times": ["08:30", "21:30"],
-    "next_run": "2026-08-08T21:30:00+08:00",
-    "prompt_rewrite_attempt_status": "failed_tool_error_not_applied",
-    "effective_regression_enforcement": "repository qa-contract + workflow runs on each maintenance commit"
-  },
-  "qa": {
-    "canonical_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
-    "project_identity": "Lumen 台股分析平台",
-    "story_project_excluded": true,
-    "qa_contract_present": true,
+  "product_qa": {
+    "qa_contract_path": "taiex-trend-dashboard/qa-contract.json",
     "qa_contract_version": 1,
     "analyze_before_write_required": true,
     "repeat_full_regression_every_update_required": true,
-    "static_control_bindings_code_inspected": true,
-    "stock_tab_contract_code_inspected": true,
-    "dynamic_navigation_contract_code_inspected": true,
-    "source_link_policy_enforced_in_ci": true,
-    "ci_explicit_success_evidence": false,
-    "ci_combined_status_records": 0,
+    "canonical_views_required": ["market", "stock", "etf", "derivatives", "workspace", "sources"],
+    "stock_tabs_required": ["overview", "technical", "fundamental", "valuation", "chips", "events", "raw"],
+    "static_controls_contract_present": true,
+    "dynamic_interactions_contract_present": true,
+    "source_link_policy_present": true,
     "live_browser_runtime_smoke_test_completed": false,
-    "formal_cloudflare_write_access_verified": false,
-    "github_pages_source_status": "updated_in_current_chat",
-    "formal_cloudflare_deployment_status": "not_synchronized_or_not_verified",
-    "local_codex_scheduler_control_available": false,
-    "github_lumen_cron_workflow_found": false,
-    "current_chat_commits": [
-      "9c51e58daf4d3989be15da45939c8ef6e9b265c5",
-      "8c58a8fe96c420af5487406f6801dfda5537b024",
-      "eedbedd83325841be42f3195255df11563b88c8a"
-    ]
+    "note": "Repository contract and event-binding checks remain present. This run did not obtain an independent live-browser click-through execution environment, so browser/CORS behavior is not claimed fully verified."
+  },
+  "github": {
+    "latest_repo_commit_before_this_record": "a211252cb73fc4d10c9346e2d85a883e56d5a046",
+    "latest_repo_commit_message_before_this_record": "docs(lumen): bind source manifest to full regression contract",
+    "ci_combined_status_records": 0,
+    "ci_explicit_success_evidence": false,
+    "code_change_required_this_run": false,
+    "reason_no_code_change": "No new reproducible low-risk source or UI defect was proven during this run. Only the maintenance record required refreshing."
+  },
+  "deployment": {
+    "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "github_pages_source_updated": true,
+    "cloudflare_lumen_script_writable_source_verified": false,
+    "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   }
 }
