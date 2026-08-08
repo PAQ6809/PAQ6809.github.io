@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "purpose": "Every Lumen maintenance run must analyze first, then update only verified data/code, then re-run the complete data and interaction checks before reporting healthy.",
+  "run_sequence": [
+    "analyze_current_market_and_source_state_in_chat",
+    "verify_primary_sources_and_data_dates",
+    "identify_required_code_or_data_changes",
+    "apply_minimal_verified_changes_to_canonical_github_source",
+    "run_complete_static_and_interaction_contract",
+    "recheck_market_data_and_source_links",
+    "record_failures_and_limits_in_maintenance_latest",
+    "report_healthy_only_when_all_required_checks_pass"
+  ],
+  "security_universe": {
+    "listed": "TWSE official daily quote universe",
+    "otc": "TPEx official mainboard quote universe",
+    "requirement": "Every security successfully returned by the official TWSE or TPEx quote universe must remain searchable by code or name without losing its market identity."
+  },
+  "stock_information_categories": [
+    "official_daily_quote_and_OHLC",
+    "six_month_official_price_history",
+    "MA5_MA20_MA60",
+    "RSI14",
+    "MACD_and_signal",
+    "transparent_technical_trend_rule",
+    "company_profile_and_industry",
+    "monthly_revenue",
+    "income_statement_summary",
+    "balance_sheet_summary",
+    "EPS_when_official_field_exists",
+    "PE_ratio",
+    "PB_ratio",
+    "dividend_yield",
+    "official_industry_peer_comparison",
+    "institutional_trading_data",
+    "margin_and_short_market_context",
+    "official_material_information",
+    "external_news_discovery_with_primary_source_reverification",
+    "raw_primary_source_links",
+    "source_data_date",
+    "page_fetch_timestamp",
+    "explicit_missing_or_failure_state"
+  ],
+  "views": [
+    "market",
+    "stock",
+    "etf",
+    "derivatives",
+    "workspace",
+    "sources"
+  ],
+  "static_controls": [
+    {"id": "refreshButton", "event": "click", "action": "refreshAll"},
+    {"id": "stockSearchButton", "event": "click", "action": "runStockSearch"},
+    {"id": "stockSearch", "event": "keydown", "action": "runStockSearch_on_Enter"},
+    {"id": "etfFilter", "event": "input", "action": "renderEtfs"},
+    {"id": "watchBtn", "event": "click", "action": "toggleWatch"},
+    {"id": "copyStockLink", "event": "click", "action": "copyStockLink"},
+    {"id": "workspaceSelect", "event": "change", "action": "switchWorkspace"},
+    {"id": "newWorkspace", "event": "click", "action": "newWorkspace"},
+    {"id": "deleteWorkspace", "event": "click", "action": "deleteWorkspace"},
+    {"id": "exportWorkspace", "event": "click", "action": "exportWorkspace"},
+    {"id": "importWorkspace", "event": "change", "action": "importWorkspace"},
+    {"id": "copyWorkspaceLink", "event": "click", "action": "copyWorkspaceLink"},
+    {"id": "workspaceNote", "event": "input", "action": "persistWorkspaceNote"}
+  ],
+  "dynamic_interactions": [
+    {"selector": "[data-view]", "purpose": "main navigation and brand navigation"},
+    {"selector": "#stockTabs [data-tab]", "purpose": "all stock information tabs"},
+    {"selector": "#stockPanel [data-stock]", "purpose": "peer and stock row navigation"},
+    {"selector": "[data-go=derivatives]", "purpose": "stock chip context to derivatives view"}
+  ],
+  "stock_tabs": {
+    "overview": "renderOverview",
+    "technical": "renderTechnical",
+    "fundamental": "renderFundamental",
+    "valuation": "renderValuationPeers",
+    "chips": "renderStockChips",
+    "events": "renderEvents",
+    "raw": "renderRawSources"
+  },
+  "link_policy": {
+    "financial_links_must_be_https": true,
+    "external_target_blank_requires_noopener_noreferrer": true,
+    "javascript_links_forbidden": true,
+    "primary_domains": [
+      "openapi.twse.com.tw",
+      "www.twse.com.tw",
+      "www.tpex.org.tw",
+      "mops.twse.com.tw",
+      "openapi.taifex.com.tw",
+      "www.taifex.com.tw"
+    ]
+  },
+  "maintenance_failure_policy": {
+    "do_not_guess_missing_financial_values": true,
+    "do_not_mark_healthy_when_required_check_fails": true,
+    "record_failed_control_or_source": true,
+    "record_source_data_date_and_fetch_time_separately": true,
+    "cloudflare_deployment_must_remain_unverified_until_writable_project_is_connected": true
+  }
+}
