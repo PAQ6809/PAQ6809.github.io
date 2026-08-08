@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-08T05:10:00+08:00",
+  "generated_at": "2026-08-08T15:57:00+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -76,13 +76,27 @@
       "auth": "Supabase Auth",
       "access": "authenticated users only; RLS owner-only select/insert/update/delete",
       "merge": "last-updated workspace wins during two-way sync",
-      "server_secret_in_frontend": false
+      "server_secret_in_frontend": false,
+      "verified_at": "2026-08-08T15:50:00+08:00"
     },
-    "external_news": "discovery only; financial numbers must be re-verified against primary sources"
+    "external_news": "discovery only; financial numbers must be re-verified against primary sources",
+    "maintenance": {
+      "provider": "ChatGPT automation",
+      "title": "Lumen 雙時段更新",
+      "timezone": "Asia/Taipei",
+      "times": ["08:30", "21:30"],
+      "enabled": true,
+      "next_run_at_creation": "2026-08-08T21:30:00+08:00",
+      "latest_record": "./maintenance-latest.json"
+    }
   },
   "deployment_scope": {
     "canonical_repo": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
+    "github_pages_url": "https://paq6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated_in_this_chat": true,
-    "cloudflare_lumen_script_writable_source_verified": false
+    "cloudflare_lumen_script_writable_source_verified": false,
+    "cloudflare_status_policy": "Do not claim lumen-script.pages.dev is synchronized until writable Cloudflare Pages access is verified.",
+    "local_codex_scheduler_control_available": false,
+    "github_lumen_cron_workflow_found": false
   }
 }
