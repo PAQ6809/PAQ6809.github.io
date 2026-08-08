@@ -37,7 +37,7 @@ jobs:
             node --check "$file"
           done
 
-      - name: Validate source manifest and page contract
+      - name: Validate complete Lumen data and interaction contract
         shell: python
         run: |
           import json
@@ -60,6 +60,8 @@ jobs:
               root / 'lumen.css',
               root / 'lumen.js',
               root / 'source-manifest.json',
+              root / 'qa-contract.json',
+              root / 'maintenance-latest.json',
               root / 'README.md',
               root / 'REFRACTOR-STATUS.md',
               *[root / name for name in modules],
@@ -73,6 +75,10 @@ jobs:
               raise SystemExit('Obsolete duplicate runtime patch still exists')
 
           html = (root / 'index.html').read_text(encoding='utf-8')
+          loader = (root / 'lumen.js').read_text(encoding='utf-8')
+          module_text = {name: (root / name).read_text(encoding='utf-8') for name in modules}
+          combined = '\n'.join(module_text.values())
+
           required_ids = [
               'nav', 'marketDate', 'fetchTime', 'sourceHealth',
               'marketKpis', 'indexRows', 'marketSentiment', 'hotRows', 'hotSource',
@@ -89,8 +95,9 @@ jobs:
               raise SystemExit('index.html is missing the canonical CSS or JS loader')
           if 'lumen-runtime-fixes.js' in html:
               raise SystemExit('index.html still references obsolete runtime patch')
+          if re.search(r'href=["\']javascript:', html, flags=re.I):
+              raise SystemExit('javascript: links are forbidden')
 
-          loader = (root / 'lumen.js').read_text(encoding='utf-8')
           missing_modules = [name for name in modules if f'./{name}' not in loader]
           if missing_modules:
               raise SystemExit(f'Loader is missing canonical modules: {missing_modules}')
@@ -99,6 +106,9 @@ jobs:
               raise SystemExit('Canonical modules are not loaded in dependency order')
 
           manifest = json.loads((root / 'source-manifest.json').read_text(encoding='utf-8'))
+          qa = json.loads((root / 'qa-contract.json').read_text(encoding='utf-8'))
+          maintenance = json.loads((root / 'maintenance-latest.json').read_text(encoding='utf-8'))
+
           policy = manifest.get('policy', {})
           required_policy = [
               'financial_values_require_source', 'show_source_data_date',
@@ -118,7 +128,6 @@ jobs:
           if missing_domains:
               raise SystemExit(f'Missing official source domains: {missing_domains}')
 
-          combined = '\n'.join((root / name).read_text(encoding='utf-8') for name in modules)
           required_contracts = [
               r'PutCallRatio',
               r'MarketDataOfMajorInstitutionalTradersGeneralBytheDate',
@@ -133,6 +142,84 @@ jobs:
           if missing_contracts:
               raise SystemExit(f'Missing Lumen runtime/source contracts: {missing_contracts}')
 
+          expected_views = qa.get('views', [])
+          missing_views = [view for view in expected_views if f'id="view-{view}"' not in html]
+          if missing_views:
+              raise SystemExit(f'QA contract views missing from HTML: {missing_views}')
+
+          boot = module_text['lumen-boot.js']
+          for control in qa.get('static_controls', []):
+              cid = control['id']
+              event = control['event']
+              if f'id="{cid}"' not in html:
+                  raise SystemExit(f'QA control missing from HTML: {cid}')
+              binding = re.compile(rf"getElementById\(['\"]{re.escape(cid)}['\"]\)\.addEventListener\(['\"]{re.escape(event)}['\"]")
+              if not binding.search(boot):
+                  raise SystemExit(f'QA control is not bound to expected event {event}: {cid}')
+
+          core = module_text['lumen-core.js']
+          stock_a = module_text['lumen-stock-a.js']
+          stock_b = module_text['lumen-stock-b.js']
+          if "querySelectorAll('#nav button,[data-view]')" not in core:
+              raise SystemExit('Dynamic [data-view] navigation binding is missing')
+          if "querySelectorAll('#stockTabs [data-tab]')" not in stock_a:
+              raise SystemExit('Dynamic stock-tab binding is missing')
+          if "#stockPanel [data-stock]" not in stock_b:
+              raise SystemExit('Dynamic stock-row navigation binding is missing')
+          if '[data-go="derivatives"]' not in stock_b:
+              raise SystemExit('Derivatives navigation control is missing')
+
+          for tab, renderer in qa.get('stock_tabs', {}).items():
+              if f"['{tab}'" not in stock_a and f'{tab}:' not in stock_a:
+                  raise SystemExit(f'Stock tab missing: {tab}')
+              if not re.search(rf'\b{re.escape(renderer)}\s*\(', combined) and renderer not in stock_a:
+                  raise SystemExit(f'Stock tab renderer missing: {tab} -> {renderer}')
+
+          required_categories = {
+              'official_daily_quote_and_OHLC', 'six_month_official_price_history',
+              'MA5_MA20_MA60', 'RSI14', 'MACD_and_signal',
+              'company_profile_and_industry', 'monthly_revenue',
+              'income_statement_summary', 'balance_sheet_summary',
+              'PE_ratio', 'PB_ratio', 'dividend_yield',
+              'institutional_trading_data', 'official_material_information',
+              'raw_primary_source_links', 'explicit_missing_or_failure_state'
+          }
+          categories = set(qa.get('stock_information_categories', []))
+          if not required_categories.issubset(categories):
+              raise SystemExit(f'QA stock-information coverage incomplete: {required_categories-categories}')
+
+          link_policy = qa.get('link_policy', {})
+          if not link_policy.get('financial_links_must_be_https'):
+              raise SystemExit('HTTPS financial-link policy must be enabled')
+          if not link_policy.get('external_target_blank_requires_noopener_noreferrer'):
+              raise SystemExit('noopener/noreferrer policy must be enabled')
+          if not link_policy.get('javascript_links_forbidden'):
+              raise SystemExit('javascript-link prohibition must be enabled')
+
+          for domain in link_policy.get('primary_domains', []):
+              if domain not in combined + manifest_text:
+                  raise SystemExit(f'QA primary domain not represented in runtime/manifest: {domain}')
+
+          blank_tags = re.findall(r'<a\b[^>]*target=["\']_blank["\'][^>]*>', html + combined, flags=re.I)
+          unsafe_blank = [tag for tag in blank_tags if not re.search(r'rel=["\'][^"\']*noopener[^"\']*noreferrer[^"\']*["\']', tag, flags=re.I)]
+          if unsafe_blank:
+              raise SystemExit(f'External _blank links missing noopener noreferrer: {unsafe_blank[:3]}')
+
+          if not maintenance.get('run_at'):
+              raise SystemExit('maintenance-latest.json must record run_at')
+          if maintenance.get('project_identity', {}).get('canonical_repo_path') != 'PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/':
+              raise SystemExit('maintenance record points to the wrong canonical project')
+
+          failure_policy = qa.get('maintenance_failure_policy', {})
+          required_fail_rules = [
+              'do_not_guess_missing_financial_values',
+              'do_not_mark_healthy_when_required_check_fails',
+              'record_failed_control_or_source',
+              'record_source_data_date_and_fetch_time_separately'
+          ]
+          if not all(failure_policy.get(k) is True for k in required_fail_rules):
+              raise SystemExit('Maintenance failure policy is incomplete')
+
           forbidden = [
               r'SUPABASE_SERVICE_ROLE_KEY',
               r'sb_secret_',
@@ -142,4 +229,4 @@ jobs:
           if leaked:
               raise SystemExit(f'Frontend contains forbidden server-side credential pattern: {leaked}')
 
-          print('Lumen modular source-first + private-cloud contract OK')
+          print('Lumen complete data + interaction QA contract OK')
