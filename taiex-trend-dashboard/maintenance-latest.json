@@ -1,6 +1,6 @@
 {
-  "run_type": "21:30_postmarket_full_maintenance",
-  "run_at": "2026-08-08T21:30:00+08:00",
+  "run_type": "08:30_premarket_full_maintenance",
+  "run_at": "2026-08-09T08:28:15+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -10,14 +10,15 @@
     "taiwan_market_state": "closed_weekend",
     "taiwan_latest_trading_day": "2026-08-07",
     "us_latest_session": "2026-08-07",
-    "note": "2026-08-08 is Saturday in Taiwan; Taiwan prices remain official last-close data from 2026-08-07."
+    "next_expected_taiwan_trading_day": "2026-08-10",
+    "note": "2026-08-09 is Sunday in Taiwan. Taiwan prices remain official last-close data from 2026-08-07; the 2026 TWSE holiday schedule does not list 2026-08-10 as a market holiday."
   },
   "verified_sources": [
     {
       "source_name": "TWSE OpenAPI - MI_INDEX",
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
       "as_of": "2026-08-07",
-      "fetched_at": "2026-08-08T21:29:00+08:00",
+      "fetched_at": "2026-08-09T08:28:15+08:00",
       "status": "verified",
       "observations": {
         "TAIEX_close": 44225.91,
@@ -36,26 +37,43 @@
       }
     },
     {
-      "source_name": "Reuters - U.S. market close",
-      "source_url": "https://www.reuters.com/world/china/global-markets-global-markets-2026-08-07/",
-      "as_of": "2026-08-07",
-      "fetched_at": "2026-08-08T21:29:00+08:00",
-      "status": "verified_trusted_secondary",
+      "source_name": "TWSE 2026 holiday schedule",
+      "source_url": "https://www.twse.com.tw/en/trading/holiday.html",
+      "as_of": "2026",
+      "fetched_at": "2026-08-09T08:28:15+08:00",
+      "status": "verified",
       "observations": {
-        "Nasdaq_change_percent": 1.30,
-        "us_payroll_change_reported": -23000,
-        "comment": "U.S. stocks and bonds rallied after the softer July payroll report; technology led gains."
+        "2026_08_10_listed_as_holiday": false
       }
     },
     {
-      "source_name": "U.S. BLS release calendar",
-      "source_url": "https://www.bls.gov/schedule/news_release/empsit.htm",
+      "source_name": "Reuters - U.S. market close",
+      "source_url": "https://www.reuters.com/business/sp-500-dow-futures-muted-ahead-jobs-data-chips-software-stocks-rise-2026-08-07/",
       "as_of": "2026-08-07",
-      "fetched_at": "2026-08-08T21:29:00+08:00",
-      "status": "verified_release_date_only",
+      "fetched_at": "2026-08-09T08:28:15+08:00",
+      "status": "verified_trusted_secondary",
       "observations": {
-        "july_2026_employment_situation_release_date": "2026-08-07",
-        "next_cpi_release_date": "2026-08-12"
+        "Dow_close": 54036.93,
+        "Dow_change_percent": 0.28,
+        "SP500_close": 7757.64,
+        "SP500_change_percent": 0.62,
+        "Nasdaq_close": 26690.62,
+        "Nasdaq_change_percent": 1.30,
+        "us_nonfarm_payroll_change": -23000,
+        "us_unemployment_rate_percent": 4.1,
+        "September_Fed_rate_hike_probability_percent_reported": 44
+      }
+    },
+    {
+      "source_name": "U.S. BLS CPI release calendar",
+      "source_url": "https://www.bls.gov/cpi/",
+      "as_of": "2026-08-09",
+      "fetched_at": "2026-08-09T08:28:15+08:00",
+      "status": "verified",
+      "observations": {
+        "next_cpi_reference_month": "2026-07",
+        "next_cpi_release_date": "2026-08-12",
+        "next_cpi_release_time_et": "08:30"
       }
     }
   ],
@@ -90,20 +108,21 @@
       "TAIEX closed 2026-08-07 at 44,225.91, down 0.38%.",
       "TWSE sector data showed financial insurance +0.99%, shipping +1.29%, steel +1.32% and digital cloud +6.85%.",
       "TWSE electronic sectors were broadly weaker: computer peripherals -2.01%, optoelectronics -3.01%, communications network -3.09%, electronic components -1.25%.",
-      "Reuters reported U.S. equities rallied on 2026-08-07 after a softer payroll report, with Nasdaq +1.30%.",
-      "BLS schedules July 2026 CPI for 2026-08-12."
+      "U.S. equities closed higher on 2026-08-07: Dow +0.28%, S&P 500 +0.62%, Nasdaq +1.30%.",
+      "Reuters reported July U.S. nonfarm payrolls decreased by 23,000 and unemployment was 4.1%.",
+      "BLS schedules July 2026 CPI for 2026-08-12 at 08:30 ET."
     ],
     "lumen_calculation": [
-      "Taiwan's Friday sector breadth shows a clear rotation away from several electronic groups toward financials, shipping, steel and selected non-electronic groups."
+      "Friday Taiwan sector breadth remained rotational rather than broadly risk-on: several electronic groups underperformed while financials, shipping, steel and selected non-electronic groups outperformed."
     ],
     "rule_interpretation": [
-      "The stronger U.S. technology close is a positive external input for the next Taiwan session, but Friday's weak Taiwan electronics breadth argues against treating it as a guaranteed broad gap-up signal.",
-      "The next major macro reversal risk is the U.S. July CPI release on 2026-08-12."
+      "The stronger U.S. technology close remains a positive external input for the next Taiwan session, but the weaker Friday Taiwan electronics breadth prevents treating it as a guaranteed broad gap-up signal.",
+      "The July U.S. CPI release on 2026-08-12 is the clearest scheduled macro reversal risk for the coming week."
     ],
     "risk_limitations": [
-      "Taiwan is closed on 2026-08-08, so no new Taiwan closing prices exist today.",
-      "TPEx and TAIFEX direct endpoint health were not independently confirmed by the automation fetch layer in this run.",
-      "Cross-market strength does not guarantee Taiwan stock direction."
+      "Taiwan is closed on 2026-08-09, so no new Taiwan closing prices exist today.",
+      "TPEx and TAIFEX direct endpoint health were not independently confirmed by this automation fetch layer in this run.",
+      "Cross-market strength does not guarantee Taiwan stock direction; Monday company announcements, FX, ADR basis and geopolitical developments may dominate."
     ]
   },
   "product_qa": {
@@ -117,11 +136,11 @@
     "dynamic_interactions_contract_present": true,
     "source_link_policy_present": true,
     "live_browser_runtime_smoke_test_completed": false,
-    "note": "Repository contract and event-binding checks remain present. This run did not obtain an independent live-browser click-through execution environment, so browser/CORS behavior is not claimed fully verified."
+    "note": "Repository QA contract remains the canonical regression definition. This run did not have an independent live-browser click-through environment, so browser/CORS behavior is not claimed fully verified."
   },
   "github": {
-    "latest_repo_commit_before_this_record": "a211252cb73fc4d10c9346e2d85a883e56d5a046",
-    "latest_repo_commit_message_before_this_record": "docs(lumen): bind source manifest to full regression contract",
+    "latest_repo_commit_before_this_record": "c2568bf8e00b47a3c331624174467f0f3871df34",
+    "latest_repo_commit_message_before_this_record": "chore(lumen): record 2026-08-08 21:30 verified maintenance state",
     "ci_combined_status_records": 0,
     "ci_explicit_success_evidence": false,
     "code_change_required_this_run": false,
