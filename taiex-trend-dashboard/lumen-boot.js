@@ -95,13 +95,31 @@ function decorateSnapshotStatus() {
   badge.className = 'badge warn';
 }
 
+function lumenRowsAvailable(value) {
+  return Array.isArray(value) ? value.length>0 : !!(value && typeof value==='object' && Object.keys(value).length);
+}
+
+async function retryCoreOfficialDataset(current,key,url,options={}) {
+  if (lumenRowsAvailable(current)) return current;
+  if (STATE.status[key]?.ok) return current;
+  await new Promise(resolve=>setTimeout(resolve,650+Math.round(Math.random()*250)));
+  return getData(key,url,{
+    ...options,
+    cache:false,
+    noStore:true,
+    allowSnapshotFallback:false,
+    relayAttempts:3,
+    relayTimeout:12000
+  });
+}
+
 async function refreshAll(manual=false) {
   if (manual) {
     DATA_CACHE.clear();
     document.getElementById('sourceHealth').textContent='來源狀態：同步中';
   }
   const noSnapshot={allowSnapshotFallback:false};
-  const [listedLive,otcLive,indicesLive,fundsLive,marginListedLive,marginOtcLive,taifexInstLive,pcrLive,snapshot]=await Promise.all([
+  let [listedLive,otcLive,indicesLive,fundsLive,marginListedLive,marginOtcLive,taifexInstLive,pcrLive,snapshot]=await Promise.all([
     getData('TWSE行情',API.twse.quotes,{cache:false,noStore:true,...noSnapshot}),
     getData('TPEx行情',API.tpex.quotes,{cache:false,noStore:true,...noSnapshot}),
     getData('TWSE指數',API.twse.indices,{cache:false,noStore:true,...noSnapshot}),
@@ -112,6 +130,15 @@ async function refreshAll(manual=false) {
     getData('TAIFEXPutCall',API.taifex.putCall,{cache:false,noStore:true,...noSnapshot}),
     loadScheduledOfficialSnapshot()
   ]);
+
+  listedLive=await retryCoreOfficialDataset(listedLive,'TWSE行情',API.twse.quotes);
+  otcLive=await retryCoreOfficialDataset(otcLive,'TPEx行情',API.tpex.quotes);
+  indicesLive=await retryCoreOfficialDataset(indicesLive,'TWSE指數',API.twse.indices);
+  fundsLive=await retryCoreOfficialDataset(fundsLive,'TWSE基金',API.twse.funds);
+  marginListedLive=await retryCoreOfficialDataset(marginListedLive,'TWSE融資融券',API.twse.margin);
+  marginOtcLive=await retryCoreOfficialDataset(marginOtcLive,'TPEx融資融券',API.tpex.margin);
+  taifexInstLive=await retryCoreOfficialDataset(taifexInstLive,'TAIFEX三大法人',API.taifex.institutional);
+  pcrLive=await retryCoreOfficialDataset(pcrLive,'TAIFEXPutCall',API.taifex.putCall);
 
   const listed=snapshotFallback(listedLive,snapshot,'twse_listed_quotes','TWSE行情');
   const otc=snapshotFallback(otcLive,snapshot,'tpex_quotes','TPEx行情');
