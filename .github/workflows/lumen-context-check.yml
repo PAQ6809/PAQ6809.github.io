@@ -1,0 +1,92 @@
+name: Lumen context checks
+
+on:
+  push:
+    paths:
+      - 'taiex-trend-dashboard/lumen-context.js'
+      - 'taiex-trend-dashboard/context-source-catalog.json'
+      - 'taiex-trend-dashboard/source-manifest.json'
+      - 'taiex-trend-dashboard/lumen.js'
+      - '.github/workflows/lumen-context-check.yml'
+  pull_request:
+    paths:
+      - 'taiex-trend-dashboard/lumen-context.js'
+      - 'taiex-trend-dashboard/context-source-catalog.json'
+      - 'taiex-trend-dashboard/source-manifest.json'
+      - 'taiex-trend-dashboard/lumen.js'
+      - '.github/workflows/lumen-context-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-context:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check taiex-trend-dashboard/lumen-context.js
+      - name: Official context contract
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          root=Path('taiex-trend-dashboard')
+          catalog=json.loads((root/'context-source-catalog.json').read_text(encoding='utf-8'))
+          manifest=json.loads((root/'source-manifest.json').read_text(encoding='utf-8'))
+          loader=(root/'lumen.js').read_text(encoding='utf-8')
+          context=(root/'lumen-context.js').read_text(encoding='utf-8')
+
+          if './lumen-context.js' not in loader:
+              raise SystemExit('lumen-context.js is not loaded')
+          if loader.index('./lumen-context.js') > loader.index('./lumen-boot.js'):
+              raise SystemExit('context module must load before boot')
+
+          policy=catalog.get('policy',{})
+          required=[
+              'primary_sources_first',
+              'company_business_scope_is_registration_scope_not_revenue_mix',
+              'event_analysis_must_separate_fact_from_inference',
+              'no_third_party_financial_values'
+          ]
+          if not all(policy.get(k) is True for k in required):
+              raise SystemExit('context source policy incomplete')
+
+          urls=[]
+          for section in ['company_business','company_context_apis','esg_context_apis','macro_and_industry_sources']:
+              for item in catalog.get(section,[]):
+                  url=item.get('source_url','')
+                  if url:
+                      urls.append(url)
+          required_hosts={
+              'data.gcis.nat.gov.tw','openapi.twse.com.tw','www.tpex.org.tw',
+              'www.stat.gov.tw','data.gov.tw','www.bls.gov','www.bea.gov','www.federalreserve.gov'
+          }
+          hosts={urlparse(u).hostname for u in urls}
+          missing=required_hosts-hosts
+          if missing:
+              raise SystemExit(f'missing official context hosts: {sorted(missing)}')
+
+          must_contain=[
+              'gcis_company_business','t187ap02_L','mopsfin_t187ap02_O',
+              't187ap22_L','mopsfin_t187ap22_O','t187ap25_L','mopsfin_t187ap25_O',
+              't187ap46_L_8','t187ap46_L_16','company_business_registration_not_equal_revenue_mix'
+          ]
+          combined=json.dumps(catalog,ensure_ascii=False)+json.dumps(manifest,ensure_ascii=False)+context
+          missing=[token for token in must_contain if token not in combined]
+          if missing:
+              raise SystemExit(f'missing context contracts: {missing}')
+
+          if '登記範圍不等於實際營收組合' not in context:
+              raise SystemExit('business registration limitation is not visible in UI')
+          if '規則解讀' not in context:
+              raise SystemExit('event relevance is not labeled as rule interpretation')
+          if 'LUMEN_CONTEXT_RELAY_ENDPOINT' not in context:
+              raise SystemExit('context relay client is missing')
+
+          print('Lumen official company/event context contract OK')
