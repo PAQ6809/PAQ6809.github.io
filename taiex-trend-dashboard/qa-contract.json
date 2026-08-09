@@ -1,14 +1,17 @@
 {
-  "version": 4,
-  "purpose": "Every Lumen maintenance run must analyze first, process the complete canonical data/context catalogs, keep stocks and ETFs on the correct product model, update only verified data/code, then re-run the complete contracts before reporting healthy.",
+  "version": 5,
+  "purpose": "Every Lumen maintenance run must analyze first, process the complete canonical data/context catalogs, keep stocks and ETFs on the correct product model, verify ETF identity fallbacks against official TWSE sources, update only verified data/code, then re-run the complete contracts before reporting healthy.",
   "run_sequence": [
     "analyze_current_market_and_source_state_in_chat",
     "load_snapshot_catalog",
     "load_context_source_catalog",
+    "load_verified_etf_identity_registry",
     "verify_every_catalog_primary_source_and_data_date",
+    "verify_every_etf_identity_profile_source_and_verified_at",
     "refresh_official_snapshot_with_verified_rows_only",
     "assert_every_catalog_dataset_has_current_run_status",
     "verify_stock_vs_etf_product_type_boundaries",
+    "verify_0050_etf_identity_regression",
     "identify_required_code_or_data_changes",
     "apply_minimal_verified_changes_to_canonical_github_source",
     "run_complete_static_interaction_snapshot_context_and_etf_contracts",
@@ -54,6 +57,7 @@
     "official_daily_quote_and_OHLC",
     "official_fund_master",
     "benchmark_or_tracking_index",
+    "verified_official_identity_profile_fallback",
     "official_etf_product_page",
     "official_etf_dividend_reference",
     "official_etf_material_announcement_reference",
@@ -76,11 +80,29 @@
     "etf_must_not_request_listed_company_material_information_as_etf_announcement": true,
     "etf_stock_valuation_fields_must_not_masquerade_as_nav_or_distribution": true,
     "etf_fund_master_is_primary_structured_identity_source": true,
+    "etf_verified_identity_profile_is_secondary_official_identity_fallback_only": true,
+    "etf_verified_identity_profile_must_not_store_dynamic_financial_values": true,
+    "etf_profile_fallback_provenance_must_be_visible": true,
     "etf_official_reference_pages_must_remain_transparently_labeled": true
+  },
+  "etf_verified_identity_profile_policy": {
+    "path": "etf-profile-verified.json",
+    "allowed_source_host": "www.twse.com.tw",
+    "allowed_source_path_prefix": "/zh/ETFortune/etfInfo/",
+    "verified_at_required": true,
+    "allowed_fields": ["code","name","full_name","security_type","issuer","benchmark","theme","source_name","source_url","verified_at"],
+    "forbidden_dynamic_fields": ["price","close","nav","aum","performance","premium_discount","volume","trade_value"],
+    "live_fund_master_fields_have_priority": true,
+    "fallback_only_fills_missing_identity_fields": true
   },
   "regression_examples": {
     "etf": ["0050"],
-    "rule": "0050 must render the ETF product model and must not render company monthly revenue, company financial statements, listed-company material information or stock P/E/P/B as ETF fundamentals."
+    "rule": "0050 must render the ETF product model, must show the verified TWSE issuer and benchmark when the fund-master transport does not provide them, and must not render company monthly revenue, company financial statements, listed-company material information or stock P/E/P/B as ETF fundamentals.",
+    "0050_expected_identity": {
+      "issuer": "元大證券投資信託股份有限公司",
+      "benchmark": "富時臺灣證券交易所臺灣50指數",
+      "official_source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050"
+    }
   },
   "views": ["market","stock","etf","derivatives","workspace","sources"],
   "static_controls": [
