@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "name": "Lumen official company and event context catalog",
+  "schema_version": 2,
+  "name": "Lumen official company, ETF and event context catalog",
   "timezone": "Asia/Taipei",
   "scheduled_runs": ["08:30", "21:30"],
   "policy": {
@@ -8,7 +8,10 @@
     "company_business_scope_is_registration_scope_not_revenue_mix": true,
     "event_analysis_must_separate_fact_from_inference": true,
     "no_third_party_financial_values": true,
-    "on_demand_company_queries_are_not_full_market_snapshots": true
+    "on_demand_company_queries_are_not_full_market_snapshots": true,
+    "etf_is_not_a_company": true,
+    "etf_must_not_use_company_revenue_financials_or_company_material_information": true,
+    "etf_web_pages_are_official_reference_pages_not_silent_structured_api_fallbacks": true
   },
   "company_business": [
     {
@@ -28,6 +31,40 @@
       "query": "Business_Item",
       "purpose": "營業項目定義與分類",
       "frontend": "on_demand"
+    }
+  ],
+  "etf_context_sources": [
+    {
+      "id": "twse_etf_fund_master",
+      "authority": "臺灣證券交易所",
+      "source_name": "基金基本資料彙總表",
+      "source_url": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "access_mode": "official_openapi",
+      "scope": "ETF/基金身分、名稱、發行或經理資訊、標的指數等可用欄位"
+    },
+    {
+      "id": "twse_etf_product_page",
+      "authority": "臺灣證券交易所 ETF e添富",
+      "source_name": "ETF 商品頁",
+      "source_url_template": "https://www.twse.com.tw/zh/ETFortune/etfInfo/{code}",
+      "access_mode": "official_reference_page",
+      "scope": "ETF 商品、公開說明書、淨值與折溢價入口"
+    },
+    {
+      "id": "twse_etf_dividend_list",
+      "authority": "臺灣證券交易所 ETF e添富",
+      "source_name": "ETF 配息清單",
+      "source_url": "https://www.twse.com.tw/zh/ETFortune/dividendList",
+      "access_mode": "official_reference_page",
+      "scope": "除息交易日、收益分配基準日、發放日與官方收益分配資訊"
+    },
+    {
+      "id": "twse_etf_announcements",
+      "authority": "臺灣證券交易所 ETF e添富",
+      "source_name": "ETF 重大消息",
+      "source_url": "https://www.twse.com.tw/zh/ETFortune/announcementList",
+      "access_mode": "official_reference_page",
+      "scope": "新上市/終止上市、收益分配、淨資產價值、追蹤差距、公開說明書/信託契約修訂與其他 ETF 重大消息"
     }
   ],
   "company_context_apis": [
