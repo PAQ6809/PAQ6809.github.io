@@ -62,6 +62,7 @@ jobs:
               root / 'source-manifest.json',
               root / 'qa-contract.json',
               root / 'maintenance-latest.json',
+              root / 'official-snapshot-latest.json',
               root / 'README.md',
               root / 'REFRACTOR-STATUS.md',
               *[root / name for name in modules],
@@ -108,6 +109,7 @@ jobs:
           manifest = json.loads((root / 'source-manifest.json').read_text(encoding='utf-8'))
           qa = json.loads((root / 'qa-contract.json').read_text(encoding='utf-8'))
           maintenance = json.loads((root / 'maintenance-latest.json').read_text(encoding='utf-8'))
+          snapshot = json.loads((root / 'official-snapshot-latest.json').read_text(encoding='utf-8'))
 
           policy = manifest.get('policy', {})
           required_policy = [
@@ -137,6 +139,8 @@ jobs:
               r'lumen_workspaces',
               r'auth\.signInWithPassword',
               r'normalizeHistoryRows',
+              r'official-snapshot-latest\.json',
+              r'snapshotFallback',
           ]
           missing_contracts = [pattern for pattern in required_contracts if not re.search(pattern, combined + manifest_text)]
           if missing_contracts:
@@ -182,7 +186,8 @@ jobs:
               'income_statement_summary', 'balance_sheet_summary',
               'PE_ratio', 'PB_ratio', 'dividend_yield',
               'institutional_trading_data', 'official_material_information',
-              'raw_primary_source_links', 'explicit_missing_or_failure_state'
+              'raw_primary_source_links', 'explicit_missing_or_failure_state',
+              'verified_scheduled_snapshot_fallback'
           }
           categories = set(qa.get('stock_information_categories', []))
           if not required_categories.issubset(categories):
@@ -209,6 +214,45 @@ jobs:
               raise SystemExit('maintenance-latest.json must record run_at')
           if maintenance.get('project_identity', {}).get('canonical_repo_path') != 'PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/':
               raise SystemExit('maintenance record points to the wrong canonical project')
+
+          snapshot_policy = qa.get('snapshot_policy', {})
+          required_snapshot_rules = [
+              'live_official_api_has_priority',
+              'fallback_requires_empty_live_dataset',
+              'fallback_requires_verified_status',
+              'fallback_requires_nonempty_rows',
+              'unverified_datasets_must_not_backfill',
+              'financial_rows_must_be_from_canonical_official_source',
+              'source_url_required',
+              'source_data_date_required_for_verified_financial_rows',
+              'snapshot_run_at_required',
+              'macro_calendar_requires_official_source',
+              'macro_calendar_must_not_predict_release_values'
+          ]
+          if not all(snapshot_policy.get(k) is True for k in required_snapshot_rules):
+              raise SystemExit('Verified snapshot safety policy is incomplete')
+          if not snapshot.get('run_at') or not isinstance(snapshot.get('datasets'), dict):
+              raise SystemExit('Official snapshot is missing run_at or datasets')
+          snapshot_root_policy = snapshot.get('policy', {})
+          if not all(snapshot_root_policy.get(k) is True for k in [
+              'official_only_for_financial_values',
+              'fallback_only_when_live_dataset_empty',
+              'unverified_datasets_never_used_as_fallback',
+              'source_date_and_snapshot_time_are_separate'
+          ]):
+              raise SystemExit('Official snapshot root policy is incomplete')
+          for key, dataset in snapshot.get('datasets', {}).items():
+              status = dataset.get('status')
+              rows = dataset.get('rows')
+              if not isinstance(rows, list):
+                  raise SystemExit(f'Snapshot dataset rows must be a list: {key}')
+              if status == 'verified':
+                  if not rows:
+                      raise SystemExit(f'Verified snapshot dataset cannot be empty: {key}')
+                  if not dataset.get('source_url') or not dataset.get('data_date'):
+                      raise SystemExit(f'Verified snapshot dataset lacks source URL/data date: {key}')
+              elif rows:
+                  raise SystemExit(f'Unverified snapshot dataset must not carry financial rows: {key}')
 
           failure_policy = qa.get('maintenance_failure_policy', {})
           required_fail_rules = [
