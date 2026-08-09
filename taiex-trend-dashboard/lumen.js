@@ -8,6 +8,7 @@
     './lumen-stock-b.js',
     './lumen-derivatives.js',
     './lumen-workspace.js',
+    './lumen-status.js',
     './lumen-cloud.js',
     './lumen-boot.js'
   ];
