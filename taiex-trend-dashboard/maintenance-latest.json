@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_official_data_catalog_build",
-  "run_at": "2026-08-09T14:13:38+08:00",
+  "run_type": "manual_runtime_status_and_transparency_repair",
+  "run_at": "2026-08-09T15:02:28+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -66,6 +66,24 @@
       "fallback_eligible": false
     }
   ],
+  "runtime_status_repair": {
+    "status_module": "taiex-trend-dashboard/lumen-status.js",
+    "old_problem": "Browser fetch failures, official-source outages and missing verified snapshot data were displayed together as generic failures; feature rows were hard-coded green even when their data was unavailable; maintenance UI read a non-existent GitHub source field and displayed 未記錄.",
+    "fixed": true,
+    "changes": [
+      "Top badge now reports live official availability, browser-direct restrictions and verified snapshot fallback separately.",
+      "TWSE/TPEx/TAIFEX source cards no longer claim the official source itself failed solely because browser fetch failed.",
+      "Feature status is derived from current runtime/snapshot availability instead of hard-coded ok values.",
+      "GitHub canonical source is read from deployment.github_pages_canonical_source or project_identity.canonical_repo_path.",
+      "GitHub source update, GitHub Pages live deployment verification, CI success evidence and Cloudflare synchronization are displayed as separate states.",
+      "The source center now exposes snapshot-catalog.json and official-snapshot-latest.json coverage directly."
+    ],
+    "display_semantics": {
+      "green": "data/function is currently demonstrated available",
+      "yellow": "implemented but data is on-demand, browser-direct restricted, awaiting verified snapshot, or external login/runtime verification is still required",
+      "red": "reserved for a proven blocking failure rather than ordinary browser/API reachability limits"
+    }
+  },
   "website_changes": {
     "snapshot_catalog_created": true,
     "on_demand_verified_snapshot_fallback_added": true,
@@ -74,8 +92,10 @@
     "freshness_guard_added": true,
     "twse_t86_frontend_fallback_enabled": false,
     "source_manifest_catalog_bound": true,
-    "qa_contract_version": 3,
-    "snapshot_specific_workflow_added": ".github/workflows/lumen-snapshot-check.yml"
+    "truthful_status_module_loaded_before_boot": true,
+    "feature_status_no_longer_hardcoded_green": true,
+    "github_source_unrecorded_bug_fixed": true,
+    "snapshot_specific_workflow": ".github/workflows/lumen-snapshot-check.yml"
   },
   "automation": {
     "provider": "ChatGPT automation",
@@ -89,43 +109,45 @@
   },
   "analysis": {
     "raw_facts": [
-      "The canonical official update registry now contains 44 datasets.",
+      "The canonical official update registry contains 44 datasets.",
       "Only twse_indices currently contains verified snapshot rows.",
-      "TWSE BWIBBU_ALL was readable with 2026-08-07 valuation rows, but the complete dataset was not materialized into the repository snapshot in this run."
+      "TWSE BWIBBU_ALL is independently readable with 2026-08-07 valuation rows, but a complete repository snapshot was not materialized in this run.",
+      "The previous UI's 2 normal / 7 failed count mixed browser fetch reachability with actual data/source state and therefore overstated source failure."
     ],
     "lumen_calculation": [
-      "No investment-direction value was generated or persisted by this build."
+      "Runtime status now classifies live API success, verified snapshot fallback and browser-direct restriction separately.",
+      "Feature readiness is calculated from current STATE data and verified snapshot coverage rather than static labels."
     ],
     "rule_interpretation": [
-      "Catalog registration means a dataset is in the recurring verification queue; it does not mean the dataset is already online with verified rows.",
-      "The generic fallback layer expands resilience for on-demand stock tabs without allowing unverified or partial data to masquerade as current official data."
+      "A failed browser fetch is not sufficient evidence that TWSE, TPEx or TAIFEX is down.",
+      "Catalog registration means a dataset is in the recurring verification queue; it does not mean verified rows are already online.",
+      "Implemented code is not shown as data-available unless the corresponding runtime or verified snapshot evidence exists."
     ],
     "risk_limitations": [
-      "43 catalog datasets are not yet eligible as verified snapshot fallback datasets.",
+      "Most catalog datasets still do not have complete verified snapshot rows, so several data-heavy functions can remain unavailable when direct browser access is restricted.",
       "TWSE T86 remains registered but frontend fallback is deliberately disabled until reliable trading-date binding is implemented.",
-      "No live-browser click-through/CORS smoke test was independently completed in this run.",
-      "GitHub combined status returned no status records for the latest QA commit, so CI success is not claimed.",
+      "The public GitHub Pages URL could not be independently fetched by the available web layer in this run, so live propagation is not claimed.",
+      "GitHub combined status and commit workflow-run queries returned no success records for the latest status-workflow commit, so CI success is not claimed.",
       "Cloudflare lumen-script.pages.dev writable project remains unverified/not synchronized."
     ]
   },
   "validation": {
     "github_file_writes_succeeded": true,
-    "catalog_and_snapshot_schema_written": true,
-    "snapshot_contract_workflow_written": true,
+    "lumen_status_node_syntax_check_passed": true,
+    "loader_updated": true,
+    "snapshot_contract_workflow_updated": true,
     "github_combined_status_records": 0,
     "ci_explicit_success_evidence": false,
-    "live_browser_runtime_smoke_test_completed": false
+    "commit_workflow_runs_found": 0,
+    "github_pages_live_deployment_verified": false
   },
   "github": {
-    "feature_commits": [
-      "ddd19a3aa1fc359b0e837a9a3cc32d166a0cfc95",
-      "234f8b04f9aed547ea71e5615a05d7c9b7f6af44",
-      "d05e14bbbc20d4bf2bc883fa981e50d67545a0bc",
-      "d22c47e191202bc1aff609fb47134d5a827c767a",
-      "59e23281b37396a2cf0eb526ed30c4a40f672c6c",
-      "f4ac848b94c2f184caf5cac4e7910a8c61d63a80"
+    "status_repair_commits": [
+      "91f32ea5fade7d54e7d22449d8bcd86abf2be2dc",
+      "e88785e02605cb2fb4e47039d9ca1b5759466400",
+      "24aa316d5f669677c8023a0e35a2d7c7985a81a4"
     ],
-    "ci_note": "No combined status records were returned for f4ac848b94c2f184caf5cac4e7910a8c61d63a80; do not label CI as passed."
+    "ci_note": "No combined status or workflow-run success evidence was returned for 24aa316d5f669677c8023a0e35a2d7c7985a81a4; do not label CI as passed."
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
