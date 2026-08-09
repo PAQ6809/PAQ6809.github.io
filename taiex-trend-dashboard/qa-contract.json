@@ -1,15 +1,17 @@
 {
-  "version": 3,
-  "purpose": "Every Lumen maintenance run must analyze first, process the complete canonical data catalog, update only verified data/code, then re-run the complete data and interaction checks before reporting healthy.",
+  "version": 4,
+  "purpose": "Every Lumen maintenance run must analyze first, process the complete canonical data/context catalogs, keep stocks and ETFs on the correct product model, update only verified data/code, then re-run the complete contracts before reporting healthy.",
   "run_sequence": [
     "analyze_current_market_and_source_state_in_chat",
     "load_snapshot_catalog",
+    "load_context_source_catalog",
     "verify_every_catalog_primary_source_and_data_date",
     "refresh_official_snapshot_with_verified_rows_only",
     "assert_every_catalog_dataset_has_current_run_status",
+    "verify_stock_vs_etf_product_type_boundaries",
     "identify_required_code_or_data_changes",
     "apply_minimal_verified_changes_to_canonical_github_source",
-    "run_complete_static_interaction_and_snapshot_contracts",
+    "run_complete_static_interaction_snapshot_context_and_etf_contracts",
     "recheck_market_data_and_source_links",
     "record_failures_and_limits_in_maintenance_latest",
     "report_healthy_only_when_all_required_checks_pass"
@@ -17,7 +19,7 @@
   "security_universe": {
     "listed": "TWSE official daily quote universe",
     "otc": "TPEx official mainboard quote universe",
-    "requirement": "Every security successfully returned by the official TWSE or TPEx quote universe must remain searchable by code or name without losing its market identity."
+    "requirement": "Every security successfully returned by the official TWSE or TPEx quote universe must remain searchable by code or name without losing its market identity or product type."
   },
   "stock_information_categories": [
     "official_daily_quote_and_OHLC",
@@ -38,6 +40,9 @@
     "institutional_trading_data",
     "margin_and_short_market_context",
     "official_material_information",
+    "company_business_registration_context",
+    "official_governance_and_regulatory_context",
+    "macro_event_relevance_rule_interpretation",
     "external_news_discovery_with_primary_source_reverification",
     "raw_primary_source_links",
     "source_data_date",
@@ -45,6 +50,34 @@
     "explicit_missing_or_failure_state",
     "verified_scheduled_snapshot_fallback"
   ],
+  "etf_information_categories": [
+    "official_daily_quote_and_OHLC",
+    "official_fund_master",
+    "benchmark_or_tracking_index",
+    "official_etf_product_page",
+    "official_etf_dividend_reference",
+    "official_etf_material_announcement_reference",
+    "six_month_official_price_history",
+    "MA5_MA20_MA60",
+    "RSI14",
+    "MACD_and_signal",
+    "explicit_not_applicable_for_company_revenue_and_financials",
+    "explicit_not_applicable_for_company_material_information",
+    "explicit_not_applicable_for_company_institutional_chip_interpretation",
+    "raw_primary_source_links",
+    "source_data_date",
+    "page_fetch_timestamp",
+    "explicit_missing_or_failure_state"
+  ],
+  "product_type_policy": {
+    "etf_is_not_company": true,
+    "etf_must_not_request_company_monthly_revenue_as_its_own_fundamental": true,
+    "etf_must_not_request_company_financial_statements_as_its_own_fundamental": true,
+    "etf_must_not_request_listed_company_material_information_as_etf_announcement": true,
+    "etf_stock_valuation_fields_must_not_masquerade_as_nav_or_distribution": true,
+    "etf_fund_master_is_primary_structured_identity_source": true,
+    "etf_official_reference_pages_must_remain_transparently_labeled": true
+  },
   "views": ["market","stock","etf","derivatives","workspace","sources"],
   "static_controls": [
     {"id":"refreshButton","event":"click","action":"refreshAll"},
@@ -63,7 +96,7 @@
   ],
   "dynamic_interactions": [
     {"selector":"[data-view]","purpose":"main navigation and brand navigation"},
-    {"selector":"#stockTabs [data-tab]","purpose":"all stock information tabs"},
+    {"selector":"#stockTabs [data-tab]","purpose":"stock/ETF information tabs"},
     {"selector":"#stockPanel [data-stock]","purpose":"peer and stock row navigation"},
     {"selector":"[data-go=derivatives]","purpose":"stock chip context to derivatives view"}
   ],
@@ -82,7 +115,8 @@
     "javascript_links_forbidden": true,
     "primary_domains": [
       "openapi.twse.com.tw","www.twse.com.tw","www.tpex.org.tw","mops.twse.com.tw",
-      "openapi.taifex.com.tw","www.taifex.com.tw","www.bls.gov","www.bea.gov","www.federalreserve.gov"
+      "openapi.taifex.com.tw","www.taifex.com.tw","data.gcis.nat.gov.tw","www.stat.gov.tw",
+      "www.bls.gov","www.bea.gov","www.federalreserve.gov"
     ]
   },
   "snapshot_catalog_policy": {
@@ -93,6 +127,14 @@
     "financial_source_hosts_must_be_official_allowlist":true,
     "new_catalog_dataset_automatically_enters_schedule":true,
     "priority_order":["critical","high","normal"]
+  },
+  "context_catalog_policy": {
+    "path":"context-source-catalog.json",
+    "is_canonical_context_registry":true,
+    "company_and_etf_context_must_remain_separate":true,
+    "company_business_registration_is_not_revenue_mix":true,
+    "etf_reference_pages_are_not_silent_structured_api_fallbacks":true,
+    "official_macro_context_must_be_reverified_each_run":true
   },
   "snapshot_policy": {
     "path":"official-snapshot-latest.json",
@@ -118,6 +160,7 @@
     "record_failed_control_or_source":true,
     "record_catalog_success_failure_pending_counts":true,
     "record_source_data_date_and_fetch_time_separately":true,
-    "cloudflare_deployment_must_remain_unverified_until_writable_project_is_connected":true
+    "cloudflare_deployment_must_remain_unverified_until_writable_project_is_connected":true,
+    "ci_must_not_be_marked_success_without_explicit_workflow_conclusion_success":true
   }
 }
