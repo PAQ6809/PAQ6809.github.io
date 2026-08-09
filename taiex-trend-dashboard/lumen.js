@@ -13,6 +13,7 @@
     './lumen-relay.js',
     './lumen-context.js',
     './lumen-etf.js',
+    './lumen-etf-profile.js',
     './lumen-boot.js'
   ];
 
