@@ -10,6 +10,7 @@
     './lumen-workspace.js',
     './lumen-status.js',
     './lumen-cloud.js',
+    './lumen-relay.js',
     './lumen-boot.js'
   ];
 
