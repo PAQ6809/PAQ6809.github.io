@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-08T19:27:00+08:00",
+  "generated_at": "2026-08-09T13:48:36+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -65,6 +65,24 @@
         "put_call_ratio": "https://openapi.taifex.com.tw/v1/PutCallRatio"
       },
       "interpretation_limit": "Institutional categories are aggregates of many institutions and must not be presented as one institution or one unanimous strategy."
+    },
+    {
+      "name": "U.S. Bureau of Labor Statistics",
+      "url": "https://www.bls.gov/",
+      "authority": "primary_cross_market",
+      "scope": "official U.S. CPI, PPI, employment statistics and release calendar"
+    },
+    {
+      "name": "U.S. Bureau of Economic Analysis",
+      "url": "https://www.bea.gov/",
+      "authority": "primary_cross_market",
+      "scope": "official U.S. GDP, Personal Income and Outlays statistics and release calendar"
+    },
+    {
+      "name": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/",
+      "authority": "primary_cross_market",
+      "scope": "official FOMC calendar, statements and monetary policy releases"
     }
   ],
   "coverage_contract": {
@@ -83,13 +101,16 @@
       "institutional_and_chip_data",
       "material_information",
       "raw_source_links",
-      "source_date_fetch_time_and_failure_state"
+      "source_date_fetch_time_and_failure_state",
+      "scheduled_verified_official_snapshot_fallback"
     ],
     "qa_contract": "./qa-contract.json",
     "failure_rule": "Any required check failure must remain visible and prevents the maintenance run from being labeled healthy/complete."
   },
   "runtime": {
     "latest_data_policy": "market-critical endpoints are fetched with no-store on page load and manual refresh",
+    "verified_snapshot": "./official-snapshot-latest.json",
+    "snapshot_policy": "Direct official API remains primary. A snapshot is used only when the corresponding live dataset is empty, the snapshot dataset is explicitly marked verified, and its official source/data date are preserved. Unverified datasets never backfill financial values.",
     "technical_history": "six months of official OHLC when available; fields+data and table response shapes are normalized before indicator calculation",
     "workspace_local": "LocalStorage multi-workspace plus JSON and URL-fragment transfer",
     "workspace_cloud": {
@@ -109,8 +130,8 @@
       "timezone": "Asia/Taipei",
       "times": ["08:30", "21:30"],
       "enabled": true,
-      "next_run_at_creation": "2026-08-08T21:30:00+08:00",
       "latest_record": "./maintenance-latest.json",
+      "verified_snapshot": "./official-snapshot-latest.json",
       "full_regression_contract": "./qa-contract.json",
       "repository_workflow": ".github/workflows/lumen-static-check.yml"
     }
