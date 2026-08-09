@@ -1,3 +1,5 @@
+'use strict';
+
 async function loadScheduledOfficialSnapshot() {
   const url = './official-snapshot-latest.json';
   try {
@@ -26,10 +28,18 @@ async function loadScheduledOfficialSnapshot() {
   }
 }
 
-function snapshotFallback(liveRows,snapshot,datasetKey,statusKey) {
-  if (Array.isArray(liveRows) && liveRows.length) return liveRows;
-  const dataset = snapshot?.datasets?.[datasetKey];
-  if (!dataset || dataset.status !== 'verified' || !Array.isArray(dataset.rows) || !dataset.rows.length) return liveRows;
+function snapshotDatasetFreshEnough(snapshot,dataset) {
+  const hours=Number(dataset?.freshness_limit_hours);
+  if (!Number.isFinite(hours) || hours<=0) return true;
+  const runAt=Date.parse(snapshot?.run_at||'');
+  if (!Number.isFinite(runAt)) return false;
+  return Date.now()-runAt <= hours*60*60*1000;
+}
+
+function materializeSnapshotRows(snapshot,dataset,statusKey) {
+  if (!dataset || dataset.status !== 'verified' || dataset.frontend_fallback === false) return [];
+  if (!Array.isArray(dataset.rows) || !dataset.rows.length) return [];
+  if (!snapshotDatasetFreshEnough(snapshot,dataset)) return [];
   const rows = dataset.rows.map(row => ({
     ...row,
     _lumenSnapshot: {
@@ -41,6 +51,7 @@ function snapshotFallback(liveRows,snapshot,datasetKey,statusKey) {
   }));
   STATE.status[statusKey] = {
     ...(STATE.status[statusKey]||{}),
+    ok:true,
     snapshot_fallback:true,
     snapshot_run_at:snapshot.run_at||'',
     snapshot_data_date:dataset.data_date||'',
@@ -49,6 +60,32 @@ function snapshotFallback(liveRows,snapshot,datasetKey,statusKey) {
   };
   return rows;
 }
+
+function snapshotFallback(liveRows,snapshot,datasetKey,statusKey) {
+  if (Array.isArray(liveRows) && liveRows.length) return liveRows;
+  const dataset = snapshot?.datasets?.[datasetKey];
+  const rows=materializeSnapshotRows(snapshot,dataset,statusKey);
+  return rows.length ? rows : liveRows;
+}
+
+function snapshotFallbackForUrl(liveRows,snapshot,url,statusKey) {
+  if (Array.isArray(liveRows) && liveRows.length) return liveRows;
+  if (!snapshot?.datasets) return liveRows;
+  const dataset=Object.values(snapshot.datasets).find(item=>{
+    if (!item || item.frontend_fallback===false) return false;
+    if (item.source_url===url) return true;
+    return item.source_url_prefix && String(url).startsWith(item.source_url_prefix);
+  });
+  const rows=materializeSnapshotRows(snapshot,dataset,statusKey);
+  return rows.length ? rows : liveRows;
+}
+
+const getDataLiveOnly=getData;
+getData=async function getDataWithVerifiedSnapshot(key,url,options={}) {
+  const live=await getDataLiveOnly(key,url,options);
+  if (options.allowSnapshotFallback===false) return live;
+  return snapshotFallbackForUrl(live,STATE.verifiedSnapshot,url,key);
+};
 
 function decorateSnapshotStatus() {
   const fallbackCount = Object.values(STATE.status).filter(status => status.snapshot_fallback).length;
@@ -63,15 +100,16 @@ async function refreshAll(manual=false) {
     DATA_CACHE.clear();
     document.getElementById('sourceHealth').textContent='來源狀態：同步中';
   }
+  const noSnapshot={allowSnapshotFallback:false};
   const [listedLive,otcLive,indicesLive,fundsLive,marginListedLive,marginOtcLive,taifexInstLive,pcrLive,snapshot]=await Promise.all([
-    getData('TWSE行情',API.twse.quotes,{cache:false,noStore:true}),
-    getData('TPEx行情',API.tpex.quotes,{cache:false,noStore:true}),
-    getData('TWSE指數',API.twse.indices,{cache:false,noStore:true}),
-    getData('TWSE基金',API.twse.funds,{cache:true}),
-    getData('TWSE融資融券',API.twse.margin,{cache:false,noStore:true}),
-    getData('TPEx融資融券',API.tpex.margin,{cache:false,noStore:true}),
-    getData('TAIFEX三大法人',API.taifex.institutional,{cache:false,noStore:true}),
-    getData('TAIFEXPutCall',API.taifex.putCall,{cache:false,noStore:true}),
+    getData('TWSE行情',API.twse.quotes,{cache:false,noStore:true,...noSnapshot}),
+    getData('TPEx行情',API.tpex.quotes,{cache:false,noStore:true,...noSnapshot}),
+    getData('TWSE指數',API.twse.indices,{cache:false,noStore:true,...noSnapshot}),
+    getData('TWSE基金',API.twse.funds,{cache:true,...noSnapshot}),
+    getData('TWSE融資融券',API.twse.margin,{cache:false,noStore:true,...noSnapshot}),
+    getData('TPEx融資融券',API.tpex.margin,{cache:false,noStore:true,...noSnapshot}),
+    getData('TAIFEX三大法人',API.taifex.institutional,{cache:false,noStore:true,...noSnapshot}),
+    getData('TAIFEXPutCall',API.taifex.putCall,{cache:false,noStore:true,...noSnapshot}),
     loadScheduledOfficialSnapshot()
   ]);
 
