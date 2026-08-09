@@ -1,0 +1,103 @@
+name: Lumen snapshot checks
+
+on:
+  push:
+    paths:
+      - 'taiex-trend-dashboard/snapshot-catalog.json'
+      - 'taiex-trend-dashboard/official-snapshot-latest.json'
+      - 'taiex-trend-dashboard/lumen-boot.js'
+      - '.github/workflows/lumen-snapshot-check.yml'
+  pull_request:
+    paths:
+      - 'taiex-trend-dashboard/snapshot-catalog.json'
+      - 'taiex-trend-dashboard/official-snapshot-latest.json'
+      - 'taiex-trend-dashboard/lumen-boot.js'
+      - '.github/workflows/lumen-snapshot-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-snapshot-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check taiex-trend-dashboard/lumen-boot.js
+      - name: Snapshot catalog contract
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          root = Path('taiex-trend-dashboard')
+          catalog = json.loads((root / 'snapshot-catalog.json').read_text(encoding='utf-8'))
+          snapshot = json.loads((root / 'official-snapshot-latest.json').read_text(encoding='utf-8'))
+
+          items = catalog.get('datasets', [])
+          if not items:
+              raise SystemExit('snapshot catalog is empty')
+          ids = [item.get('id') for item in items]
+          if any(not x for x in ids) or len(ids) != len(set(ids)):
+              raise SystemExit('dataset ids must be present and unique')
+
+          allowed_hosts = {
+              'openapi.twse.com.tw', 'www.twse.com.tw',
+              'www.tpex.org.tw', 'openapi.taifex.com.tw'
+          }
+          for item in items:
+              url = item.get('source_url', '')
+              parsed = urlparse(url)
+              if parsed.scheme != 'https' or parsed.hostname not in allowed_hosts:
+                  raise SystemExit(f'non-canonical financial source: {item.get("id")} -> {url}')
+
+          datasets = snapshot.get('datasets', {})
+          missing = sorted(set(ids) - set(datasets))
+          if missing:
+              raise SystemExit(f'snapshot missing catalog datasets: {missing}')
+          extra = sorted(set(datasets) - set(ids))
+          if extra:
+              raise SystemExit(f'snapshot contains uncatalogued datasets: {extra}')
+
+          for item in items:
+              dataset = datasets[item['id']]
+              if dataset.get('source_url') != item.get('source_url'):
+                  raise SystemExit(f'source mismatch for {item["id"]}')
+              rows = dataset.get('rows')
+              if not isinstance(rows, list):
+                  raise SystemExit(f'rows must be an array for {item["id"]}')
+              if dataset.get('status') != 'verified' and rows:
+                  raise SystemExit(f'unverified dataset must have empty rows: {item["id"]}')
+              if dataset.get('status') == 'verified' and not rows:
+                  raise SystemExit(f'verified dataset must contain rows: {item["id"]}')
+              if dataset.get('status') == 'verified' and not dataset.get('data_date'):
+                  raise SystemExit(f'verified dataset must record data_date: {item["id"]}')
+
+          policy = snapshot.get('policy', {})
+          required = [
+              'official_only_for_financial_values',
+              'fallback_only_when_live_dataset_empty',
+              'unverified_datasets_never_used_as_fallback',
+              'source_date_and_snapshot_time_are_separate',
+              'all_catalog_datasets_must_be_recorded'
+          ]
+          if not all(policy.get(k) is True for k in required):
+              raise SystemExit('snapshot safety policy is incomplete')
+
+          boot = (root / 'lumen-boot.js').read_text(encoding='utf-8')
+          required_runtime = [
+              'snapshotFallbackForUrl',
+              "dataset.status !== 'verified'",
+              'dataset.frontend_fallback === false',
+              'snapshotDatasetFreshEnough',
+              'allowSnapshotFallback:false'
+          ]
+          for token in required_runtime:
+              if token not in boot:
+                  raise SystemExit(f'missing runtime snapshot guard: {token}')
+
+          print(f'Lumen snapshot catalog OK: {len(ids)} datasets')
