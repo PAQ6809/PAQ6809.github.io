@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'taiex-trend-dashboard/lumen-etf.js'
+      - 'taiex-trend-dashboard/lumen-etf-profile.js'
+      - 'taiex-trend-dashboard/etf-profile-verified.json'
       - 'taiex-trend-dashboard/lumen.js'
       - 'taiex-trend-dashboard/context-source-catalog.json'
       - 'taiex-trend-dashboard/qa-contract.json'
@@ -11,6 +13,8 @@ on:
   pull_request:
     paths:
       - 'taiex-trend-dashboard/lumen-etf.js'
+      - 'taiex-trend-dashboard/lumen-etf-profile.js'
+      - 'taiex-trend-dashboard/etf-profile-verified.json'
       - 'taiex-trend-dashboard/lumen.js'
       - 'taiex-trend-dashboard/context-source-catalog.json'
       - 'taiex-trend-dashboard/qa-contract.json'
@@ -28,23 +32,29 @@ jobs:
         with:
           node-version: '22'
       - name: JavaScript syntax
-        run: node --check taiex-trend-dashboard/lumen-etf.js
+        run: |
+          node --check taiex-trend-dashboard/lumen-etf.js
+          node --check taiex-trend-dashboard/lumen-etf-profile.js
       - name: ETF product type contract
         shell: python
         run: |
           import json
           from pathlib import Path
+          from urllib.parse import urlparse
 
           root=Path('taiex-trend-dashboard')
           loader=(root/'lumen.js').read_text(encoding='utf-8')
           etf=(root/'lumen-etf.js').read_text(encoding='utf-8')
+          profile_js=(root/'lumen-etf-profile.js').read_text(encoding='utf-8')
+          profile=json.loads((root/'etf-profile-verified.json').read_text(encoding='utf-8'))
           catalog=json.loads((root/'context-source-catalog.json').read_text(encoding='utf-8'))
           qa=json.loads((root/'qa-contract.json').read_text(encoding='utf-8'))
 
-          if './lumen-etf.js' not in loader:
-              raise SystemExit('ETF module is not loaded')
-          if not (loader.index('./lumen-context.js') < loader.index('./lumen-etf.js') < loader.index('./lumen-boot.js')):
-              raise SystemExit('ETF module must load after context and before boot')
+          for module in ['./lumen-etf.js','./lumen-etf-profile.js']:
+              if module not in loader:
+                  raise SystemExit(f'ETF module is not loaded: {module}')
+          if not (loader.index('./lumen-context.js') < loader.index('./lumen-etf.js') < loader.index('./lumen-etf-profile.js') < loader.index('./lumen-boot.js')):
+              raise SystemExit('ETF modules must load after context and before boot in dependency order')
 
           policy=catalog.get('policy',{})
           for key in [
@@ -64,6 +74,23 @@ jobs:
           if missing:
               raise SystemExit(f'missing ETF runtime contracts: {missing}')
 
+          required_profile_tokens=['loadVerifiedEtfProfiles','LUMEN_ETF_PROFILE_READY','verified_official_identity_profile','基金母檔可用時仍優先']
+          missing=[token for token in required_profile_tokens if token not in profile_js]
+          if missing:
+              raise SystemExit(f'missing ETF profile fallback contracts: {missing}')
+
+          profile_policy=profile.get('policy',{})
+          if not all(profile_policy.get(k) is True for k in ['official_identity_only','not_for_market_prices_or_nav','source_must_be_official_twse_etfortune','verified_at_required']):
+              raise SystemExit('ETF verified profile policy incomplete')
+          p0050=profile.get('profiles',{}).get('0050')
+          if not p0050 or p0050.get('status')!='verified':
+              raise SystemExit('0050 verified ETF profile missing')
+          if not p0050.get('issuer') or not p0050.get('benchmark') or not p0050.get('verified_at'):
+              raise SystemExit('0050 verified ETF identity is incomplete')
+          parsed=urlparse(p0050.get('source_url',''))
+          if parsed.scheme!='https' or parsed.hostname!='www.twse.com.tw' or not parsed.path.startswith('/zh/ETFortune/etfInfo/0050'):
+              raise SystemExit('0050 ETF profile must cite the canonical TWSE ETF e添富 page')
+
           forbidden_etf_sources=['t187ap05_L','t187ap04_L','t187ap03_L','BWIBBU_ALL']
           raw_function=etf.split('window.renderRawSources=function()',1)[-1]
           leaked=[token for token in forbidden_etf_sources if token in raw_function]
@@ -80,4 +107,4 @@ jobs:
           if not required_categories.issubset(etf_categories):
               raise SystemExit(f'ETF QA coverage incomplete: {sorted(required_categories-etf_categories)}')
 
-          print('Lumen ETF product-type contract OK')
+          print('Lumen ETF product-type + verified identity contract OK')
