@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "name": "Lumen official company and event context catalog",
+  "timezone": "Asia/Taipei",
+  "scheduled_runs": ["08:30", "21:30"],
+  "policy": {
+    "primary_sources_first": true,
+    "company_business_scope_is_registration_scope_not_revenue_mix": true,
+    "event_analysis_must_separate_fact_from_inference": true,
+    "no_third_party_financial_values": true,
+    "on_demand_company_queries_are_not_full_market_snapshots": true
+  },
+  "company_business": [
+    {
+      "id": "gcis_company_business",
+      "authority": "經濟部商業發展署",
+      "source_name": "商工行政資料開放平臺－公司登記基本資料應用三",
+      "source_url": "https://data.gcis.nat.gov.tw/od/data/api/236EE382-4942-41A9-BD03-CA0709025E7C",
+      "query": "Business_Accounting_NO",
+      "purpose": "公司登記營業項目",
+      "frontend": "on_demand"
+    },
+    {
+      "id": "gcis_business_item",
+      "authority": "經濟部商業發展署",
+      "source_name": "公司行號營業項目代碼表",
+      "source_url": "https://data.gcis.nat.gov.tw/od/data/api/FCB90AB1-E382-45CE-8D4F-394861851E28",
+      "query": "Business_Item",
+      "purpose": "營業項目定義與分類",
+      "frontend": "on_demand"
+    }
+  ],
+  "company_context_apis": [
+    {"id":"twse_major_shareholders","market":"listed","category":"ownership","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap02_L"},
+    {"id":"tpex_major_shareholders","market":"otc","category":"ownership","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap02_O"},
+    {"id":"twse_insider_holdings","market":"listed","category":"governance","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap11_L"},
+    {"id":"tpex_insider_holdings","market":"otc","category":"governance","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap11_O"},
+    {"id":"twse_insider_transfer","market":"listed","category":"governance_event","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap12_L"},
+    {"id":"tpex_insider_transfer","market":"otc","category":"governance_event","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O"},
+    {"id":"twse_penalties","market":"listed","category":"regulatory_risk","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap22_L"},
+    {"id":"tpex_penalties","market":"otc","category":"regulatory_risk","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap22_O"},
+    {"id":"twse_info_violations","market":"listed","category":"disclosure_risk","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap23_L"},
+    {"id":"tpex_info_violations","market":"otc","category":"disclosure_risk","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap23_O"},
+    {"id":"twse_business_scope_changes","market":"listed","category":"business_change","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap25_L"},
+    {"id":"tpex_business_scope_changes","market":"otc","category":"business_change","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap25_O"},
+    {"id":"twse_dividends","market":"listed","category":"capital_return","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap45_L"},
+    {"id":"tpex_dividends","market":"otc","category":"capital_return","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap39_O"},
+    {"id":"twse_attention","market":"listed","category":"market_risk","source_url":"https://openapi.twse.com.tw/v1/announcement/notice"},
+    {"id":"twse_punish","market":"listed","category":"market_risk","source_url":"https://openapi.twse.com.tw/v1/announcement/punish"},
+    {"id":"twse_foreign_holding_industry","market":"listed","category":"foreign_ownership","source_url":"https://openapi.twse.com.tw/v1/fund/MI_QFIIS_cat"},
+    {"id":"twse_news","market":"listed","category":"official_news","source_url":"https://openapi.twse.com.tw/v1/news/newsList"}
+  ],
+  "esg_context_apis": [
+    {"id":"twse_esg_climate","category":"climate","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap46_L_8"},
+    {"id":"twse_esg_supply_chain","category":"supply_chain","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap46_L_13"},
+    {"id":"twse_esg_cybersecurity","category":"cybersecurity","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap46_L_16"},
+    {"id":"twse_esg_risk_management","category":"risk_management","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap46_L_19"}
+  ],
+  "macro_and_industry_sources": [
+    {"id":"taiwan_dgbas","authority":"行政院主計總處／中華民國統計資訊網","source_url":"https://www.stat.gov.tw/","scope":"GDP、CPI、就業、薪資與主要經濟指標"},
+    {"id":"moea_export_orders","authority":"經濟部","source_url":"https://data.gov.tw/dataset/6845","scope":"外銷訂單與產業接單"},
+    {"id":"customs_trade","authority":"財政部關務署","source_url":"https://data.gov.tw/dataset/6053","scope":"海關進出口貿易統計"},
+    {"id":"bls","authority":"U.S. Bureau of Labor Statistics","source_url":"https://www.bls.gov/schedule/","scope":"CPI、PPI、就業"},
+    {"id":"bea","authority":"U.S. Bureau of Economic Analysis","source_url":"https://www.bea.gov/news/schedule","scope":"GDP、Personal Income and Outlays"},
+    {"id":"federal_reserve","authority":"Federal Reserve","source_url":"https://www.federalreserve.gov/newsevents/calendar.htm","scope":"FOMC、利率與政策事件"}
+  ]
+}
