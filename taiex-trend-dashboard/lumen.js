@@ -11,6 +11,7 @@
     './lumen-status.js',
     './lumen-cloud.js',
     './lumen-relay.js',
+    './lumen-context.js',
     './lumen-boot.js'
   ];
 
