@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "run_at": "2026-08-09T13:48:36+08:00",
+  "run_at": "2026-08-09T13:52:47+08:00",
   "latest_taiwan_trading_day": "2026-08-07",
   "policy": {
     "official_only_for_financial_values": true,
@@ -39,7 +39,9 @@
   "macro_events": [
     {"title":"美國 7 月 CPI","date":"2026-08-12","time":"08:30","timezone":"ET","source_name":"U.S. BLS","source_url":"https://www.bls.gov/schedule/2026/08_sched_list.htm"},
     {"title":"美國 7 月 PPI","date":"2026-08-13","time":"08:30","timezone":"ET","source_name":"U.S. BLS","source_url":"https://www.bls.gov/schedule/2026/08_sched_list.htm"},
+    {"title":"美國 7 月進出口物價指數","date":"2026-08-18","time":"08:30","timezone":"ET","source_name":"U.S. BLS","source_url":"https://www.bls.gov/schedule/2026/08_sched_list.htm"},
+    {"title":"FOMC 7 月會議紀要","date":"2026-08-19","time":"14:00","timezone":"ET","source_name":"Federal Reserve","source_url":"https://www.federalreserve.gov/newsevents/2026-august.htm"},
     {"title":"美國 Q2 GDP 第二次估值 / 7 月 Personal Income and Outlays","date":"2026-08-26","time":"08:30","timezone":"ET","source_name":"U.S. BEA","source_url":"https://www.bea.gov/news/schedule"},
-    {"title":"FOMC 利率決策與聲明","date":"2026-09-16","time":"14:00","timezone":"ET","source_name":"Federal Reserve","source_url":"https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+    {"title":"FOMC 利率決策與聲明","date":"2026-09-16","time":"14:00","timezone":"ET","source_name":"Federal Reserve","source_url":"https://www.federalreserve.gov/newsevents/2026-september.htm"}
   ]
 }
