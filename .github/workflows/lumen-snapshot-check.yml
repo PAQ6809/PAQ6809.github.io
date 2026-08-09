@@ -5,12 +5,16 @@ on:
     paths:
       - 'taiex-trend-dashboard/snapshot-catalog.json'
       - 'taiex-trend-dashboard/official-snapshot-latest.json'
+      - 'taiex-trend-dashboard/lumen.js'
+      - 'taiex-trend-dashboard/lumen-status.js'
       - 'taiex-trend-dashboard/lumen-boot.js'
       - '.github/workflows/lumen-snapshot-check.yml'
   pull_request:
     paths:
       - 'taiex-trend-dashboard/snapshot-catalog.json'
       - 'taiex-trend-dashboard/official-snapshot-latest.json'
+      - 'taiex-trend-dashboard/lumen.js'
+      - 'taiex-trend-dashboard/lumen-status.js'
       - 'taiex-trend-dashboard/lumen-boot.js'
       - '.github/workflows/lumen-snapshot-check.yml'
 
@@ -26,7 +30,10 @@ jobs:
         with:
           node-version: '22'
       - name: JavaScript syntax
-        run: node --check taiex-trend-dashboard/lumen-boot.js
+        run: |
+          node --check taiex-trend-dashboard/lumen.js
+          node --check taiex-trend-dashboard/lumen-status.js
+          node --check taiex-trend-dashboard/lumen-boot.js
       - name: Snapshot catalog contract
         shell: python
         run: |
@@ -99,5 +106,24 @@ jobs:
           for token in required_runtime:
               if token not in boot:
                   raise SystemExit(f'missing runtime snapshot guard: {token}')
+
+          loader = (root / 'lumen.js').read_text(encoding='utf-8')
+          if './lumen-status.js' not in loader:
+              raise SystemExit('truthful status module is not loaded')
+          if loader.index('./lumen-status.js') > loader.index('./lumen-boot.js'):
+              raise SystemExit('status module must load before boot')
+
+          status = (root / 'lumen-status.js').read_text(encoding='utf-8')
+          status_contract = [
+              '瀏覽器直連受限',
+              'verified snapshot',
+              'github_pages_canonical_source',
+              'snapshot-catalog.json',
+              '有功能不等於有資料',
+              '官方即時：'
+          ]
+          for token in status_contract:
+              if token not in status:
+                  raise SystemExit(f'missing truthful status contract: {token}')
 
           print(f'Lumen snapshot catalog OK: {len(ids)} datasets')
