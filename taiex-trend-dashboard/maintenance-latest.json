@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_runtime_transport_retry_repair",
-  "run_at": "2026-08-09T15:15:00+08:00",
+  "run_type": "manual_official_company_context_expansion",
+  "run_at": "2026-08-09T16:59:00+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -11,82 +11,91 @@
     "taiwan_latest_trading_day": "2026-08-07",
     "next_expected_taiwan_trading_day": "2026-08-10"
   },
-  "catalog": {
-    "path": "taiex-trend-dashboard/snapshot-catalog.json",
-    "dataset_count": 44,
-    "canonical_update_registry": true
+  "registries": {
+    "snapshot_catalog": "taiex-trend-dashboard/snapshot-catalog.json",
+    "snapshot_dataset_count": 44,
+    "context_catalog": "taiex-trend-dashboard/context-source-catalog.json",
+    "context_catalog_added_this_run": true
   },
-  "observed_runtime_before_fix": {
-    "reported_by_live_browser": true,
-    "direct_official": 0,
-    "official_relay": 7,
-    "still_limited": 1,
-    "interpretation": "Seven of the eight core initial official datasets were successfully transported through the official-source relay. One core dataset remained unresolved; this is a transport/data retrieval issue, not evidence that all exchange APIs are down."
+  "official_source_expansion": {
+    "moea_gcis": {
+      "status": "official_api_confirmed_and_connected",
+      "company_business_endpoint": "https://data.gcis.nat.gov.tw/od/data/api/236EE382-4942-41A9-BD03-CA0709025E7C",
+      "business_item_endpoint": "https://data.gcis.nat.gov.tw/od/data/api/FCB90AB1-E382-45CE-8D4F-394861851E28",
+      "use": "On-demand company registered business scope by valid 8-digit UBN"
+    },
+    "twse_context": {
+      "status": "official_openapi_catalog_confirmed_and_connected",
+      "coverage": [
+        "major shareholders over 10%",
+        "insider/director holdings",
+        "insider transfer pre-declarations",
+        "SFB regulatory penalties",
+        "information disclosure violations",
+        "major business-scope changes",
+        "dividends",
+        "attention/disposition stocks",
+        "foreign holding by industry",
+        "official news",
+        "ESG climate, supply chain, cybersecurity and risk management"
+      ]
+    },
+    "tpex_context": {
+      "status": "official_openapi_catalog_confirmed_and_connected",
+      "coverage": [
+        "major shareholders over 10%",
+        "insider/director holdings",
+        "insider transfer pre-declarations",
+        "SFB regulatory penalties",
+        "information disclosure violations",
+        "major business-scope changes",
+        "dividends"
+      ]
+    },
+    "taiwan_macro_context": {
+      "sources": [
+        "DGBAS / National Statistics",
+        "MOEA export orders",
+        "Customs Administration trade statistics"
+      ],
+      "role": "official macro/industry context for event analysis"
+    }
   },
-  "repair": {
-    "relay_frontend_module": "taiex-trend-dashboard/lumen-relay.js",
-    "boot_module": "taiex-trend-dashboard/lumen-boot.js",
-    "changes": [
-      "Relay calls now retry transient 429, 5xx, timeout and network failures with short jittered backoff.",
-      "Core initial datasets that remain unavailable after the parallel first pass receive a serial second-pass retry with up to three relay attempts.",
-      "The top source badge now names the exact remaining limited dataset when exactly one item is unresolved.",
-      "Source cards now list unresolved status keys instead of showing only a generic count.",
-      "Canonical official source_url attribution is unchanged; relay remains transport metadata only."
-    ],
-    "expected_transport_order": [
-      "direct_official",
-      "official_relay_with_retry",
-      "serial_second_pass_for_failed_core_dataset",
-      "verified_snapshot",
-      "explicit_missing"
-    ]
+  "website_changes": {
+    "company_business_module": "taiex-trend-dashboard/lumen-context.js",
+    "context_catalog": "taiex-trend-dashboard/context-source-catalog.json",
+    "source_manifest_updated": true,
+    "loader_updated": true,
+    "company_overview_registered_business_section": true,
+    "company_business_tags_are_rule_based": true,
+    "events_tab_governance_and_regulatory_context": true,
+    "events_tab_macro_relevance": true,
+    "chips_tab_major_shareholder_and_insider_context": true,
+    "business_scope_revenue_mix_equivalence_forbidden": true
   },
-  "official_relay": {
+  "context_relay": {
     "provider": "Supabase Edge Functions",
     "project_id": "goedzzhhvvnfczgnkqlv",
-    "function": "lumen-official-relay",
-    "status": "ACTIVE_v2",
-    "role": "official-source transport fallback only",
+    "function": "lumen-context-relay",
+    "version": 1,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "handler_auth": "publishable-key validation",
     "arbitrary_url_proxy": false,
+    "allowed_dynamic_queries": [
+      "GCIS company business by validated 8-digit UBN",
+      "GCIS business item dictionary by validated business-item code"
+    ],
     "canonical_source_preserved": true
   },
-  "source_validation": {
-    "twse_openapi_catalog": "verified_current",
-    "tpex_openapi_catalog": "verified_current",
-    "taifex_oas_catalog": "verified_current",
-    "twse_mi_index_latest_data_date": "2026-08-07",
-    "note": "Official catalogs still define the core endpoints used by Lumen. Browser direct reachability is tracked separately from official endpoint existence."
-  },
-  "analysis": {
-    "raw_facts": [
-      "The live browser reported 0 direct / 7 relay / 1 limited before this repair.",
-      "TWSE MI_INDEX remains readable with 2026-08-07 official rows.",
-      "TWSE, TPEx and TAIFEX official API catalogs still list the relevant Lumen endpoints."
-    ],
-    "lumen_calculation": [
-      "No investment-direction forecast was generated by this maintenance run."
-    ],
-    "rule_interpretation": [
-      "A single relay miss after seven successes is treated first as a transient transport/upstream retrieval issue and retried; it is not relabeled as an exchange outage without independent evidence.",
-      "If the retry still fails, the UI exposes the exact dataset name so the next repair can be endpoint-specific."
-    ],
+  "analysis_policy": {
+    "raw_fact": "Official exchange, MOPS, MOEA GCIS and government statistics only",
+    "lumen_calculation": "Business tags and relevance scoring are transparent rule classifications",
+    "rule_interpretation": "Macro/company-event relevance explains why an event may matter but is not a price-direction forecast",
     "risk_limitations": [
-      "This maintenance environment cannot resolve the Supabase project hostname, so the user's browser remains the authoritative end-to-end observation for relay reachability.",
-      "The exact previously limited dataset could not be independently recovered from the aggregate badge alone; the updated UI now surfaces its name.",
-      "GitHub combined status returned no status records for the latest code commit, so CI success is not claimed.",
-      "Cloudflare lumen-script.pages.dev writable project remains unverified/not synchronized."
-    ]
-  },
-  "validation": {
-    "github_file_writes_succeeded": true,
-    "github_combined_status_records": 0,
-    "ci_explicit_success_evidence": false,
-    "live_browser_runtime_smoke_test_completed_by_maintenance_environment": false
-  },
-  "github": {
-    "repair_commits": [
-      "d8ca181c60647d11877c0eb69061c93be5a4b3f7",
-      "26bfed89cc8358568c392f36b8bb43f54cfb293a"
+      "Registered business scope is not current segment revenue or product mix.",
+      "No matching penalty/violation row is not equivalent to zero company risk.",
+      "High event relevance does not imply guaranteed benefit, damage, rally or decline."
     ]
   },
   "automation": {
@@ -94,7 +103,18 @@
     "timezone": "Asia/Taipei",
     "times": ["08:30", "21:30"],
     "enabled": true,
-    "relay_health_check_in_scope": true
+    "snapshot_catalog_driven": true,
+    "context_catalog_driven": true,
+    "daily_company_context_health_checks": true,
+    "daily_official_current_events_analysis": true,
+    "daily_business_event_relevance_update": true
+  },
+  "validation": {
+    "github_file_writes_succeeded": true,
+    "context_edge_function_active": true,
+    "context_workflow_added": ".github/workflows/lumen-context-check.yml",
+    "ci_explicit_success_evidence": false,
+    "live_browser_context_smoke_test_completed": false
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
