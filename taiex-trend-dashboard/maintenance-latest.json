@@ -1,6 +1,6 @@
 {
   "run_type": "manual_data_enrichment_and_schedule_update",
-  "run_at": "2026-08-09T13:53:25+08:00",
+  "run_at": "2026-08-09T13:54:42+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -10,60 +10,58 @@
     "taiwan_market_state": "closed_weekend",
     "taiwan_latest_trading_day": "2026-08-07",
     "next_expected_taiwan_trading_day": "2026-08-10",
-    "note": "2026-08-09 is Sunday in Taiwan. TWSE official 2026 holiday data does not list 2026-08-10 as a market holiday."
+    "note": "2026-08-09 is Sunday in Taiwan. The official TWSE 2026 market holiday schedule does not list 2026-08-10 as a holiday."
   },
   "verified_sources": [
     {
       "source_name": "TWSE OpenAPI - MI_INDEX",
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
-      "as_of": "2026-08-07",
+      "data_date": "2026-08-07",
       "fetched_at": "2026-08-09T13:52:47+08:00",
       "status": "verified",
-      "observations": {
+      "facts": {
         "TAIEX_close": 44225.91,
         "TAIEX_change_points": -170.79,
         "TAIEX_change_percent": -0.38,
-        "electronics_change_percent": -0.70,
-        "semiconductor_change_percent": -0.21,
-        "computer_peripherals_change_percent": -2.01,
-        "optoelectronics_change_percent": -3.01,
-        "electronic_components_change_percent": -1.25,
-        "financial_insurance_change_percent": 0.99,
-        "shipping_change_percent": 1.29,
-        "steel_change_percent": 1.32,
-        "green_energy_environmental_change_percent": 1.26,
-        "digital_cloud_change_percent": 6.85
+        "electronics_percent": -0.70,
+        "semiconductor_percent": -0.21,
+        "computer_peripherals_percent": -2.01,
+        "optoelectronics_percent": -3.01,
+        "electronic_components_percent": -1.25,
+        "financial_insurance_percent": 0.99,
+        "shipping_percent": 1.29,
+        "steel_percent": 1.32,
+        "green_energy_environmental_percent": 1.26,
+        "digital_cloud_percent": 6.85
       }
     },
     {
       "source_name": "TWSE 2026 market holiday schedule",
       "source_url": "https://www.twse.com.tw/holidaySchedule/holidaySchedule",
-      "as_of": "2026",
+      "data_date": "2026",
       "fetched_at": "2026-08-09T13:53:25+08:00",
       "status": "verified",
-      "observations": {
-        "2026_08_10_listed_as_holiday": false
-      }
+      "facts": {"2026_08_10_listed_as_holiday": false}
     },
     {
       "source_name": "U.S. BLS August 2026 release calendar",
       "source_url": "https://www.bls.gov/schedule/2026/08_sched_list.htm",
-      "as_of": "2026-08-09",
+      "data_date": "2026-08-09",
       "fetched_at": "2026-08-09T13:52:47+08:00",
       "status": "verified",
-      "observations": {
+      "facts": {
         "July_CPI": "2026-08-12 08:30 ET",
         "July_PPI": "2026-08-13 08:30 ET",
         "July_import_export_prices": "2026-08-18 08:30 ET"
       }
     },
     {
-      "source_name": "Federal Reserve official calendar",
+      "source_name": "Federal Reserve official calendars",
       "source_url": "https://www.federalreserve.gov/newsevents/2026-august.htm",
-      "as_of": "2026-08-09",
+      "data_date": "2026-08-09",
       "fetched_at": "2026-08-09T13:52:47+08:00",
       "status": "verified",
-      "observations": {
+      "facts": {
         "July_FOMC_minutes": "2026-08-19 14:00 ET",
         "September_FOMC_meeting": "2026-09-15 to 2026-09-16",
         "September_FOMC_release": "2026-09-16 14:00 ET"
@@ -72,10 +70,10 @@
     {
       "source_name": "U.S. BEA release schedule",
       "source_url": "https://www.bea.gov/news/schedule",
-      "as_of": "2026-08-09",
+      "data_date": "2026-08-09",
       "fetched_at": "2026-08-09T13:52:47+08:00",
       "status": "verified",
-      "observations": {
+      "facts": {
         "Q2_GDP_second_estimate": "2026-08-26 08:30 ET",
         "July_personal_income_outlays": "2026-08-26 08:30 ET"
       }
@@ -85,32 +83,32 @@
     {
       "source_name": "TWSE OpenAPI - STOCK_DAY_ALL",
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
-      "status": "not_independently_verified_in_this_fetch_layer",
-      "note": "The official TWSE Swagger confirms the endpoint exists, but direct row retrieval was not independently available in this maintenance fetch layer. No quote rows were written to the scheduled snapshot."
+      "status": "endpoint_catalog_verified_rows_not_independently_retrieved",
+      "snapshot_rows_written": 0
     },
     {
       "source_name": "TPEx OpenAPI - tpex_mainboard_quotes",
       "source_url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes",
-      "status": "not_independently_verified_in_this_fetch_layer",
-      "note": "The official TPEx OpenAPI catalog confirms the endpoint, but direct row retrieval was not independently available in this run. No OTC quote rows were written to the scheduled snapshot."
+      "status": "endpoint_catalog_verified_rows_not_independently_retrieved",
+      "snapshot_rows_written": 0
     },
     {
       "source_name": "TAIFEX OpenAPI - PutCallRatio",
       "source_url": "https://openapi.taifex.com.tw/v1/PutCallRatio",
-      "status": "endpoint_verified_rows_not_parsed",
-      "note": "TAIFEX official Swagger confirms the endpoint. This fetch layer did not produce independently parsed ratio rows, so the snapshot remains empty for this dataset."
+      "status": "endpoint_catalog_verified_rows_not_independently_parsed",
+      "snapshot_rows_written": 0
     },
     {
       "source_name": "TAIFEX OpenAPI - institutional derivatives",
       "source_url": "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersGeneralBytheDate",
-      "status": "endpoint_verified_rows_not_parsed",
-      "note": "TAIFEX official Swagger confirms the endpoint. Direct retrieval returned an unsupported content-type in this fetch layer, therefore no institutional values were inferred or snapshotted."
+      "status": "endpoint_catalog_verified_rows_not_independently_parsed",
+      "snapshot_rows_written": 0
     }
   ],
   "website_changes": {
     "official_snapshot_path": "taiex-trend-dashboard/official-snapshot-latest.json",
     "live_official_api_priority": true,
-    "snapshot_fallback_rule": "Only when a live dataset is empty and the matching scheduled dataset is explicitly verified with non-empty rows.",
+    "snapshot_fallback_requires_live_empty_verified_and_nonempty": true,
     "unverified_snapshot_backfill_forbidden": true,
     "current_verified_snapshot_datasets": ["twse_indices"],
     "current_unverified_empty_snapshot_datasets": [
@@ -122,11 +120,10 @@
       "taifex_institutional",
       "taifex_put_call"
     ],
-    "macro_calendar_added_to_market_view": true,
-    "macro_calendar_sources": ["BLS", "BEA", "Federal Reserve"],
+    "market_view_official_macro_calendar": true,
     "source_manifest_updated": true,
     "qa_snapshot_contract_version": 2,
-    "static_workflow_validates_snapshot_boundary": true
+    "static_workflow_snapshot_boundary_check_added": true
   },
   "automation": {
     "provider": "ChatGPT automation",
@@ -135,50 +132,55 @@
     "times": ["08:30", "21:30"],
     "enabled": true,
     "updated_this_run": true,
-    "snapshot_refresh_required_each_run": true,
-    "unverified_rows_must_remain_empty": true
+    "official_snapshot_refresh_required_each_run": true,
+    "maintenance_latest_refresh_required_each_run": true
   },
   "analysis": {
     "raw_facts": [
-      "TWSE MI_INDEX reports TAIEX 44,225.91 on 2026-08-07, down 170.79 points or 0.38%.",
-      "TWSE sector data shows electronics -0.70%, semiconductor -0.21%, computer peripherals -2.01%, optoelectronics -3.01% and electronic components -1.25%.",
-      "Financial insurance +0.99%, shipping +1.29%, steel +1.32%, green energy/environmental +1.26% and digital cloud +6.85%.",
-      "BLS schedules July CPI for 2026-08-12 08:30 ET, July PPI for 2026-08-13 08:30 ET and July import/export prices for 2026-08-18 08:30 ET.",
-      "Federal Reserve schedules July FOMC minutes for 2026-08-19 14:00 ET and the September meeting for 2026-09-15 to 2026-09-16, with the meeting release at 14:00 ET on September 16.",
-      "BEA schedules Q2 GDP second estimate and July Personal Income and Outlays for 2026-08-26 08:30 ET."
+      "TAIEX closed 2026-08-07 at 44,225.91, down 170.79 points or 0.38% according to TWSE MI_INDEX.",
+      "Verified future official macro events were added from BLS, BEA and Federal Reserve calendars."
     ],
     "lumen_calculation": [
-      "No new calculated market direction was persisted in the snapshot. The snapshot stores verified raw official rows and official event metadata; live Lumen calculations continue to be derived at runtime from available official data."
+      "No directional forecast value was persisted. Runtime indicators continue to be calculated from available official market data."
     ],
     "rule_interpretation": [
-      "A scheduled verified snapshot reduces browser/CORS/network fragility without changing source authority: live official APIs remain canonical and take priority.",
-      "Unverified datasets are deliberately left empty, so the site may still display a missing state rather than substitute a number that was not independently confirmed."
+      "The verified snapshot is a resilience layer, not a replacement data vendor. Live official APIs remain canonical and take priority."
     ],
     "risk_limitations": [
-      "Taiwan is closed on 2026-08-09, therefore there is no new Taiwan closing session today.",
-      "TWSE listed quotes, TPEx quote rows and TAIFEX derivative rows could not be independently parsed by this maintenance fetch layer, even though their official endpoint catalogs were found.",
-      "The new snapshot currently guarantees fallback only for the verified TWSE index dataset; other datasets continue to depend on successful live official retrieval until a future scheduled run independently verifies them.",
-      "A live browser/CORS click-through test was not independently completed in this run."
+      "Taiwan has no new closing session on Sunday 2026-08-09.",
+      "Listed/OTC quote rows and TAIFEX derivative rows were not independently retrievable or parseable in this maintenance fetch layer and therefore were not added to the verified snapshot.",
+      "A live browser/CORS click-through test was not independently completed.",
+      "An independent git clone/static execution attempt could not run because the maintenance container could not resolve github.com; this is recorded as an environment limitation, not as a repository pass or failure."
     ]
   },
-  "github": {
-    "changes": [
-      {"commit":"5078c8d8f218b7123b365fdacfc247993ea3ab83","purpose":"create verified official snapshot"},
-      {"commit":"375d827c32326ac658ad6343ece24fe215c4f594","purpose":"wire transparent snapshot fallback into runtime"},
-      {"commit":"752c0aa041240e42045bfd48db37add4fbb6d792","purpose":"show macro calendar and snapshot provenance"},
-      {"commit":"430b5d8e34e030b658af42418050945156d749c9","purpose":"document snapshot and official macro source policy"},
-      {"commit":"825a4229c62d237722561034229d8e6dcabaca24","purpose":"extend QA contract for verified snapshot boundary"},
-      {"commit":"8e470317067dd059d26555660f80be9e27096d0b","purpose":"extend static workflow to validate snapshot policy"},
-      {"commit":"2bc8227a125dba6d718f895d481cf1f8004d779d","purpose":"refine official macro calendar source links and events"}
-    ],
-    "ci_combined_status_records_after_latest_code_data_commit": 0,
-    "workflow_runs_returned_by_available_commit_wrapper": 0,
+  "validation": {
+    "github_file_writes_succeeded": true,
+    "official_snapshot_json_written": true,
+    "static_workflow_updated_to_validate_snapshot_policy": true,
+    "github_combined_status_records": 0,
     "ci_explicit_success_evidence": false,
-    "note": "No CI status record was returned by the available GitHub status interfaces. This is not labeled as a CI pass."
+    "independent_container_clone_completed": false,
+    "independent_container_clone_failure": "Could not resolve host: github.com",
+    "live_browser_runtime_smoke_test_completed": false
+  },
+  "github": {
+    "feature_commits": [
+      "5078c8d8f218b7123b365fdacfc247993ea3ab83",
+      "375d827c32326ac658ad6343ece24fe215c4f594",
+      "752c0aa041240e42045bfd48db37add4fbb6d792",
+      "430b5d8e34e030b658af42418050945156d749c9",
+      "825a4229c62d237722561034229d8e6dcabaca24",
+      "8e470317067dd059d26555660f80be9e27096d0b",
+      "2bc8227a125dba6d718f895d481cf1f8004d779d"
+    ],
+    "prior_maintenance_commit": "ddb2a4ec1fff495ba979686931ba025a8bca7976",
+    "ci_note": "No combined status records were returned; do not label CI as passed."
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated": true,
+    "github_pages_live_deployment_verified": false,
+    "github_pages_verification_note": "Public URL could not be independently fetched by the available web layer in this run; source update is confirmed, live deployment is not claimed.",
     "cloudflare_lumen_script_writable_source_verified": false,
     "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   }
