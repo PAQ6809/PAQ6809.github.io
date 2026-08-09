@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_etf_identity_fallback_repair",
-  "run_at": "2026-08-09T17:25:30+08:00",
+  "run_type": "manual_etf_identity_fallback_repair_and_ci_verification",
+  "run_at": "2026-08-09T17:27:13+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -33,6 +33,7 @@
     "verified_profile_registry": "taiex-trend-dashboard/etf-profile-verified.json",
     "runtime_module": "taiex-trend-dashboard/lumen-etf-profile.js",
     "loader_updated": "taiex-trend-dashboard/lumen.js",
+    "qa_contract_version": 5,
     "precedence": [
       "TWSE t187ap47_L available structured identity fields",
       "verified official ETF identity profile",
@@ -57,17 +58,28 @@
     "0050_identity_regression_added": true
   },
   "github_ci": {
-    "previous_verified_run": {
-      "verification_pr": 22,
-      "merge_sha": "2126115515d4af65db6df5b3961b4f97809c4ab7",
-      "four_required_workflows_conclusion_success": true
-    },
-    "current_profile_fallback_changes": {
-      "workflow_contract_updated": true,
-      "explicit_new_workflow_conclusion_success_observed": false,
-      "combined_status_records": 0,
-      "policy": "Do not claim the current ETF-profile fallback changes passed CI until a workflow run returns conclusion=success."
-    }
+    "verification_pr": 23,
+    "verification_head_sha": "3e9a1205b177428ea1c5f732f915c59b392763b0",
+    "merged": true,
+    "merge_sha": "a91be791b61c8c149f557cbc4427cd53ad1a200b",
+    "explicit_success_evidence": true,
+    "workflow_runs": [
+      {
+        "name": "Lumen ETF checks",
+        "run_id": 31305920476,
+        "run_number": 11,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Lumen static checks",
+        "run_id": 31305920460,
+        "run_number": 103,
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "note": "These two workflows are the workflows triggered by the QA-v5 ETF identity verification PR. Snapshot/context checks were not required by the PR path filter and are not claimed as newly rerun in this verification."
   },
   "validation": {
     "official_twse_0050_page_independently_read": true,
@@ -77,6 +89,8 @@
     "profile_verified_at_required": true,
     "profile_module_waits_for_registry_before_etf_render": true,
     "etf_ci_contract_updated": true,
+    "etf_ci_success": true,
+    "static_ci_success": true,
     "github_pages_live_deployment_verified": false,
     "cloudflare_public_content_verified": false,
     "live_browser_smoke_test_completed": false
@@ -84,14 +98,15 @@
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated": true,
+    "github_pages_latest_merge_sha": "a91be791b61c8c149f557cbc4427cd53ad1a200b",
     "github_pages_live_deployment_verified": false,
     "cloudflare_lumen_script_writable_source_verified": false,
     "cloudflare_public_content_verified": false,
     "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   },
   "risk_limitations": [
-    "TWSE ETF e添富 pages are official reference pages; identity fields were manually/maintenance-verified and are not used as a silent source for dynamic market values.",
+    "TWSE ETF e添富 pages are official reference pages; identity fields were maintenance-verified and are not used as a silent source for dynamic market values.",
     "The current browser deployment has not been independently smoke-tested after this repair.",
-    "The latest profile-fallback commits do not yet have explicit new GitHub Actions conclusion=success evidence."
+    "GitHub Pages propagation and Cloudflare synchronization remain separately unverified."
   ]
 }
