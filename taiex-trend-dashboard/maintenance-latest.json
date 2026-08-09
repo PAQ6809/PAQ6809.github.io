@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_runtime_status_and_transport_repair",
-  "run_at": "2026-08-09T15:08:05+08:00",
+  "run_type": "manual_runtime_transport_retry_repair",
+  "run_at": "2026-08-09T15:15:00+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -13,160 +13,93 @@
   },
   "catalog": {
     "path": "taiex-trend-dashboard/snapshot-catalog.json",
-    "schema_version": 1,
-    "canonical_update_registry": true,
     "dataset_count": 44,
-    "priority_order": ["critical", "high", "normal"]
+    "canonical_update_registry": true
   },
-  "snapshot": {
-    "path": "taiex-trend-dashboard/official-snapshot-latest.json",
-    "schema_version": 2,
-    "catalog_dataset_count_recorded": 44,
-    "verified_dataset_count": 1,
-    "verified_source_not_snapshotted_count": 1,
-    "queued_or_not_yet_verified_count": 42,
-    "verified_datasets": ["twse_indices"],
-    "source_verified_but_not_fallback_eligible": ["twse_valuation"]
+  "observed_runtime_before_fix": {
+    "reported_by_live_browser": true,
+    "direct_official": 0,
+    "official_relay": 7,
+    "still_limited": 1,
+    "interpretation": "Seven of the eight core initial official datasets were successfully transported through the official-source relay. One core dataset remained unresolved; this is a transport/data retrieval issue, not evidence that all exchange APIs are down."
   },
-  "verified_sources": [
-    {
-      "source_name": "TWSE OpenAPI - MI_INDEX",
-      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
-      "data_date": "2026-08-07",
-      "status": "verified_and_snapshotted"
-    },
-    {
-      "source_name": "TWSE OpenAPI - BWIBBU_ALL",
-      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL",
-      "data_date": "2026-08-07",
-      "status": "source_and_schema_rows_independently_readable_but_complete_snapshot_not_materialized",
-      "fallback_eligible": false
-    }
-  ],
-  "runtime_status_repair": {
-    "status_module": "taiex-trend-dashboard/lumen-status.js",
-    "fixed": true,
+  "repair": {
+    "relay_frontend_module": "taiex-trend-dashboard/lumen-relay.js",
+    "boot_module": "taiex-trend-dashboard/lumen-boot.js",
     "changes": [
-      "Top source badge no longer collapses browser/CORS transport limits into generic official-source failures.",
-      "TWSE/TPEx/TAIFEX cards distinguish direct, official relay, verified snapshot and still-unavailable transport states.",
-      "Feature status is derived from current data availability instead of hard-coded green states.",
-      "GitHub canonical source is read from the actual deployment/project fields rather than a non-existent qa field.",
-      "GitHub source update, GitHub Pages live verification, CI evidence and Cloudflare synchronization are displayed independently."
+      "Relay calls now retry transient 429, 5xx, timeout and network failures with short jittered backoff.",
+      "Core initial datasets that remain unavailable after the parallel first pass receive a serial second-pass retry with up to three relay attempts.",
+      "The top source badge now names the exact remaining limited dataset when exactly one item is unresolved.",
+      "Source cards now list unresolved status keys instead of showing only a generic count.",
+      "Canonical official source_url attribution is unchanged; relay remains transport metadata only."
+    ],
+    "expected_transport_order": [
+      "direct_official",
+      "official_relay_with_retry",
+      "serial_second_pass_for_failed_core_dataset",
+      "verified_snapshot",
+      "explicit_missing"
     ]
   },
   "official_relay": {
     "provider": "Supabase Edge Functions",
     "project_id": "goedzzhhvvnfczgnkqlv",
     "function": "lumen-official-relay",
-    "version": 2,
-    "status": "ACTIVE",
-    "verify_jwt": false,
-    "handler_auth": "publishable-key validation",
-    "role": "official-source transport fallback only; not a financial source",
+    "status": "ACTIVE_v2",
+    "role": "official-source transport fallback only",
     "arbitrary_url_proxy": false,
-    "allowed_static_scope": "cataloged TWSE/TPEx/TAIFEX official endpoints",
-    "allowed_dynamic_scope": [
-      "TWSE T86 with validated YYYYMMDD",
-      "TWSE STOCK_DAY history with validated date/code",
-      "TPEx tradingStock history with validated date/code"
-    ],
-    "cors_origins": [
-      "https://paq6809.github.io",
-      "https://lumen-script.pages.dev",
-      "localhost development origins"
-    ],
-    "source_attribution_rule": "relay responses retain official source_url; relay URL is transport metadata only"
+    "canonical_source_preserved": true
   },
-  "website_changes": {
-    "snapshot_catalog_created": true,
-    "on_demand_verified_snapshot_fallback_added": true,
-    "official_relay_frontend_module": "taiex-trend-dashboard/lumen-relay.js",
-    "transport_order": ["direct_official", "official_relay", "verified_snapshot", "explicit_missing"],
-    "relay_applies_to": [
-      "market indices",
-      "listed and OTC quotes",
-      "ETF/fund source",
-      "valuation",
-      "margin",
-      "TAIFEX institutional and Put/Call",
-      "monthly revenue",
-      "company profile",
-      "material information",
-      "financial statement families",
-      "TPEx institutional datasets",
-      "TWSE T86",
-      "TWSE/TPEx stock history"
-    ],
-    "truthful_status_module_loaded_before_boot": true,
-    "official_relay_loaded_after_cloud_config_before_boot": true,
-    "feature_status_no_longer_hardcoded_green": true,
-    "github_source_unrecorded_bug_fixed": true,
-    "source_manifest_documents_relay": true,
-    "snapshot_specific_workflow": ".github/workflows/lumen-snapshot-check.yml"
-  },
-  "automation": {
-    "provider": "ChatGPT automation",
-    "title": "Lumen 雙時段更新",
-    "timezone": "Asia/Taipei",
-    "times": ["08:30", "21:30"],
-    "enabled": true,
-    "catalog_driven": true,
-    "relay_health_check_added": true,
-    "new_catalog_dataset_automatically_enters_update_scope": true
+  "source_validation": {
+    "twse_openapi_catalog": "verified_current",
+    "tpex_openapi_catalog": "verified_current",
+    "taifex_oas_catalog": "verified_current",
+    "twse_mi_index_latest_data_date": "2026-08-07",
+    "note": "Official catalogs still define the core endpoints used by Lumen. Browser direct reachability is tracked separately from official endpoint existence."
   },
   "analysis": {
     "raw_facts": [
-      "The prior UI showed 2 normal / 7 failed because it mixed browser transport reachability with actual official-source state.",
-      "The canonical official update registry contains 44 datasets.",
-      "Supabase Edge Function lumen-official-relay version 2 is ACTIVE.",
-      "TWSE, TPEx and TAIFEX official API endpoint definitions remain confirmed by their official OpenAPI/Swagger catalogs.",
-      "TWSE BWIBBU_ALL is independently readable with 2026-08-07 valuation rows."
+      "The live browser reported 0 direct / 7 relay / 1 limited before this repair.",
+      "TWSE MI_INDEX remains readable with 2026-08-07 official rows.",
+      "TWSE, TPEx and TAIFEX official API catalogs still list the relevant Lumen endpoints."
     ],
     "lumen_calculation": [
-      "Runtime source status now separates direct official success, official relay success, verified snapshot fallback and unresolved transport failure.",
-      "Feature readiness is calculated from current runtime/snapshot evidence instead of static labels."
+      "No investment-direction forecast was generated by this maintenance run."
     ],
     "rule_interpretation": [
-      "A browser fetch/CORS failure is not sufficient evidence that an exchange source is down.",
-      "The relay is a transport mechanism only; all displayed financial source attribution must remain TWSE, TPEx, MOPS or TAIFEX as applicable.",
-      "Implemented code is not equivalent to current data availability."
+      "A single relay miss after seven successes is treated first as a transient transport/upstream retrieval issue and retried; it is not relabeled as an exchange outage without independent evidence.",
+      "If the retry still fails, the UI exposes the exact dataset name so the next repair can be endpoint-specific."
     ],
     "risk_limitations": [
-      "End-to-end browser invocation of the newly deployed relay could not be independently executed from this maintenance environment because outbound DNS/network access is unavailable here.",
-      "Most catalog datasets still do not contain verified repository snapshot rows; the relay is intended to reduce browser/CORS dependence while snapshots continue to be populated by scheduled maintenance.",
-      "The public GitHub Pages URL could not be independently fetched by the available web layer in this run, so live propagation is not claimed.",
-      "No explicit GitHub CI success status is available for the latest changes, so CI success is not claimed.",
+      "This maintenance environment cannot resolve the Supabase project hostname, so the user's browser remains the authoritative end-to-end observation for relay reachability.",
+      "The exact previously limited dataset could not be independently recovered from the aggregate badge alone; the updated UI now surfaces its name.",
+      "GitHub combined status returned no status records for the latest code commit, so CI success is not claimed.",
       "Cloudflare lumen-script.pages.dev writable project remains unverified/not synchronized."
     ]
   },
   "validation": {
     "github_file_writes_succeeded": true,
-    "lumen_status_node_syntax_check_passed": true,
-    "supabase_relay_deployment_active": true,
-    "supabase_relay_version": 2,
-    "relay_source_code_re_read_after_deploy": true,
-    "loader_updated": true,
-    "snapshot_contract_workflow_updated_for_relay": true,
+    "github_combined_status_records": 0,
     "ci_explicit_success_evidence": false,
-    "github_pages_live_deployment_verified": false,
-    "relay_end_to_end_browser_smoke_test_completed": false
+    "live_browser_runtime_smoke_test_completed_by_maintenance_environment": false
   },
   "github": {
-    "status_and_transport_commits": [
-      "91f32ea5fade7d54e7d22449d8bcd86abf2be2dc",
-      "e88785e02605cb2fb4e47039d9ca1b5759466400",
-      "24aa316d5f669677c8023a0e35a2d7c7985a81a4",
-      "979a7e9c7c3a86a02566b5fc49d636cc782adafb",
-      "0ee6f8f65cf4a31c636867e1193f99e4c9b245e1",
-      "428544e7ec0510739473c3552d0db0c9b7dbc361",
-      "3f0f502a7de640f7c5ea0eb08d2a7b53112c46b5"
+    "repair_commits": [
+      "d8ca181c60647d11877c0eb69061c93be5a4b3f7",
+      "26bfed89cc8358568c392f36b8bb43f54cfb293a"
     ]
+  },
+  "automation": {
+    "title": "Lumen 雙時段更新",
+    "timezone": "Asia/Taipei",
+    "times": ["08:30", "21:30"],
+    "enabled": true,
+    "relay_health_check_in_scope": true
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated": true,
     "github_pages_live_deployment_verified": false,
-    "supabase_official_relay_status": "ACTIVE_v2",
     "cloudflare_lumen_script_writable_source_verified": false,
     "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   }
