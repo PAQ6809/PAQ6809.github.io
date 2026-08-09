@@ -88,61 +88,93 @@ function lumenMarkDirectLimited(url) {
   if (host) LUMEN_DIRECT_LIMITED_UNTIL.set(host,Date.now()+5*60*1000);
 }
 
+function lumenRelaySleep(ms) {
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
 async function lumenFetchViaRelay(key,officialUrl,target,options={}) {
   const relay=new URL(LUMEN_RELAY_ENDPOINT);
   relay.searchParams.set('id',target.id);
   for (const [name,value] of Object.entries(target.params||{})) relay.searchParams.set(name,String(value));
   const started=performance.now();
-  try {
-    const response=await fetch(relay.toString(),{
-      method:'GET',
-      cache:'no-store',
-      signal:AbortSignal.timeout(options.relayTimeout||18000),
-      headers:{
-        Accept:'application/json',
-        apikey:LUMEN_SUPABASE_PUBLISHABLE_KEY
+  const maxAttempts=Math.max(1,Math.min(Number(options.relayAttempts)||2,3));
+  let lastError=null;
+
+  for (let attempt=1;attempt<=maxAttempts;attempt++) {
+    try {
+      const response=await fetch(relay.toString(),{
+        method:'GET',
+        cache:'no-store',
+        signal:AbortSignal.timeout(options.relayTimeout||18000),
+        headers:{
+          Accept:'application/json',
+          apikey:LUMEN_SUPABASE_PUBLISHABLE_KEY
+        }
+      });
+      if (!response.ok) {
+        const retryable=response.status===429 || response.status>=500;
+        if (retryable && attempt<maxAttempts) {
+          lastError=new Error(`relay HTTP ${response.status}`);
+          await lumenRelaySleep(450*attempt+Math.round(Math.random()*250));
+          continue;
+        }
+        throw new Error(`relay HTTP ${response.status}`);
       }
-    });
-    if (!response.ok) throw new Error(`relay HTTP ${response.status}`);
-    const payload=await response.json();
-    if (!payload || payload.source_url!==officialUrl) {
-      throw new Error('relay source mismatch');
+      const payload=await response.json();
+      if (!payload || payload.source_url!==officialUrl) throw new Error('relay source mismatch');
+      const raw=payload.data;
+      const normalizedRows=rowsOf(raw);
+      const result=Array.isArray(raw)?raw:(normalizedRows.length?normalizedRows:raw);
+      const resultSize=Array.isArray(result)?result.length:(result&&typeof result==='object'?1:0);
+      if (!resultSize) {
+        if (attempt<maxAttempts) {
+          lastError=new Error('relay returned empty official payload');
+          await lumenRelaySleep(450*attempt+Math.round(Math.random()*250));
+          continue;
+        }
+        throw new Error('relay returned empty official payload');
+      }
+      const previous=STATE.status[key]||{};
+      STATE.status[key]={
+        ok:true,
+        rows:resultSize,
+        ms:Math.round(performance.now()-started),
+        at:new Date().toISOString(),
+        url:officialUrl,
+        official_source_url:officialUrl,
+        transport:'lumen_official_relay',
+        relay_transport:true,
+        relay_url:relay.toString(),
+        relay_fetched_at:payload.fetched_at||'',
+        relay_attempts:attempt,
+        direct_error:previous.ok?null:(previous.error||'browser_direct_unavailable')
+      };
+      const cacheKey=options.cacheKey||officialUrl;
+      if (options.cache!==false) DATA_CACHE.set(cacheKey,result);
+      return result;
+    } catch (error) {
+      lastError=error;
+      const transient=error?.name==='TimeoutError' || error?.name==='TypeError';
+      if (transient && attempt<maxAttempts) {
+        await lumenRelaySleep(450*attempt+Math.round(Math.random()*250));
+        continue;
+      }
+      break;
     }
-    const raw=payload.data;
-    const normalizedRows=rowsOf(raw);
-    const result=Array.isArray(raw)?raw:(normalizedRows.length?normalizedRows:raw);
-    const resultSize=Array.isArray(result)?result.length:(result&&typeof result==='object'?1:0);
-    if (!resultSize) throw new Error('relay returned empty official payload');
-    const previous=STATE.status[key]||{};
-    STATE.status[key]={
-      ok:true,
-      rows:resultSize,
-      ms:Math.round(performance.now()-started),
-      at:new Date().toISOString(),
-      url:officialUrl,
-      official_source_url:officialUrl,
-      transport:'lumen_official_relay',
-      relay_transport:true,
-      relay_url:relay.toString(),
-      relay_fetched_at:payload.fetched_at||'',
-      direct_error:previous.ok?null:(previous.error||'browser_direct_unavailable')
-    };
-    const cacheKey=options.cacheKey||officialUrl;
-    if (options.cache!==false) DATA_CACHE.set(cacheKey,result);
-    return result;
-  } catch (error) {
-    const previous=STATE.status[key]||{};
-    STATE.status[key]={
-      ...previous,
-      ok:false,
-      relay_attempted:true,
-      relay_error:error.name==='TimeoutError'?'relay timeout':error.message,
-      official_source_url:officialUrl,
-      relay_url:relay.toString(),
-      at:new Date().toISOString()
-    };
-    return [];
   }
+
+  const previous=STATE.status[key]||{};
+  STATE.status[key]={
+    ...previous,
+    ok:false,
+    relay_attempted:true,
+    relay_attempts:maxAttempts,
+    relay_error:lastError?.name==='TimeoutError'?'relay timeout':(lastError?.message||'relay failed'),
+    official_source_url:officialUrl,
+    relay_url:relay.toString(),
+    at:new Date().toISOString()
+  };
+  return [];
 }
 
 getData=async function(key,url,options={}) {
@@ -183,7 +215,10 @@ function sourceCard(name,description,url,prefixes) {
     if (summary.direct) parts.push(`直連 ${summary.direct}`);
     if (summary.relay) parts.push(`官方 Relay ${summary.relay}`);
     if (summary.snapshot) parts.push(`verified 快照 ${summary.snapshot}`);
-    if (summary.limited) parts.push(`仍受限 ${summary.limited}`);
+    if (summary.limited) {
+      const names=summary.statuses.filter(([,s])=>!s.ok&&!s.snapshot_fallback).map(([name])=>name);
+      parts.push(`仍受限 ${summary.limited}${names.length?`：${names.join('、')}`:''}`);
+    }
     label=parts.join(' · ')||'尚無可用資料';
     cls=summary.limited?'warn':'good';
   }
@@ -198,14 +233,19 @@ function updateTopStatus() {
   const direct=statuses.filter(([,s])=>s.ok&&!s.snapshot_fallback&&!s.relay_transport).length;
   const relay=statuses.filter(([,s])=>s.ok&&s.relay_transport).length;
   const snapshot=statuses.filter(([,s])=>s.snapshot_fallback).length;
-  const limited=statuses.filter(([,s])=>!s.ok&&!s.snapshot_fallback).length;
+  const limitedEntries=statuses.filter(([,s])=>!s.ok&&!s.snapshot_fallback);
+  const limited=limitedEntries.length;
   const total=direct+relay+snapshot+limited;
   const badge=document.getElementById('sourceHealth');
   if (!total) {
     badge.textContent='來源狀態：尚未檢查';
     badge.className='badge warn';
+    badge.removeAttribute('title');
     return;
   }
-  badge.textContent=`官方來源：${direct} 直連 / ${relay} Relay${limited?` · ${limited} 項仍受限`:''}`;
+  const limitedNames=limitedEntries.map(([name])=>name);
+  badge.textContent=`官方來源：${direct} 直連 / ${relay} Relay${snapshot?` / ${snapshot} 快照`:''}${limited?` · ${limited} 項仍受限${limited===1?`：${limitedNames[0]}`:''}`:''}`;
+  if (limitedNames.length) badge.title=`仍受限：${limitedNames.join('、')}`;
+  else badge.removeAttribute('title');
   badge.className=`badge ${limited||snapshot?'warn':'good'}`;
 }
