@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-09T15:08:05+08:00",
+  "generated_at": "2026-08-09T16:53:00+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -8,6 +8,8 @@
     "no_silent_fallback": true,
     "analyze_before_repository_write": true,
     "repeat_full_regression_every_maintenance_run": true,
+    "company_business_registration_not_equal_revenue_mix": true,
+    "event_analysis_must_separate_fact_and_inference": true,
     "missing_value_labels": ["尚未取得", "資料延遲", "待驗證"],
     "separate_layers": ["raw_fact", "calculated_indicator", "rule_interpretation", "risk_limitations"]
   },
@@ -24,6 +26,21 @@
         "monthly_revenue": "https://openapi.twse.com.tw/v1/opendata/t187ap05_L",
         "material_information": "https://openapi.twse.com.tw/v1/opendata/t187ap04_L",
         "company_profile": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+        "major_shareholders": "https://openapi.twse.com.tw/v1/opendata/t187ap02_L",
+        "insider_holdings": "https://openapi.twse.com.tw/v1/opendata/t187ap11_L",
+        "insider_transfer": "https://openapi.twse.com.tw/v1/opendata/t187ap12_L",
+        "regulatory_penalties": "https://openapi.twse.com.tw/v1/opendata/t187ap22_L",
+        "information_violations": "https://openapi.twse.com.tw/v1/opendata/t187ap23_L",
+        "business_scope_changes": "https://openapi.twse.com.tw/v1/opendata/t187ap25_L",
+        "dividends": "https://openapi.twse.com.tw/v1/opendata/t187ap45_L",
+        "esg_climate": "https://openapi.twse.com.tw/v1/opendata/t187ap46_L_8",
+        "esg_supply_chain": "https://openapi.twse.com.tw/v1/opendata/t187ap46_L_13",
+        "esg_cybersecurity": "https://openapi.twse.com.tw/v1/opendata/t187ap46_L_16",
+        "esg_risk_management": "https://openapi.twse.com.tw/v1/opendata/t187ap46_L_19",
+        "attention_stocks": "https://openapi.twse.com.tw/v1/announcement/notice",
+        "disposition_stocks": "https://openapi.twse.com.tw/v1/announcement/punish",
+        "foreign_holding_by_industry": "https://openapi.twse.com.tw/v1/fund/MI_QFIIS_cat",
+        "official_news": "https://openapi.twse.com.tw/v1/news/newsList",
         "funds": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
         "income_statement_families": "t187ap06_L_ci|basi|bd|fh|ins|mim",
         "balance_sheet_families": "t187ap07_L_ci|basi|bd|fh|ins|mim",
@@ -44,10 +61,17 @@
         "monthly_revenue": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O",
         "material_information": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap04_O",
         "company_profile": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+        "major_shareholders": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap02_O",
+        "insider_holdings": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap11_O",
+        "insider_transfer": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O",
+        "regulatory_penalties": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap22_O",
+        "information_violations": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap23_O",
+        "business_scope_changes": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap25_O",
+        "dividends": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap39_O",
         "income_statement_families": "mopsfin_t187ap06_O_ci|basi|bd|fh|ins|mim",
         "balance_sheet_families": "mopsfin_t187ap07_O_ci|basi|bd|fh|ins|mim"
       },
-      "note": "TWSE and TPEx are separate markets; Lumen always retains market identity. Missing per-stock institutional categories are shown as missing rather than inferred."
+      "note": "TWSE and TPEx are separate markets; Lumen retains market identity and never infers missing governance rows."
     },
     {
       "name": "MOPS",
@@ -63,8 +87,35 @@
         "swagger": "https://openapi.taifex.com.tw/swagger.json",
         "institutional_derivatives": "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersGeneralBytheDate",
         "put_call_ratio": "https://openapi.taifex.com.tw/v1/PutCallRatio"
+      }
+    },
+    {
+      "name": "MOEA GCIS",
+      "url": "https://data.gcis.nat.gov.tw/resources/swagger/",
+      "authority": "primary_company_registry",
+      "endpoints": {
+        "company_business": "https://data.gcis.nat.gov.tw/od/data/api/236EE382-4942-41A9-BD03-CA0709025E7C",
+        "business_item_dictionary": "https://data.gcis.nat.gov.tw/od/data/api/FCB90AB1-E382-45CE-8D4F-394861851E28"
       },
-      "interpretation_limit": "Institutional categories are aggregates of many institutions and must not be presented as one institution or one unanimous strategy."
+      "interpretation_limit": "Registered business items describe legally registered business scope. They are not evidence of current core products, segment revenue, customer mix or revenue percentage."
+    },
+    {
+      "name": "Taiwan DGBAS / National Statistics",
+      "url": "https://www.stat.gov.tw/",
+      "authority": "primary_cross_market",
+      "scope": "Taiwan GDP, CPI, employment, wages and key economic indicators"
+    },
+    {
+      "name": "MOEA Export Orders",
+      "url": "https://data.gov.tw/dataset/6845",
+      "authority": "primary_cross_market",
+      "scope": "Taiwan export orders and industry demand context"
+    },
+    {
+      "name": "Customs Administration Trade Statistics",
+      "url": "https://data.gov.tw/dataset/6053",
+      "authority": "primary_cross_market",
+      "scope": "Taiwan customs import and export trade statistics"
     },
     {
       "name": "U.S. Bureau of Labor Statistics",
@@ -92,6 +143,7 @@
       "six_month_price_history",
       "MA_RSI_MACD",
       "company_and_industry",
+      "registered_business_scope",
       "monthly_revenue",
       "income_statement_summary",
       "balance_sheet_summary",
@@ -99,36 +151,45 @@
       "PE_PB_dividend_yield",
       "official_peer_comparison",
       "institutional_and_chip_data",
-      "material_information",
+      "major_shareholders_and_insider_holdings",
+      "regulatory_and_disclosure_risk_context",
+      "business_scope_change_context",
+      "official_material_information",
+      "official_macro_event_relevance",
       "raw_primary_source_links",
       "source_date_fetch_time_and_transport_state",
       "official_relay_transport_fallback",
       "scheduled_verified_official_snapshot_fallback"
     ],
     "snapshot_catalog": "./snapshot-catalog.json",
+    "context_catalog": "./context-source-catalog.json",
     "qa_contract": "./qa-contract.json",
     "failure_rule": "Any required check failure must remain visible and prevents the maintenance run from being labeled healthy/complete."
   },
   "runtime": {
-    "latest_data_policy": "Market-critical endpoints are attempted against the official source first. If browser/CORS transport is unavailable, Lumen may use the allowlisted official relay. Verified snapshot fallback is only considered after live official transport paths fail.",
+    "latest_data_policy": "Market-critical endpoints are attempted against the official source first. Browser transport limits may use allowlisted relay functions without changing canonical source attribution.",
     "official_relay_transport": {
       "provider": "Supabase Edge Functions",
       "project_id": "goedzzhhvvnfczgnkqlv",
       "function": "lumen-official-relay",
       "role": "transport_only_not_financial_source",
+      "arbitrary_url_proxy": false
+    },
+    "context_relay_transport": {
+      "provider": "Supabase Edge Functions",
+      "project_id": "goedzzhhvvnfczgnkqlv",
+      "function": "lumen-context-relay",
+      "role": "official_company_and_event_context_transport_only",
       "auth": "publishable-key validation inside the Edge Function",
-      "verify_jwt": false,
-      "allowed_origins": ["https://paq6809.github.io", "https://lumen-script.pages.dev", "localhost development origins"],
       "arbitrary_url_proxy": false,
-      "static_scope": "cataloged TWSE, TPEx and TAIFEX endpoints",
-      "validated_dynamic_scope": ["TWSE T86 by YYYYMMDD", "TWSE stock history by date/code", "TPEx stock history by date/code"],
-      "canonical_source_rule": "Relay responses must retain the original official source_url; the relay URL must never replace the financial source attribution."
+      "dynamic_scope": ["GCIS company business by validated 8-digit UBN", "GCIS business item dictionary by validated code"],
+      "canonical_source_rule": "The relay URL is transport metadata; TWSE, TPEx or MOEA GCIS remains the source."
     },
     "snapshot_catalog": "./snapshot-catalog.json",
+    "context_catalog": "./context-source-catalog.json",
     "verified_snapshot": "./official-snapshot-latest.json",
-    "snapshot_policy": "A cataloged snapshot dataset is used only when direct official transport and the allowlisted official relay do not provide usable data, status is explicitly verified, rows are non-empty, frontend_fallback is enabled, and any freshness limit remains valid. Unverified datasets never backfill financial values.",
-    "snapshot_scope": "Catalog covers market, listed/OTC quotes, ETF, valuation, margin, TAIFEX, monthly revenue, company profile, material information, TPEx institutional data, TWSE T86 registration, and listed/OTC income-statement and balance-sheet families.",
-    "technical_history": "six months of official OHLC when available; fields+data and table response shapes are normalized before indicator calculation; TWSE/TPEx history may use the official relay when browser transport is restricted",
+    "company_business_policy": "Use the TWSE/TPEx company profile UBN to query MOEA GCIS business items on demand. Business tags are a transparent Lumen rule classification and must not be presented as segment revenue or current product mix.",
+    "event_analysis_policy": "Company material information, official regulatory/governance rows and verified macro events are raw facts. Lumen may calculate relevance from business tags, but direction and price impact are never guaranteed.",
     "workspace_local": "LocalStorage multi-workspace plus JSON and URL-fragment transfer",
     "workspace_cloud": {
       "provider": "Supabase",
@@ -136,11 +197,9 @@
       "table": "public.lumen_workspaces",
       "auth": "Supabase Auth",
       "access": "authenticated users only; RLS owner-only select/insert/update/delete",
-      "merge": "last-updated workspace wins during two-way sync",
-      "server_secret_in_frontend": false,
-      "verified_at": "2026-08-08T15:50:00+08:00"
+      "server_secret_in_frontend": false
     },
-    "external_news": "discovery only; financial numbers must be re-verified against primary sources",
+    "external_news": "discovery only; financial values and material facts must be re-verified against primary sources",
     "maintenance": {
       "provider": "ChatGPT automation",
       "title": "Lumen 雙時段更新",
@@ -149,13 +208,11 @@
       "enabled": true,
       "latest_record": "./maintenance-latest.json",
       "snapshot_catalog": "./snapshot-catalog.json",
+      "context_catalog": "./context-source-catalog.json",
       "verified_snapshot": "./official-snapshot-latest.json",
       "relay_health_required": true,
-      "full_regression_contract": "./qa-contract.json",
-      "repository_workflows": [
-        ".github/workflows/lumen-static-check.yml",
-        ".github/workflows/lumen-snapshot-check.yml"
-      ]
+      "context_relay_health_required": true,
+      "full_regression_contract": "./qa-contract.json"
     }
   },
   "deployment_scope": {
@@ -163,8 +220,6 @@
     "github_pages_url": "https://paq6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated_in_this_chat": true,
     "cloudflare_lumen_script_writable_source_verified": false,
-    "cloudflare_status_policy": "Do not claim lumen-script.pages.dev is synchronized until writable Cloudflare Pages access is verified.",
-    "local_codex_scheduler_control_available": false,
-    "github_lumen_cron_workflow_found": false
+    "cloudflare_status_policy": "Do not claim lumen-script.pages.dev is synchronized until writable Cloudflare Pages access is verified."
   }
 }
