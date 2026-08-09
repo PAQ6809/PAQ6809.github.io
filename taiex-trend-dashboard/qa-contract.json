@@ -1,13 +1,15 @@
 {
-  "version": 2,
-  "purpose": "Every Lumen maintenance run must analyze first, then update only verified data/code, then re-run the complete data and interaction checks before reporting healthy.",
+  "version": 3,
+  "purpose": "Every Lumen maintenance run must analyze first, process the complete canonical data catalog, update only verified data/code, then re-run the complete data and interaction checks before reporting healthy.",
   "run_sequence": [
     "analyze_current_market_and_source_state_in_chat",
-    "verify_primary_sources_and_data_dates",
+    "load_snapshot_catalog",
+    "verify_every_catalog_primary_source_and_data_date",
     "refresh_official_snapshot_with_verified_rows_only",
+    "assert_every_catalog_dataset_has_current_run_status",
     "identify_required_code_or_data_changes",
     "apply_minimal_verified_changes_to_canonical_github_source",
-    "run_complete_static_and_interaction_contract",
+    "run_complete_static_interaction_and_snapshot_contracts",
     "recheck_market_data_and_source_links",
     "record_failures_and_limits_in_maintenance_latest",
     "report_healthy_only_when_all_required_checks_pass"
@@ -43,79 +45,79 @@
     "explicit_missing_or_failure_state",
     "verified_scheduled_snapshot_fallback"
   ],
-  "views": [
-    "market",
-    "stock",
-    "etf",
-    "derivatives",
-    "workspace",
-    "sources"
-  ],
+  "views": ["market","stock","etf","derivatives","workspace","sources"],
   "static_controls": [
-    {"id": "refreshButton", "event": "click", "action": "refreshAll"},
-    {"id": "stockSearchButton", "event": "click", "action": "runStockSearch"},
-    {"id": "stockSearch", "event": "keydown", "action": "runStockSearch_on_Enter"},
-    {"id": "etfFilter", "event": "input", "action": "renderEtfs"},
-    {"id": "watchBtn", "event": "click", "action": "toggleWatch"},
-    {"id": "copyStockLink", "event": "click", "action": "copyStockLink"},
-    {"id": "workspaceSelect", "event": "change", "action": "switchWorkspace"},
-    {"id": "newWorkspace", "event": "click", "action": "newWorkspace"},
-    {"id": "deleteWorkspace", "event": "click", "action": "deleteWorkspace"},
-    {"id": "exportWorkspace", "event": "click", "action": "exportWorkspace"},
-    {"id": "importWorkspace", "event": "change", "action": "importWorkspace"},
-    {"id": "copyWorkspaceLink", "event": "click", "action": "copyWorkspaceLink"},
-    {"id": "workspaceNote", "event": "input", "action": "persistWorkspaceNote"}
+    {"id":"refreshButton","event":"click","action":"refreshAll"},
+    {"id":"stockSearchButton","event":"click","action":"runStockSearch"},
+    {"id":"stockSearch","event":"keydown","action":"runStockSearch_on_Enter"},
+    {"id":"etfFilter","event":"input","action":"renderEtfs"},
+    {"id":"watchBtn","event":"click","action":"toggleWatch"},
+    {"id":"copyStockLink","event":"click","action":"copyStockLink"},
+    {"id":"workspaceSelect","event":"change","action":"switchWorkspace"},
+    {"id":"newWorkspace","event":"click","action":"newWorkspace"},
+    {"id":"deleteWorkspace","event":"click","action":"deleteWorkspace"},
+    {"id":"exportWorkspace","event":"click","action":"exportWorkspace"},
+    {"id":"importWorkspace","event":"change","action":"importWorkspace"},
+    {"id":"copyWorkspaceLink","event":"click","action":"copyWorkspaceLink"},
+    {"id":"workspaceNote","event":"input","action":"persistWorkspaceNote"}
   ],
   "dynamic_interactions": [
-    {"selector": "[data-view]", "purpose": "main navigation and brand navigation"},
-    {"selector": "#stockTabs [data-tab]", "purpose": "all stock information tabs"},
-    {"selector": "#stockPanel [data-stock]", "purpose": "peer and stock row navigation"},
-    {"selector": "[data-go=derivatives]", "purpose": "stock chip context to derivatives view"}
+    {"selector":"[data-view]","purpose":"main navigation and brand navigation"},
+    {"selector":"#stockTabs [data-tab]","purpose":"all stock information tabs"},
+    {"selector":"#stockPanel [data-stock]","purpose":"peer and stock row navigation"},
+    {"selector":"[data-go=derivatives]","purpose":"stock chip context to derivatives view"}
   ],
   "stock_tabs": {
-    "overview": "renderOverview",
-    "technical": "renderTechnical",
-    "fundamental": "renderFundamental",
-    "valuation": "renderValuationPeers",
-    "chips": "renderStockChips",
-    "events": "renderEvents",
-    "raw": "renderRawSources"
+    "overview":"renderOverview",
+    "technical":"renderTechnical",
+    "fundamental":"renderFundamental",
+    "valuation":"renderValuationPeers",
+    "chips":"renderStockChips",
+    "events":"renderEvents",
+    "raw":"renderRawSources"
   },
   "link_policy": {
     "financial_links_must_be_https": true,
     "external_target_blank_requires_noopener_noreferrer": true,
     "javascript_links_forbidden": true,
     "primary_domains": [
-      "openapi.twse.com.tw",
-      "www.twse.com.tw",
-      "www.tpex.org.tw",
-      "mops.twse.com.tw",
-      "openapi.taifex.com.tw",
-      "www.taifex.com.tw",
-      "www.bls.gov",
-      "www.bea.gov",
-      "www.federalreserve.gov"
+      "openapi.twse.com.tw","www.twse.com.tw","www.tpex.org.tw","mops.twse.com.tw",
+      "openapi.taifex.com.tw","www.taifex.com.tw","www.bls.gov","www.bea.gov","www.federalreserve.gov"
     ]
   },
+  "snapshot_catalog_policy": {
+    "path":"snapshot-catalog.json",
+    "is_canonical_update_registry":true,
+    "every_dataset_must_be_checked_each_run":true,
+    "dataset_ids_must_be_unique":true,
+    "financial_source_hosts_must_be_official_allowlist":true,
+    "new_catalog_dataset_automatically_enters_schedule":true,
+    "priority_order":["critical","high","normal"]
+  },
   "snapshot_policy": {
-    "path": "official-snapshot-latest.json",
-    "live_official_api_has_priority": true,
-    "fallback_requires_empty_live_dataset": true,
-    "fallback_requires_verified_status": true,
-    "fallback_requires_nonempty_rows": true,
-    "unverified_datasets_must_not_backfill": true,
-    "financial_rows_must_be_from_canonical_official_source": true,
-    "source_url_required": true,
-    "source_data_date_required_for_verified_financial_rows": true,
-    "snapshot_run_at_required": true,
-    "macro_calendar_requires_official_source": true,
-    "macro_calendar_must_not_predict_release_values": true
+    "path":"official-snapshot-latest.json",
+    "must_cover_every_catalog_dataset":true,
+    "must_not_contain_uncatalogued_financial_dataset":true,
+    "live_official_api_has_priority":true,
+    "fallback_requires_empty_live_dataset":true,
+    "fallback_requires_verified_status":true,
+    "fallback_requires_nonempty_rows":true,
+    "fallback_requires_frontend_fallback_enabled":true,
+    "fallback_must_respect_freshness_limit":true,
+    "unverified_datasets_must_have_empty_rows":true,
+    "financial_rows_must_be_from_canonical_official_source":true,
+    "source_url_must_match_catalog":true,
+    "source_data_date_required_for_verified_financial_rows":true,
+    "snapshot_run_at_required":true,
+    "macro_calendar_requires_official_source":true,
+    "macro_calendar_must_not_predict_release_values":true
   },
   "maintenance_failure_policy": {
-    "do_not_guess_missing_financial_values": true,
-    "do_not_mark_healthy_when_required_check_fails": true,
-    "record_failed_control_or_source": true,
-    "record_source_data_date_and_fetch_time_separately": true,
-    "cloudflare_deployment_must_remain_unverified_until_writable_project_is_connected": true
+    "do_not_guess_missing_financial_values":true,
+    "do_not_mark_healthy_when_required_check_fails":true,
+    "record_failed_control_or_source":true,
+    "record_catalog_success_failure_pending_counts":true,
+    "record_source_data_date_and_fetch_time_separately":true,
+    "cloudflare_deployment_must_remain_unverified_until_writable_project_is_connected":true
   }
 }
