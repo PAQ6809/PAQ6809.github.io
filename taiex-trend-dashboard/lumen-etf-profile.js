@@ -38,6 +38,8 @@ async function loadVerifiedEtfProfiles() {
   }
 }
 
+const LUMEN_ETF_PROFILE_READY=loadVerifiedEtfProfiles();
+
 function lumenVerifiedEtfIdentity(q) {
   const profile=STATE.etfVerifiedProfiles?.[String(q?.code||'')];
   if(!profile || profile.status!=='verified') return null;
@@ -82,6 +84,7 @@ function lumenEtfProfileSourceNote(q) {
 
 const LUMEN_ETF_PROFILE_BASE_OVERVIEW=window.renderOverview;
 window.renderOverview=async function() {
+  await LUMEN_ETF_PROFILE_READY;
   await LUMEN_ETF_PROFILE_BASE_OVERVIEW();
   const q=STATE.selected;
   if(!lumenIsEtf(q)) return;
@@ -94,6 +97,7 @@ window.renderOverview=async function() {
 
 const LUMEN_ETF_PROFILE_BASE_FUNDAMENTAL=window.renderFundamental;
 window.renderFundamental=async function() {
+  await LUMEN_ETF_PROFILE_READY;
   await LUMEN_ETF_PROFILE_BASE_FUNDAMENTAL();
   const q=STATE.selected;
   if(!lumenIsEtf(q)) return;
@@ -105,6 +109,7 @@ window.renderFundamental=async function() {
 
 const LUMEN_ETF_PROFILE_BASE_CHIPS=window.renderStockChips;
 window.renderStockChips=async function() {
+  await LUMEN_ETF_PROFILE_READY;
   await LUMEN_ETF_PROFILE_BASE_CHIPS();
   const q=STATE.selected;
   if(!lumenIsEtf(q)) return;
