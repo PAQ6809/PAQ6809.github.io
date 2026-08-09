@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_runtime_status_and_transparency_repair",
-  "run_at": "2026-08-09T15:02:28+08:00",
+  "run_type": "manual_runtime_status_and_transport_repair",
+  "run_at": "2026-08-09T15:08:05+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -16,23 +16,7 @@
     "schema_version": 1,
     "canonical_update_registry": true,
     "dataset_count": 44,
-    "priority_order": ["critical", "high", "normal"],
-    "coverage": [
-      "TWSE indices",
-      "TWSE listed quotes",
-      "TPEx OTC quotes",
-      "TWSE funds/ETF source",
-      "TWSE and TPEx valuation",
-      "TWSE and TPEx margin",
-      "TAIFEX institutional derivatives and Put/Call",
-      "TWSE and TPEx monthly revenue",
-      "TWSE and TPEx company profiles",
-      "TWSE and TPEx material information",
-      "TPEx institutional datasets",
-      "TWSE T86 latest-trading-day registration",
-      "TWSE and TPEx income-statement families",
-      "TWSE and TPEx balance-sheet families"
-    ]
+    "priority_order": ["critical", "high", "normal"]
   },
   "snapshot": {
     "path": "taiex-trend-dashboard/official-snapshot-latest.json",
@@ -42,14 +26,7 @@
     "verified_source_not_snapshotted_count": 1,
     "queued_or_not_yet_verified_count": 42,
     "verified_datasets": ["twse_indices"],
-    "source_verified_but_not_fallback_eligible": ["twse_valuation"],
-    "policy": {
-      "live_official_api_priority": true,
-      "verified_nonempty_rows_required_for_fallback": true,
-      "unverified_rows_must_be_empty": true,
-      "frontend_fallback_flag_required": true,
-      "freshness_limit_enforced_when_present": true
-    }
+    "source_verified_but_not_fallback_eligible": ["twse_valuation"]
   },
   "verified_sources": [
     {
@@ -68,33 +45,63 @@
   ],
   "runtime_status_repair": {
     "status_module": "taiex-trend-dashboard/lumen-status.js",
-    "old_problem": "Browser fetch failures, official-source outages and missing verified snapshot data were displayed together as generic failures; feature rows were hard-coded green even when their data was unavailable; maintenance UI read a non-existent GitHub source field and displayed 未記錄.",
     "fixed": true,
     "changes": [
-      "Top badge now reports live official availability, browser-direct restrictions and verified snapshot fallback separately.",
-      "TWSE/TPEx/TAIFEX source cards no longer claim the official source itself failed solely because browser fetch failed.",
-      "Feature status is derived from current runtime/snapshot availability instead of hard-coded ok values.",
-      "GitHub canonical source is read from deployment.github_pages_canonical_source or project_identity.canonical_repo_path.",
-      "GitHub source update, GitHub Pages live deployment verification, CI success evidence and Cloudflare synchronization are displayed as separate states.",
-      "The source center now exposes snapshot-catalog.json and official-snapshot-latest.json coverage directly."
+      "Top source badge no longer collapses browser/CORS transport limits into generic official-source failures.",
+      "TWSE/TPEx/TAIFEX cards distinguish direct, official relay, verified snapshot and still-unavailable transport states.",
+      "Feature status is derived from current data availability instead of hard-coded green states.",
+      "GitHub canonical source is read from the actual deployment/project fields rather than a non-existent qa field.",
+      "GitHub source update, GitHub Pages live verification, CI evidence and Cloudflare synchronization are displayed independently."
+    ]
+  },
+  "official_relay": {
+    "provider": "Supabase Edge Functions",
+    "project_id": "goedzzhhvvnfczgnkqlv",
+    "function": "lumen-official-relay",
+    "version": 2,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "handler_auth": "publishable-key validation",
+    "role": "official-source transport fallback only; not a financial source",
+    "arbitrary_url_proxy": false,
+    "allowed_static_scope": "cataloged TWSE/TPEx/TAIFEX official endpoints",
+    "allowed_dynamic_scope": [
+      "TWSE T86 with validated YYYYMMDD",
+      "TWSE STOCK_DAY history with validated date/code",
+      "TPEx tradingStock history with validated date/code"
     ],
-    "display_semantics": {
-      "green": "data/function is currently demonstrated available",
-      "yellow": "implemented but data is on-demand, browser-direct restricted, awaiting verified snapshot, or external login/runtime verification is still required",
-      "red": "reserved for a proven blocking failure rather than ordinary browser/API reachability limits"
-    }
+    "cors_origins": [
+      "https://paq6809.github.io",
+      "https://lumen-script.pages.dev",
+      "localhost development origins"
+    ],
+    "source_attribution_rule": "relay responses retain official source_url; relay URL is transport metadata only"
   },
   "website_changes": {
     "snapshot_catalog_created": true,
     "on_demand_verified_snapshot_fallback_added": true,
-    "on_demand_scope": ["valuation", "monthly revenue", "company profile", "material information", "financial statement families", "TPEx institutional datasets"],
-    "initial_market_refresh_disables_old_snapshot_race": true,
-    "freshness_guard_added": true,
-    "twse_t86_frontend_fallback_enabled": false,
-    "source_manifest_catalog_bound": true,
+    "official_relay_frontend_module": "taiex-trend-dashboard/lumen-relay.js",
+    "transport_order": ["direct_official", "official_relay", "verified_snapshot", "explicit_missing"],
+    "relay_applies_to": [
+      "market indices",
+      "listed and OTC quotes",
+      "ETF/fund source",
+      "valuation",
+      "margin",
+      "TAIFEX institutional and Put/Call",
+      "monthly revenue",
+      "company profile",
+      "material information",
+      "financial statement families",
+      "TPEx institutional datasets",
+      "TWSE T86",
+      "TWSE/TPEx stock history"
+    ],
     "truthful_status_module_loaded_before_boot": true,
+    "official_relay_loaded_after_cloud_config_before_boot": true,
     "feature_status_no_longer_hardcoded_green": true,
     "github_source_unrecorded_bug_fixed": true,
+    "source_manifest_documents_relay": true,
     "snapshot_specific_workflow": ".github/workflows/lumen-snapshot-check.yml"
   },
   "automation": {
@@ -104,55 +111,62 @@
     "times": ["08:30", "21:30"],
     "enabled": true,
     "catalog_driven": true,
-    "new_catalog_dataset_automatically_enters_update_scope": true,
-    "every_catalog_dataset_requires_each_run_status": true
+    "relay_health_check_added": true,
+    "new_catalog_dataset_automatically_enters_update_scope": true
   },
   "analysis": {
     "raw_facts": [
+      "The prior UI showed 2 normal / 7 failed because it mixed browser transport reachability with actual official-source state.",
       "The canonical official update registry contains 44 datasets.",
-      "Only twse_indices currently contains verified snapshot rows.",
-      "TWSE BWIBBU_ALL is independently readable with 2026-08-07 valuation rows, but a complete repository snapshot was not materialized in this run.",
-      "The previous UI's 2 normal / 7 failed count mixed browser fetch reachability with actual data/source state and therefore overstated source failure."
+      "Supabase Edge Function lumen-official-relay version 2 is ACTIVE.",
+      "TWSE, TPEx and TAIFEX official API endpoint definitions remain confirmed by their official OpenAPI/Swagger catalogs.",
+      "TWSE BWIBBU_ALL is independently readable with 2026-08-07 valuation rows."
     ],
     "lumen_calculation": [
-      "Runtime status now classifies live API success, verified snapshot fallback and browser-direct restriction separately.",
-      "Feature readiness is calculated from current STATE data and verified snapshot coverage rather than static labels."
+      "Runtime source status now separates direct official success, official relay success, verified snapshot fallback and unresolved transport failure.",
+      "Feature readiness is calculated from current runtime/snapshot evidence instead of static labels."
     ],
     "rule_interpretation": [
-      "A failed browser fetch is not sufficient evidence that TWSE, TPEx or TAIFEX is down.",
-      "Catalog registration means a dataset is in the recurring verification queue; it does not mean verified rows are already online.",
-      "Implemented code is not shown as data-available unless the corresponding runtime or verified snapshot evidence exists."
+      "A browser fetch/CORS failure is not sufficient evidence that an exchange source is down.",
+      "The relay is a transport mechanism only; all displayed financial source attribution must remain TWSE, TPEx, MOPS or TAIFEX as applicable.",
+      "Implemented code is not equivalent to current data availability."
     ],
     "risk_limitations": [
-      "Most catalog datasets still do not have complete verified snapshot rows, so several data-heavy functions can remain unavailable when direct browser access is restricted.",
-      "TWSE T86 remains registered but frontend fallback is deliberately disabled until reliable trading-date binding is implemented.",
+      "End-to-end browser invocation of the newly deployed relay could not be independently executed from this maintenance environment because outbound DNS/network access is unavailable here.",
+      "Most catalog datasets still do not contain verified repository snapshot rows; the relay is intended to reduce browser/CORS dependence while snapshots continue to be populated by scheduled maintenance.",
       "The public GitHub Pages URL could not be independently fetched by the available web layer in this run, so live propagation is not claimed.",
-      "GitHub combined status and commit workflow-run queries returned no success records for the latest status-workflow commit, so CI success is not claimed.",
+      "No explicit GitHub CI success status is available for the latest changes, so CI success is not claimed.",
       "Cloudflare lumen-script.pages.dev writable project remains unverified/not synchronized."
     ]
   },
   "validation": {
     "github_file_writes_succeeded": true,
     "lumen_status_node_syntax_check_passed": true,
+    "supabase_relay_deployment_active": true,
+    "supabase_relay_version": 2,
+    "relay_source_code_re_read_after_deploy": true,
     "loader_updated": true,
-    "snapshot_contract_workflow_updated": true,
-    "github_combined_status_records": 0,
+    "snapshot_contract_workflow_updated_for_relay": true,
     "ci_explicit_success_evidence": false,
-    "commit_workflow_runs_found": 0,
-    "github_pages_live_deployment_verified": false
+    "github_pages_live_deployment_verified": false,
+    "relay_end_to_end_browser_smoke_test_completed": false
   },
   "github": {
-    "status_repair_commits": [
+    "status_and_transport_commits": [
       "91f32ea5fade7d54e7d22449d8bcd86abf2be2dc",
       "e88785e02605cb2fb4e47039d9ca1b5759466400",
-      "24aa316d5f669677c8023a0e35a2d7c7985a81a4"
-    ],
-    "ci_note": "No combined status or workflow-run success evidence was returned for 24aa316d5f669677c8023a0e35a2d7c7985a81a4; do not label CI as passed."
+      "24aa316d5f669677c8023a0e35a2d7c7985a81a4",
+      "979a7e9c7c3a86a02566b5fc49d636cc782adafb",
+      "0ee6f8f65cf4a31c636867e1193f99e4c9b245e1",
+      "428544e7ec0510739473c3552d0db0c9b7dbc361",
+      "3f0f502a7de640f7c5ea0eb08d2a7b53112c46b5"
+    ]
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated": true,
     "github_pages_live_deployment_verified": false,
+    "supabase_official_relay_status": "ACTIVE_v2",
     "cloudflare_lumen_script_writable_source_verified": false,
     "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   }
