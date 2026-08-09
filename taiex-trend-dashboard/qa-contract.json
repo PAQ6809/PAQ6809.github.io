@@ -78,6 +78,10 @@
     "etf_fund_master_is_primary_structured_identity_source": true,
     "etf_official_reference_pages_must_remain_transparently_labeled": true
   },
+  "regression_examples": {
+    "etf": ["0050"],
+    "rule": "0050 must render the ETF product model and must not render company monthly revenue, company financial statements, listed-company material information or stock P/E/P/B as ETF fundamentals."
+  },
   "views": ["market","stock","etf","derivatives","workspace","sources"],
   "static_controls": [
     {"id":"refreshButton","event":"click","action":"refreshAll"},

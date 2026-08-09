@@ -36,6 +36,8 @@ jobs:
           node --check taiex-trend-dashboard/lumen.js
           node --check taiex-trend-dashboard/lumen-status.js
           node --check taiex-trend-dashboard/lumen-relay.js
+          node --check taiex-trend-dashboard/lumen-context.js
+          node --check taiex-trend-dashboard/lumen-etf.js
           node --check taiex-trend-dashboard/lumen-boot.js
       - name: Snapshot catalog contract
         shell: python
@@ -111,12 +113,16 @@ jobs:
                   raise SystemExit(f'missing runtime snapshot guard: {token}')
 
           loader = (root / 'lumen.js').read_text(encoding='utf-8')
-          required_modules = ['./lumen-status.js', './lumen-cloud.js', './lumen-relay.js', './lumen-boot.js']
+          required_modules = [
+              './lumen-status.js', './lumen-cloud.js', './lumen-relay.js',
+              './lumen-context.js', './lumen-etf.js', './lumen-boot.js'
+          ]
           for module in required_modules:
               if module not in loader:
                   raise SystemExit(f'missing runtime module: {module}')
-          if not (loader.index('./lumen-status.js') < loader.index('./lumen-cloud.js') < loader.index('./lumen-relay.js') < loader.index('./lumen-boot.js')):
-              raise SystemExit('status/cloud/relay/boot module order is unsafe')
+          positions = [loader.index(module) for module in required_modules]
+          if positions != sorted(positions):
+              raise SystemExit('status/cloud/relay/context/etf/boot module order is unsafe')
 
           status = (root / 'lumen-status.js').read_text(encoding='utf-8')
           status_contract = [

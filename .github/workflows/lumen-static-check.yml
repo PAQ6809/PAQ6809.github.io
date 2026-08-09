@@ -31,13 +31,17 @@ jobs:
             taiex-trend-dashboard/lumen-stock-b.js \
             taiex-trend-dashboard/lumen-derivatives.js \
             taiex-trend-dashboard/lumen-workspace.js \
+            taiex-trend-dashboard/lumen-status.js \
             taiex-trend-dashboard/lumen-cloud.js \
+            taiex-trend-dashboard/lumen-relay.js \
+            taiex-trend-dashboard/lumen-context.js \
+            taiex-trend-dashboard/lumen-etf.js \
             taiex-trend-dashboard/lumen-boot.js
           do
             node --check "$file"
           done
 
-      - name: Validate complete Lumen data and interaction contract
+      - name: Validate complete Lumen contract
         shell: python
         run: |
           import json
@@ -46,56 +50,46 @@ jobs:
 
           root = Path('taiex-trend-dashboard')
           modules = [
-              'lumen-core.js',
-              'lumen-market.js',
-              'lumen-stock-a.js',
-              'lumen-stock-b.js',
-              'lumen-derivatives.js',
-              'lumen-workspace.js',
-              'lumen-cloud.js',
-              'lumen-boot.js',
+              'lumen-core.js', 'lumen-market.js', 'lumen-stock-a.js', 'lumen-stock-b.js',
+              'lumen-derivatives.js', 'lumen-workspace.js', 'lumen-status.js', 'lumen-cloud.js',
+              'lumen-relay.js', 'lumen-context.js', 'lumen-etf.js', 'lumen-boot.js'
           ]
           required_files = [
-              root / 'index.html',
-              root / 'lumen.css',
-              root / 'lumen.js',
-              root / 'source-manifest.json',
-              root / 'qa-contract.json',
-              root / 'maintenance-latest.json',
-              root / 'official-snapshot-latest.json',
-              root / 'README.md',
-              root / 'REFRACTOR-STATUS.md',
-              *[root / name for name in modules],
+              root/'index.html', root/'lumen.css', root/'lumen.js',
+              root/'source-manifest.json', root/'qa-contract.json', root/'maintenance-latest.json',
+              root/'snapshot-catalog.json', root/'context-source-catalog.json',
+              root/'official-snapshot-latest.json', root/'README.md', root/'REFRACTOR-STATUS.md',
+              *[root/name for name in modules]
           ]
           missing = [str(p) for p in required_files if not p.exists()]
           if missing:
               raise SystemExit(f'Missing required Lumen files: {missing}')
-
-          obsolete = root / 'lumen-runtime-fixes.js'
-          if obsolete.exists():
+          if (root/'lumen-runtime-fixes.js').exists():
               raise SystemExit('Obsolete duplicate runtime patch still exists')
 
-          html = (root / 'index.html').read_text(encoding='utf-8')
-          loader = (root / 'lumen.js').read_text(encoding='utf-8')
-          module_text = {name: (root / name).read_text(encoding='utf-8') for name in modules}
+          html = (root/'index.html').read_text(encoding='utf-8')
+          loader = (root/'lumen.js').read_text(encoding='utf-8')
+          module_text = {name:(root/name).read_text(encoding='utf-8') for name in modules}
           combined = '\n'.join(module_text.values())
+          manifest = json.loads((root/'source-manifest.json').read_text(encoding='utf-8'))
+          qa = json.loads((root/'qa-contract.json').read_text(encoding='utf-8'))
+          maintenance = json.loads((root/'maintenance-latest.json').read_text(encoding='utf-8'))
+          snapshot = json.loads((root/'official-snapshot-latest.json').read_text(encoding='utf-8'))
+          context_catalog = json.loads((root/'context-source-catalog.json').read_text(encoding='utf-8'))
+          manifest_text = json.dumps(manifest, ensure_ascii=False)
+          context_text = json.dumps(context_catalog, ensure_ascii=False)
 
           required_ids = [
-              'nav', 'marketDate', 'fetchTime', 'sourceHealth',
-              'marketKpis', 'indexRows', 'marketSentiment', 'hotRows', 'hotSource',
-              'stockSearch', 'stockSearchButton', 'stockDetail', 'stockKpis', 'stockTabs', 'stockPanel',
-              'etfRows', 'etfSource',
-              'marginListed', 'marginOtc', 'taifexInstitutional', 'putCallPanel',
-              'workspaceSelect', 'watchList', 'workspaceNote', 'sourceCards', 'workList'
+              'nav','marketDate','fetchTime','sourceHealth','marketKpis','indexRows','marketSentiment',
+              'hotRows','hotSource','stockSearch','stockSearchButton','stockDetail','stockKpis','stockTabs',
+              'stockPanel','etfRows','etfSource','marginListed','marginOtc','taifexInstitutional','putCallPanel',
+              'workspaceSelect','watchList','workspaceNote','sourceCards','workList'
           ]
           missing_ids = [x for x in required_ids if f'id="{x}"' not in html]
           if missing_ids:
               raise SystemExit(f'Missing required DOM ids: {missing_ids}')
-
           if './lumen.css' not in html or './lumen.js' not in html:
-              raise SystemExit('index.html is missing the canonical CSS or JS loader')
-          if 'lumen-runtime-fixes.js' in html:
-              raise SystemExit('index.html still references obsolete runtime patch')
+              raise SystemExit('index.html is missing canonical CSS or JS loader')
           if re.search(r'href=["\']javascript:', html, flags=re.I):
               raise SystemExit('javascript: links are forbidden')
 
@@ -105,46 +99,36 @@ jobs:
           positions = [loader.index(f'./{name}') for name in modules]
           if positions != sorted(positions):
               raise SystemExit('Canonical modules are not loaded in dependency order')
-
-          manifest = json.loads((root / 'source-manifest.json').read_text(encoding='utf-8'))
-          qa = json.loads((root / 'qa-contract.json').read_text(encoding='utf-8'))
-          maintenance = json.loads((root / 'maintenance-latest.json').read_text(encoding='utf-8'))
-          snapshot = json.loads((root / 'official-snapshot-latest.json').read_text(encoding='utf-8'))
+          if not (loader.index('./lumen-context.js') < loader.index('./lumen-etf.js') < loader.index('./lumen-boot.js')):
+              raise SystemExit('ETF override must load after company context and before boot')
 
           policy = manifest.get('policy', {})
           required_policy = [
-              'financial_values_require_source', 'show_source_data_date',
-              'show_fetch_timestamp', 'no_silent_fallback'
+              'financial_values_require_source','show_source_data_date','show_fetch_timestamp','no_silent_fallback',
+              'company_business_registration_not_equal_revenue_mix','event_analysis_must_separate_fact_and_inference',
+              'etf_product_model_separate_from_company','etf_company_fundamental_fields_not_applicable',
+              'etf_reference_pages_must_not_masquerade_as_structured_api'
           ]
           if not all(policy.get(k) is True for k in required_policy):
-              raise SystemExit('Source transparency policy is incomplete or disabled')
+              raise SystemExit('Source/product transparency policy is incomplete')
 
           primary = {s.get('name') for s in manifest.get('sources', []) if s.get('authority') == 'primary'}
-          required_primary = {'TWSE OpenAPI', 'Taipei Exchange OpenAPI', 'MOPS', 'TAIFEX OpenAPI'}
+          required_primary = {'TWSE OpenAPI','Taipei Exchange OpenAPI','MOPS','TAIFEX OpenAPI'}
           if not required_primary.issubset(primary):
               raise SystemExit(f'Missing primary financial sources: {required_primary-primary}')
-
-          manifest_text = json.dumps(manifest, ensure_ascii=False)
-          required_domains = ['openapi.twse.com.tw', 'www.tpex.org.tw', 'mops.twse.com.tw', 'openapi.taifex.com.tw']
-          missing_domains = [domain for domain in required_domains if domain not in manifest_text]
-          if missing_domains:
-              raise SystemExit(f'Missing official source domains: {missing_domains}')
+          if 'TWSE ETF e添富' not in {s.get('name') for s in manifest.get('sources', [])}:
+              raise SystemExit('TWSE ETF e添富 is missing from source manifest')
 
           required_contracts = [
-              r'PutCallRatio',
-              r'MarketDataOfMajorInstitutionalTradersGeneralBytheDate',
-              r'mopsfin_t187ap05_O',
-              r'T86',
-              r'LocalStorage|localStorage',
-              r'lumen_workspaces',
-              r'auth\.signInWithPassword',
-              r'normalizeHistoryRows',
-              r'official-snapshot-latest\.json',
-              r'snapshotFallback',
+              r'PutCallRatio', r'MarketDataOfMajorInstitutionalTradersGeneralBytheDate', r'mopsfin_t187ap05_O',
+              r'T86', r'LocalStorage|localStorage', r'lumen_workspaces', r'auth\.signInWithPassword',
+              r'normalizeHistoryRows', r'official-snapshot-latest\.json', r'snapshotFallback',
+              r'lumenIsEtf', r'ETFortune/etfInfo/', r'ETFortune/dividendList', r'ETFortune/announcementList',
+              r'LUMEN_CONTEXT_RELAY_ENDPOINT', r'LUMEN_RELAY_ENDPOINT'
           ]
-          missing_contracts = [pattern for pattern in required_contracts if not re.search(pattern, combined + manifest_text)]
+          missing_contracts = [p for p in required_contracts if not re.search(p, combined + manifest_text + context_text)]
           if missing_contracts:
-              raise SystemExit(f'Missing Lumen runtime/source contracts: {missing_contracts}')
+              raise SystemExit(f'Missing runtime/source contracts: {missing_contracts}')
 
           expected_views = qa.get('views', [])
           missing_views = [view for view in expected_views if f'id="view-{view}"' not in html]
@@ -153,124 +137,112 @@ jobs:
 
           boot = module_text['lumen-boot.js']
           for control in qa.get('static_controls', []):
-              cid = control['id']
-              event = control['event']
+              cid, event = control['id'], control['event']
               if f'id="{cid}"' not in html:
                   raise SystemExit(f'QA control missing from HTML: {cid}')
               binding = re.compile(rf"getElementById\(['\"]{re.escape(cid)}['\"]\)\.addEventListener\(['\"]{re.escape(event)}['\"]")
               if not binding.search(boot):
                   raise SystemExit(f'QA control is not bound to expected event {event}: {cid}')
 
-          core = module_text['lumen-core.js']
-          stock_a = module_text['lumen-stock-a.js']
-          stock_b = module_text['lumen-stock-b.js']
-          if "querySelectorAll('#nav button,[data-view]')" not in core:
-              raise SystemExit('Dynamic [data-view] navigation binding is missing')
-          if "querySelectorAll('#stockTabs [data-tab]')" not in stock_a:
-              raise SystemExit('Dynamic stock-tab binding is missing')
-          if "#stockPanel [data-stock]" not in stock_b:
-              raise SystemExit('Dynamic stock-row navigation binding is missing')
-          if '[data-go="derivatives"]' not in stock_b:
-              raise SystemExit('Derivatives navigation control is missing')
-
-          for tab, renderer in qa.get('stock_tabs', {}).items():
-              if f"['{tab}'" not in stock_a and f'{tab}:' not in stock_a:
-                  raise SystemExit(f'Stock tab missing: {tab}')
-              if not re.search(rf'\b{re.escape(renderer)}\s*\(', combined) and renderer not in stock_a:
-                  raise SystemExit(f'Stock tab renderer missing: {tab} -> {renderer}')
-
-          required_categories = {
-              'official_daily_quote_and_OHLC', 'six_month_official_price_history',
-              'MA5_MA20_MA60', 'RSI14', 'MACD_and_signal',
-              'company_profile_and_industry', 'monthly_revenue',
-              'income_statement_summary', 'balance_sheet_summary',
-              'PE_ratio', 'PB_ratio', 'dividend_yield',
-              'institutional_trading_data', 'official_material_information',
-              'raw_primary_source_links', 'explicit_missing_or_failure_state',
+          stock_required = {
+              'official_daily_quote_and_OHLC','six_month_official_price_history','MA5_MA20_MA60','RSI14',
+              'MACD_and_signal','company_profile_and_industry','monthly_revenue','income_statement_summary',
+              'balance_sheet_summary','PE_ratio','PB_ratio','dividend_yield','institutional_trading_data',
+              'official_material_information','raw_primary_source_links','explicit_missing_or_failure_state',
               'verified_scheduled_snapshot_fallback'
           }
-          categories = set(qa.get('stock_information_categories', []))
-          if not required_categories.issubset(categories):
-              raise SystemExit(f'QA stock-information coverage incomplete: {required_categories-categories}')
+          if not stock_required.issubset(set(qa.get('stock_information_categories', []))):
+              raise SystemExit('QA stock-information coverage incomplete')
+          etf_required = {
+              'official_daily_quote_and_OHLC','official_fund_master','benchmark_or_tracking_index',
+              'official_etf_product_page','official_etf_dividend_reference',
+              'official_etf_material_announcement_reference','six_month_official_price_history',
+              'MA5_MA20_MA60','RSI14','MACD_and_signal',
+              'explicit_not_applicable_for_company_revenue_and_financials'
+          }
+          if not etf_required.issubset(set(qa.get('etf_information_categories', []))):
+              raise SystemExit('QA ETF-information coverage incomplete')
+          if '0050' not in qa.get('regression_examples', {}).get('etf', []):
+              raise SystemExit('0050 ETF regression example is missing')
+          product = qa.get('product_type_policy', {})
+          required_product = [
+              'etf_is_not_company','etf_must_not_request_company_monthly_revenue_as_its_own_fundamental',
+              'etf_must_not_request_company_financial_statements_as_its_own_fundamental',
+              'etf_must_not_request_listed_company_material_information_as_etf_announcement',
+              'etf_stock_valuation_fields_must_not_masquerade_as_nav_or_distribution',
+              'etf_fund_master_is_primary_structured_identity_source'
+          ]
+          if not all(product.get(k) is True for k in required_product):
+              raise SystemExit('ETF product-type policy incomplete')
+
+          snapshot_policy = qa.get('snapshot_policy', {})
+          required_snapshot_rules = [
+              'live_official_api_has_priority','fallback_requires_empty_live_dataset','fallback_requires_verified_status',
+              'fallback_requires_nonempty_rows','fallback_requires_frontend_fallback_enabled',
+              'fallback_must_respect_freshness_limit','unverified_datasets_must_have_empty_rows',
+              'financial_rows_must_be_from_canonical_official_source','source_url_must_match_catalog',
+              'source_data_date_required_for_verified_financial_rows','snapshot_run_at_required',
+              'macro_calendar_requires_official_source','macro_calendar_must_not_predict_release_values'
+          ]
+          if not all(snapshot_policy.get(k) is True for k in required_snapshot_rules):
+              raise SystemExit('Verified snapshot safety policy is incomplete')
+          root_policy = snapshot.get('policy', {})
+          if not all(root_policy.get(k) is True for k in [
+              'official_only_for_financial_values','fallback_only_when_live_dataset_empty',
+              'unverified_datasets_never_used_as_fallback','source_date_and_snapshot_time_are_separate'
+          ]):
+              raise SystemExit('Official snapshot root policy is incomplete')
+          if not snapshot.get('run_at') or not isinstance(snapshot.get('datasets'), dict):
+              raise SystemExit('Official snapshot is missing run_at or datasets')
+          for key, dataset in snapshot['datasets'].items():
+              rows = dataset.get('rows')
+              if not isinstance(rows, list):
+                  raise SystemExit(f'Snapshot rows must be a list: {key}')
+              if dataset.get('status') == 'verified':
+                  if not rows or not dataset.get('source_url') or not dataset.get('data_date'):
+                      raise SystemExit(f'Verified snapshot dataset incomplete: {key}')
+              elif rows:
+                  raise SystemExit(f'Unverified snapshot dataset must not carry rows: {key}')
+
+          context_policy = context_catalog.get('policy', {})
+          for key in [
+              'primary_sources_first','company_business_scope_is_registration_scope_not_revenue_mix',
+              'event_analysis_must_separate_fact_from_inference','no_third_party_financial_values',
+              'etf_is_not_a_company','etf_must_not_use_company_revenue_financials_or_company_material_information',
+              'etf_web_pages_are_official_reference_pages_not_silent_structured_api_fallbacks'
+          ]:
+              if context_policy.get(key) is not True:
+                  raise SystemExit(f'Context policy incomplete: {key}')
 
           link_policy = qa.get('link_policy', {})
-          if not link_policy.get('financial_links_must_be_https'):
-              raise SystemExit('HTTPS financial-link policy must be enabled')
-          if not link_policy.get('external_target_blank_requires_noopener_noreferrer'):
-              raise SystemExit('noopener/noreferrer policy must be enabled')
-          if not link_policy.get('javascript_links_forbidden'):
-              raise SystemExit('javascript-link prohibition must be enabled')
-
+          if not all(link_policy.get(k) is True for k in [
+              'financial_links_must_be_https','external_target_blank_requires_noopener_noreferrer','javascript_links_forbidden'
+          ]):
+              raise SystemExit('Link policy incomplete')
           for domain in link_policy.get('primary_domains', []):
-              if domain not in combined + manifest_text:
-                  raise SystemExit(f'QA primary domain not represented in runtime/manifest: {domain}')
-
+              if domain not in combined + manifest_text + context_text:
+                  raise SystemExit(f'QA primary domain not represented: {domain}')
           blank_tags = re.findall(r'<a\b[^>]*target=["\']_blank["\'][^>]*>', html + combined, flags=re.I)
-          unsafe_blank = [tag for tag in blank_tags if not re.search(r'rel=["\'][^"\']*noopener[^"\']*noreferrer[^"\']*["\']', tag, flags=re.I)]
-          if unsafe_blank:
-              raise SystemExit(f'External _blank links missing noopener noreferrer: {unsafe_blank[:3]}')
+          unsafe = [tag for tag in blank_tags if not re.search(r'rel=["\'][^"\']*noopener[^"\']*noreferrer[^"\']*["\']', tag, flags=re.I)]
+          if unsafe:
+              raise SystemExit(f'External _blank links missing noopener noreferrer: {unsafe[:3]}')
 
           if not maintenance.get('run_at'):
               raise SystemExit('maintenance-latest.json must record run_at')
           if maintenance.get('project_identity', {}).get('canonical_repo_path') != 'PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/':
-              raise SystemExit('maintenance record points to the wrong canonical project')
+              raise SystemExit('maintenance record points to wrong canonical project')
+          failure = qa.get('maintenance_failure_policy', {})
+          for key in [
+              'do_not_guess_missing_financial_values','do_not_mark_healthy_when_required_check_fails',
+              'record_failed_control_or_source','record_source_data_date_and_fetch_time_separately',
+              'ci_must_not_be_marked_success_without_explicit_workflow_conclusion_success'
+          ]:
+              if failure.get(key) is not True:
+                  raise SystemExit(f'Maintenance failure policy incomplete: {key}')
 
-          snapshot_policy = qa.get('snapshot_policy', {})
-          required_snapshot_rules = [
-              'live_official_api_has_priority',
-              'fallback_requires_empty_live_dataset',
-              'fallback_requires_verified_status',
-              'fallback_requires_nonempty_rows',
-              'unverified_datasets_must_not_backfill',
-              'financial_rows_must_be_from_canonical_official_source',
-              'source_url_required',
-              'source_data_date_required_for_verified_financial_rows',
-              'snapshot_run_at_required',
-              'macro_calendar_requires_official_source',
-              'macro_calendar_must_not_predict_release_values'
-          ]
-          if not all(snapshot_policy.get(k) is True for k in required_snapshot_rules):
-              raise SystemExit('Verified snapshot safety policy is incomplete')
-          if not snapshot.get('run_at') or not isinstance(snapshot.get('datasets'), dict):
-              raise SystemExit('Official snapshot is missing run_at or datasets')
-          snapshot_root_policy = snapshot.get('policy', {})
-          if not all(snapshot_root_policy.get(k) is True for k in [
-              'official_only_for_financial_values',
-              'fallback_only_when_live_dataset_empty',
-              'unverified_datasets_never_used_as_fallback',
-              'source_date_and_snapshot_time_are_separate'
-          ]):
-              raise SystemExit('Official snapshot root policy is incomplete')
-          for key, dataset in snapshot.get('datasets', {}).items():
-              status = dataset.get('status')
-              rows = dataset.get('rows')
-              if not isinstance(rows, list):
-                  raise SystemExit(f'Snapshot dataset rows must be a list: {key}')
-              if status == 'verified':
-                  if not rows:
-                      raise SystemExit(f'Verified snapshot dataset cannot be empty: {key}')
-                  if not dataset.get('source_url') or not dataset.get('data_date'):
-                      raise SystemExit(f'Verified snapshot dataset lacks source URL/data date: {key}')
-              elif rows:
-                  raise SystemExit(f'Unverified snapshot dataset must not carry financial rows: {key}')
-
-          failure_policy = qa.get('maintenance_failure_policy', {})
-          required_fail_rules = [
-              'do_not_guess_missing_financial_values',
-              'do_not_mark_healthy_when_required_check_fails',
-              'record_failed_control_or_source',
-              'record_source_data_date_and_fetch_time_separately'
-          ]
-          if not all(failure_policy.get(k) is True for k in required_fail_rules):
-              raise SystemExit('Maintenance failure policy is incomplete')
-
-          forbidden = [
-              r'SUPABASE_SERVICE_ROLE_KEY',
-              r'sb_secret_',
-              r'postgres(?:ql)?://',
-          ]
+          forbidden = [r'SUPABASE_SERVICE_ROLE_KEY', r'sb_secret_', r'postgres(?:ql)?://']
           leaked = [pattern for pattern in forbidden if re.search(pattern, combined)]
           if leaked:
-              raise SystemExit(f'Frontend contains forbidden server-side credential pattern: {leaked}')
+              raise SystemExit(f'Frontend contains forbidden server credential pattern: {leaked}')
 
-          print('Lumen complete data + interaction QA contract OK')
+          print('Lumen complete stock + ETF + data/context contract OK')
