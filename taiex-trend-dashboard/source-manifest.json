@@ -1,6 +1,6 @@
 {
   "name": "Lumen Taiwan Equity Research Platform",
-  "generated_at": "2026-08-09T13:48:36+08:00",
+  "generated_at": "2026-08-09T14:13:38+08:00",
   "policy": {
     "financial_values_require_source": true,
     "show_source_data_date": true,
@@ -104,13 +104,16 @@
       "source_date_fetch_time_and_failure_state",
       "scheduled_verified_official_snapshot_fallback"
     ],
+    "snapshot_catalog": "./snapshot-catalog.json",
     "qa_contract": "./qa-contract.json",
     "failure_rule": "Any required check failure must remain visible and prevents the maintenance run from being labeled healthy/complete."
   },
   "runtime": {
     "latest_data_policy": "market-critical endpoints are fetched with no-store on page load and manual refresh",
+    "snapshot_catalog": "./snapshot-catalog.json",
     "verified_snapshot": "./official-snapshot-latest.json",
-    "snapshot_policy": "Direct official API remains primary. A snapshot is used only when the corresponding live dataset is empty, the snapshot dataset is explicitly marked verified, and its official source/data date are preserved. Unverified datasets never backfill financial values.",
+    "snapshot_policy": "Direct official API remains primary. A cataloged snapshot dataset is used only when the corresponding live dataset is empty, status is explicitly verified, rows are non-empty, frontend_fallback is enabled, and any freshness limit remains valid. Unverified datasets never backfill financial values.",
+    "snapshot_scope": "Catalog covers market, listed/OTC quotes, ETF, valuation, margin, TAIFEX, monthly revenue, company profile, material information, TPEx institutional data, TWSE T86 registration, and listed/OTC income-statement and balance-sheet families.",
     "technical_history": "six months of official OHLC when available; fields+data and table response shapes are normalized before indicator calculation",
     "workspace_local": "LocalStorage multi-workspace plus JSON and URL-fragment transfer",
     "workspace_cloud": {
@@ -131,9 +134,13 @@
       "times": ["08:30", "21:30"],
       "enabled": true,
       "latest_record": "./maintenance-latest.json",
+      "snapshot_catalog": "./snapshot-catalog.json",
       "verified_snapshot": "./official-snapshot-latest.json",
       "full_regression_contract": "./qa-contract.json",
-      "repository_workflow": ".github/workflows/lumen-static-check.yml"
+      "repository_workflows": [
+        ".github/workflows/lumen-static-check.yml",
+        ".github/workflows/lumen-snapshot-check.yml"
+      ]
     }
   },
   "deployment_scope": {
