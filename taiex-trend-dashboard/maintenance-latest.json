@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_etf_product_type_repair_ci_and_deployment_verification",
-  "run_at": "2026-08-09T17:14:11+08:00",
+  "run_type": "manual_etf_identity_fallback_repair",
+  "run_at": "2026-08-09T17:25:30+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -11,189 +11,87 @@
     "taiwan_latest_trading_day": "2026-08-07",
     "next_expected_taiwan_trading_day": "2026-08-10"
   },
-  "registries": {
-    "snapshot_catalog": "taiex-trend-dashboard/snapshot-catalog.json",
-    "snapshot_dataset_count": 44,
-    "context_catalog": "taiex-trend-dashboard/context-source-catalog.json",
-    "context_catalog_schema_version": 2,
-    "qa_contract_version": 4
+  "issue": {
+    "security": "0050 元大台灣50",
+    "product_type": "ETF",
+    "observed_problem": "ETF 結構頁已正確分流，但標的指數與發行/經理公司顯示為空值。",
+    "root_cause": "ETF product model only depended on STATE.funds/t187ap47_L for identity fields. When the fund-master transport was unavailable or did not expose the needed issuer field, the UI rendered dashes even though the official TWSE ETF e添富 page contained verified identity data."
   },
-  "etf_product_type_repair": {
-    "issue": "ETF securities such as 0050 were routed through operating-company fundamentals, causing company monthly revenue, company profile and listed-company material-information panels to appear as if applicable to the ETF.",
+  "verified_official_facts": {
+    "source_name": "臺灣證券交易所 ETF e添富",
+    "source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
+    "verified_at": "2026-08-09T17:21:00+08:00",
+    "code": "0050",
+    "name": "元大台灣50",
+    "security_type": "台股ETF",
+    "issuer": "元大證券投資信託股份有限公司",
+    "benchmark": "富時臺灣證券交易所臺灣50指數",
+    "theme": "大型權值"
+  },
+  "repair": {
     "fixed": true,
-    "runtime_module": "taiex-trend-dashboard/lumen-etf.js",
-    "loader_order": "lumen-context.js -> lumen-etf.js -> lumen-boot.js",
-    "regression_example": "0050",
-    "regression_requirement": "0050 must render the ETF product model and must not render company monthly revenue, company financial statements, listed-company material information or stock P/E/P/B peer valuation as ETF fundamentals.",
-    "etf_tabs": [
-      "ETF 總覽",
-      "K 線 / 技術",
-      "ETF 基本資料",
-      "淨值 / 配息",
-      "ETF 結構",
-      "ETF 重大消息",
-      "來源"
+    "verified_profile_registry": "taiex-trend-dashboard/etf-profile-verified.json",
+    "runtime_module": "taiex-trend-dashboard/lumen-etf-profile.js",
+    "loader_updated": "taiex-trend-dashboard/lumen.js",
+    "precedence": [
+      "TWSE t187ap47_L available structured identity fields",
+      "verified official ETF identity profile",
+      "explicit missing value"
     ],
-    "not_applicable_company_layers": [
-      "company monthly revenue",
-      "company income statement and balance sheet as ETF fundamentals",
-      "listed-company daily material information as ETF announcements",
-      "stock P/E/P/B peer valuation as ETF NAV/distribution",
-      "company institutional-chip interpretation as ETF structure"
-    ]
+    "provenance_rule": "When a verified ETF profile supplies a missing identity field, the UI explicitly cites TWSE ETF e添富 and its verification time; it must not claim that field came from t187ap47_L.",
+    "financial_value_boundary": "The verified ETF identity registry may contain stable identity metadata only. It must not store price, NAV, AUM, performance or other frequently changing financial values."
   },
-  "verified_official_etf_sources": [
-    {
-      "source_name": "TWSE OpenAPI fund master",
-      "source_url": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
-      "role": "primary structured ETF/fund identity source"
-    },
-    {
-      "source_name": "TWSE ETF e添富 product page",
-      "source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
-      "verified_facts": [
-        "0050 is identified as 台股ETF",
-        "security short name is 元大台灣50",
-        "issuer is 元大證券投資信託股份有限公司",
-        "tracking index is 富時臺灣證券交易所臺灣50指數"
-      ],
-      "use_rule": "official reference page; third-party performance fields on the page are not promoted to Lumen canonical financial data"
-    },
-    {
-      "source_name": "TWSE ETF e添富 dividend list",
-      "source_url": "https://www.twse.com.tw/zh/ETFortune/dividendList",
-      "role": "official ETF distribution reference"
-    },
-    {
-      "source_name": "TWSE ETF e添富 material announcements",
-      "source_url": "https://www.twse.com.tw/zh/ETFortune/announcementList",
-      "role": "official ETF material-announcement reference instead of listed-company t187ap04_L"
-    }
-  ],
-  "company_context": {
-    "moea_gcis_registered_business": true,
-    "twse_tpex_governance_and_regulatory_context": true,
-    "taiwan_macro_context": true,
-    "company_business_registration_not_equal_revenue_mix": true,
-    "etf_uses_tracking_exposure_not_company_registration_model": true
-  },
-  "transport": {
-    "official_relay": {
-      "provider": "Supabase Edge Functions",
-      "project_id": "goedzzhhvvnfczgnkqlv",
-      "function": "lumen-official-relay",
-      "role": "allowlisted official financial transport only"
-    },
-    "context_relay": {
-      "provider": "Supabase Edge Functions",
-      "project_id": "goedzzhhvvnfczgnkqlv",
-      "function": "lumen-context-relay",
-      "role": "allowlisted official company/context transport only"
-    },
-    "canonical_source_preserved": true
-  },
-  "github_ci": {
-    "verification_pr": 22,
-    "verification_branch": "verify/lumen-etf-product-model-20260809",
-    "verified_head_sha": "b0a6f23b4f46a9e6f0413b4a31828a225e74bd5c",
-    "merged": true,
-    "merge_sha": "2126115515d4af65db6df5b3961b4f97809c4ab7",
-    "explicit_success_evidence": true,
-    "workflow_runs": [
-      {
-        "name": "Lumen ETF checks",
-        "run_id": 31305388462,
-        "run_number": 6,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      {
-        "name": "Lumen static checks",
-        "run_id": 31305388463,
-        "run_number": 92,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      {
-        "name": "Lumen snapshot checks",
-        "run_id": 31305388464,
-        "run_number": 10,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      {
-        "name": "Lumen context checks",
-        "run_id": 31305388488,
-        "run_number": 7,
-        "status": "completed",
-        "conclusion": "success"
-      }
-    ],
-    "previous_failure_fixed": {
-      "workflow": "Lumen static checks",
-      "run_id": 31305306576,
-      "cause": "static workflow still required obsolete QA snapshot-policy key names",
-      "resolution": "static workflow aligned to QA v4 and expanded to check status/relay/context/ETF runtime modules"
-    }
-  },
-  "website_changes": {
-    "etf_runtime_module_added": true,
-    "etf_source_catalog_added": true,
-    "source_manifest_etf_model_added": true,
-    "qa_etf_model_added": true,
-    "etf_specific_ci_added": ".github/workflows/lumen-etf-check.yml",
-    "static_ci_schema_drift_fixed": true,
-    "snapshot_ci_full_runtime_order_check_added": true,
-    "company_stock_model_preserved": true
+  "0050_regression": {
+    "expected_benchmark": "富時臺灣證券交易所臺灣50指數",
+    "expected_issuer": "元大證券投資信託股份有限公司",
+    "company_fundamentals_must_remain_not_applicable": true,
+    "official_product_page": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050"
   },
   "automation": {
     "title": "Lumen 雙時段更新",
     "timezone": "Asia/Taipei",
     "times": ["08:30", "21:30"],
     "enabled": true,
-    "snapshot_catalog_driven": true,
-    "context_catalog_driven": true,
-    "etf_product_type_regression_added": true,
-    "etf_official_reference_health_checks_added": true,
-    "required_workflows": [
-      "lumen-static-check.yml",
-      "lumen-snapshot-check.yml",
-      "lumen-context-check.yml",
-      "lumen-etf-check.yml"
-    ]
+    "etf_verified_profile_registry_added": true,
+    "registry_reverification_each_run": true,
+    "0050_identity_regression_added": true
   },
-  "analysis_policy": {
-    "raw_fact": "Exchange, MOPS, ETF e添富, MOEA GCIS and government official data/references",
-    "lumen_calculation": "Technical indicators, business tags and relevance classifications",
-    "rule_interpretation": "Event/business or ETF-exposure relevance; never a guaranteed direction forecast",
-    "risk_limitations": [
-      "ETF is not an operating company and company accounting fields are not silently repurposed as ETF fundamentals.",
-      "ETF e添富 pages may contain data attributed to third parties; those fields are not automatically promoted to canonical Lumen financial values.",
-      "Registered company business scope is not current segment revenue or product mix.",
-      "High event relevance does not imply guaranteed benefit, damage, rally or decline."
-    ]
+  "github_ci": {
+    "previous_verified_run": {
+      "verification_pr": 22,
+      "merge_sha": "2126115515d4af65db6df5b3961b4f97809c4ab7",
+      "four_required_workflows_conclusion_success": true
+    },
+    "current_profile_fallback_changes": {
+      "workflow_contract_updated": true,
+      "explicit_new_workflow_conclusion_success_observed": false,
+      "combined_status_records": 0,
+      "policy": "Do not claim the current ETF-profile fallback changes passed CI until a workflow run returns conclusion=success."
+    }
   },
   "validation": {
-    "github_file_writes_succeeded": true,
-    "verification_pr_merged_after_all_required_workflows_success": true,
-    "ci_explicit_success_evidence": true,
-    "etf_ci_success": true,
-    "static_ci_success": true,
-    "snapshot_ci_success": true,
-    "context_ci_success": true,
+    "official_twse_0050_page_independently_read": true,
+    "official_0050_issuer_verified": true,
+    "official_0050_benchmark_verified": true,
+    "profile_registry_source_allowlist_enforced": true,
+    "profile_verified_at_required": true,
+    "profile_module_waits_for_registry_before_etf_render": true,
+    "etf_ci_contract_updated": true,
     "github_pages_live_deployment_verified": false,
     "cloudflare_public_content_verified": false,
-    "live_browser_etf_smoke_test_completed": false,
-    "public_fetch_limitation": "Available web search did not index the Lumen deployment URLs and the execution container could not resolve github.io/pages.dev DNS, so public propagation is not claimed."
+    "live_browser_smoke_test_completed": false
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated": true,
-    "github_pages_merge_sha": "2126115515d4af65db6df5b3961b4f97809c4ab7",
     "github_pages_live_deployment_verified": false,
     "cloudflare_lumen_script_writable_source_verified": false,
     "cloudflare_public_content_verified": false,
-    "cloudflare_deployment_status": "not_verified_or_not_synchronized",
-    "cloudflare_note": "No connected Cloudflare Pages deployment connector is available in this chat; public pages.dev content also could not be independently fetched from the available network layer. Do not claim synchronization."
-  }
+    "cloudflare_deployment_status": "not_verified_or_not_synchronized"
+  },
+  "risk_limitations": [
+    "TWSE ETF e添富 pages are official reference pages; identity fields were manually/maintenance-verified and are not used as a silent source for dynamic market values.",
+    "The current browser deployment has not been independently smoke-tested after this repair.",
+    "The latest profile-fallback commits do not yet have explicit new GitHub Actions conclusion=success evidence."
+  ]
 }
