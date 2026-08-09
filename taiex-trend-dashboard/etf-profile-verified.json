@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-09T17:21:00+08:00",
+  "policy": {
+    "official_identity_only": true,
+    "not_for_market_prices_or_nav": true,
+    "source_must_be_official_twse_etfortune": true,
+    "verified_at_required": true
+  },
+  "profiles": {
+    "0050": {
+      "status": "verified",
+      "code": "0050",
+      "name": "元大台灣50",
+      "full_name": "元大台灣卓越50證券投資信託基金",
+      "security_type": "台股ETF",
+      "issuer": "元大證券投資信託股份有限公司",
+      "benchmark": "富時臺灣證券交易所臺灣50指數",
+      "theme": "大型權值",
+      "source_name": "臺灣證券交易所 ETF e添富",
+      "source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
+      "verified_at": "2026-08-09T17:21:00+08:00"
+    }
+  }
+}
