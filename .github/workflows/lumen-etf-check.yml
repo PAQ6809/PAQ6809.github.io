@@ -1,0 +1,83 @@
+name: Lumen ETF checks
+
+on:
+  push:
+    paths:
+      - 'taiex-trend-dashboard/lumen-etf.js'
+      - 'taiex-trend-dashboard/lumen.js'
+      - 'taiex-trend-dashboard/context-source-catalog.json'
+      - 'taiex-trend-dashboard/qa-contract.json'
+      - '.github/workflows/lumen-etf-check.yml'
+  pull_request:
+    paths:
+      - 'taiex-trend-dashboard/lumen-etf.js'
+      - 'taiex-trend-dashboard/lumen.js'
+      - 'taiex-trend-dashboard/context-source-catalog.json'
+      - 'taiex-trend-dashboard/qa-contract.json'
+      - '.github/workflows/lumen-etf-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-etf-product-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check taiex-trend-dashboard/lumen-etf.js
+      - name: ETF product type contract
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          root=Path('taiex-trend-dashboard')
+          loader=(root/'lumen.js').read_text(encoding='utf-8')
+          etf=(root/'lumen-etf.js').read_text(encoding='utf-8')
+          catalog=json.loads((root/'context-source-catalog.json').read_text(encoding='utf-8'))
+          qa=json.loads((root/'qa-contract.json').read_text(encoding='utf-8'))
+
+          if './lumen-etf.js' not in loader:
+              raise SystemExit('ETF module is not loaded')
+          if not (loader.index('./lumen-context.js') < loader.index('./lumen-etf.js') < loader.index('./lumen-boot.js')):
+              raise SystemExit('ETF module must load after context and before boot')
+
+          policy=catalog.get('policy',{})
+          for key in [
+              'etf_is_not_a_company',
+              'etf_must_not_use_company_revenue_financials_or_company_material_information',
+              'etf_web_pages_are_official_reference_pages_not_silent_structured_api_fallbacks'
+          ]:
+              if policy.get(key) is not True:
+                  raise SystemExit(f'missing ETF policy: {key}')
+
+          required_tokens=[
+              'lumenIsEtf', 'ETF 基本資料', '淨值 / 配息', 'ETF 結構', 'ETF 重大消息',
+              't187ap47_L', 'ETFortune/etfInfo/', 'ETFortune/dividendList', 'ETFortune/announcementList',
+              'ETF 不是營運公司', '不改用公司月營收補值'
+          ]
+          missing=[token for token in required_tokens if token not in etf]
+          if missing:
+              raise SystemExit(f'missing ETF runtime contracts: {missing}')
+
+          forbidden_etf_sources=['t187ap05_L','t187ap04_L','t187ap03_L','BWIBBU_ALL']
+          raw_function=etf.split('window.renderRawSources=function()',1)[-1]
+          leaked=[token for token in forbidden_etf_sources if token in raw_function]
+          if leaked:
+              raise SystemExit(f'ETF raw source panel contains company-only source: {leaked}')
+
+          etf_categories=set(qa.get('etf_information_categories',[]))
+          required_categories={
+              'official_daily_quote_and_OHLC','official_fund_master','benchmark_or_tracking_index',
+              'official_etf_product_page','official_etf_dividend_reference','official_etf_material_announcement_reference',
+              'six_month_official_price_history','MA5_MA20_MA60','RSI14','MACD_and_signal',
+              'explicit_not_applicable_for_company_revenue_and_financials'
+          }
+          if not required_categories.issubset(etf_categories):
+              raise SystemExit(f'ETF QA coverage incomplete: {sorted(required_categories-etf_categories)}')
+
+          print('Lumen ETF product-type contract OK')
