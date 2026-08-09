@@ -37,6 +37,21 @@ function extractForeignInstitutional() {
   return last ? {row,net:number(last[1]),field:last[0],date:sourceDate(row)} : {row,net:NaN,field:'',date:sourceDate(row)};
 }
 
+function macroEventPanel() {
+  const snapshot = STATE.verifiedSnapshot;
+  const events = Array.isArray(snapshot?.macro_events) ? snapshot.macro_events.slice(0,5) : [];
+  if (!events.length) return '';
+  const rows = events.map(event => `
+    <div class="sentimentPart">
+      <span>${esc(event.date)} · ${esc(event.title)}</span>
+      <strong>${esc(event.time || '—')} ${esc(event.timezone || '')} · <a href="${esc(event.source_url)}" target="_blank" rel="noopener noreferrer">${esc(event.source_name || '官方來源')} ↗</a></strong>
+    </div>`).join('');
+  return `<div class="sentimentParts" style="margin-top:12px">
+    <div class="source"><strong>已核對的跨市場行事曆</strong> · 排程快照只保留已核對的官方行事曆，不自行預測公布值。</div>
+    ${rows}
+  </div>`;
+}
+
 function renderSentiment(indexPctValue, up, down) {
   const components = [];
   if (Number.isFinite(indexPctValue)) components.push({
@@ -69,6 +84,7 @@ function renderSentiment(indexPctValue, up, down) {
     <div class="sentimentScore"><strong class="${levelClass}">${Number.isFinite(score)?Math.round(score):'—'}</strong><span>${label} · 0–100 描述性分數</span></div>
     <div class="meter" aria-label="透明情緒分數"><span style="width:${meter}%"></span></div>
     <div class="sentimentParts">${parts || '<div class="muted">可用來源不足，暫不計分。</div>'}${pcrText}</div>
+    ${macroEventPanel()}
   `;
 }
 
@@ -95,7 +111,9 @@ function renderMarket() {
     const p = indexPct(row);
     return `<tr><td>${esc(pick(row,['指數','Name']))}</td><td>${fmt(pick(row,['收盤指數','Close']))}</td><td class="${toneClass(p)}">${signed(p)}%</td><td>${esc(formatDate(sourceDate(row)))}</td></tr>`;
   }).join('') : '<tr><td colspan="4" class="empty">尚未取得 TWSE 指數資料。</td></tr>';
-  document.getElementById('indexSource').innerHTML = sourceLine('TWSE MI_INDEX',API.twse.indices,twii?sourceDate(twii):'未回傳');
+  const indexStatus = STATE.status['TWSE指數'];
+  const indexExtra = indexStatus?.snapshot_fallback ? `排程官方快照 · 快照資料日 ${formatDate(indexStatus.snapshot_data_date)} · 快照抓取 ${indexStatus.snapshot_run_at}` : '';
+  document.getElementById('indexSource').innerHTML = sourceLine('TWSE MI_INDEX',API.twse.indices,twii?sourceDate(twii):'未回傳',indexExtra);
 
   const hot = [...quotes].sort((a,b)=>(b.value||0)-(a.value||0)).slice(0,24);
   document.getElementById('hotRows').innerHTML = hot.length ? hot.map(q => `
