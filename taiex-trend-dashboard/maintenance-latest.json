@@ -1,6 +1,6 @@
 {
-  "run_type": "manual_data_enrichment_and_schedule_update",
-  "run_at": "2026-08-09T13:54:42+08:00",
+  "run_type": "manual_official_data_catalog_build",
+  "run_at": "2026-08-09T14:13:38+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -9,121 +9,73 @@
   "market_context": {
     "taiwan_market_state": "closed_weekend",
     "taiwan_latest_trading_day": "2026-08-07",
-    "next_expected_taiwan_trading_day": "2026-08-10",
-    "note": "2026-08-09 is Sunday in Taiwan. The official TWSE 2026 market holiday schedule does not list 2026-08-10 as a holiday."
+    "next_expected_taiwan_trading_day": "2026-08-10"
+  },
+  "catalog": {
+    "path": "taiex-trend-dashboard/snapshot-catalog.json",
+    "schema_version": 1,
+    "canonical_update_registry": true,
+    "dataset_count": 44,
+    "priority_order": ["critical", "high", "normal"],
+    "coverage": [
+      "TWSE indices",
+      "TWSE listed quotes",
+      "TPEx OTC quotes",
+      "TWSE funds/ETF source",
+      "TWSE and TPEx valuation",
+      "TWSE and TPEx margin",
+      "TAIFEX institutional derivatives and Put/Call",
+      "TWSE and TPEx monthly revenue",
+      "TWSE and TPEx company profiles",
+      "TWSE and TPEx material information",
+      "TPEx institutional datasets",
+      "TWSE T86 latest-trading-day registration",
+      "TWSE and TPEx income-statement families",
+      "TWSE and TPEx balance-sheet families"
+    ]
+  },
+  "snapshot": {
+    "path": "taiex-trend-dashboard/official-snapshot-latest.json",
+    "schema_version": 2,
+    "catalog_dataset_count_recorded": 44,
+    "verified_dataset_count": 1,
+    "verified_source_not_snapshotted_count": 1,
+    "queued_or_not_yet_verified_count": 42,
+    "verified_datasets": ["twse_indices"],
+    "source_verified_but_not_fallback_eligible": ["twse_valuation"],
+    "policy": {
+      "live_official_api_priority": true,
+      "verified_nonempty_rows_required_for_fallback": true,
+      "unverified_rows_must_be_empty": true,
+      "frontend_fallback_flag_required": true,
+      "freshness_limit_enforced_when_present": true
+    }
   },
   "verified_sources": [
     {
       "source_name": "TWSE OpenAPI - MI_INDEX",
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
       "data_date": "2026-08-07",
-      "fetched_at": "2026-08-09T13:52:47+08:00",
-      "status": "verified",
-      "facts": {
-        "TAIEX_close": 44225.91,
-        "TAIEX_change_points": -170.79,
-        "TAIEX_change_percent": -0.38,
-        "electronics_percent": -0.70,
-        "semiconductor_percent": -0.21,
-        "computer_peripherals_percent": -2.01,
-        "optoelectronics_percent": -3.01,
-        "electronic_components_percent": -1.25,
-        "financial_insurance_percent": 0.99,
-        "shipping_percent": 1.29,
-        "steel_percent": 1.32,
-        "green_energy_environmental_percent": 1.26,
-        "digital_cloud_percent": 6.85
-      }
+      "status": "verified_and_snapshotted"
     },
     {
-      "source_name": "TWSE 2026 market holiday schedule",
-      "source_url": "https://www.twse.com.tw/holidaySchedule/holidaySchedule",
-      "data_date": "2026",
-      "fetched_at": "2026-08-09T13:53:25+08:00",
-      "status": "verified",
-      "facts": {"2026_08_10_listed_as_holiday": false}
-    },
-    {
-      "source_name": "U.S. BLS August 2026 release calendar",
-      "source_url": "https://www.bls.gov/schedule/2026/08_sched_list.htm",
-      "data_date": "2026-08-09",
-      "fetched_at": "2026-08-09T13:52:47+08:00",
-      "status": "verified",
-      "facts": {
-        "July_CPI": "2026-08-12 08:30 ET",
-        "July_PPI": "2026-08-13 08:30 ET",
-        "July_import_export_prices": "2026-08-18 08:30 ET"
-      }
-    },
-    {
-      "source_name": "Federal Reserve official calendars",
-      "source_url": "https://www.federalreserve.gov/newsevents/2026-august.htm",
-      "data_date": "2026-08-09",
-      "fetched_at": "2026-08-09T13:52:47+08:00",
-      "status": "verified",
-      "facts": {
-        "July_FOMC_minutes": "2026-08-19 14:00 ET",
-        "September_FOMC_meeting": "2026-09-15 to 2026-09-16",
-        "September_FOMC_release": "2026-09-16 14:00 ET"
-      }
-    },
-    {
-      "source_name": "U.S. BEA release schedule",
-      "source_url": "https://www.bea.gov/news/schedule",
-      "data_date": "2026-08-09",
-      "fetched_at": "2026-08-09T13:52:47+08:00",
-      "status": "verified",
-      "facts": {
-        "Q2_GDP_second_estimate": "2026-08-26 08:30 ET",
-        "July_personal_income_outlays": "2026-08-26 08:30 ET"
-      }
-    }
-  ],
-  "source_checks": [
-    {
-      "source_name": "TWSE OpenAPI - STOCK_DAY_ALL",
-      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
-      "status": "endpoint_catalog_verified_rows_not_independently_retrieved",
-      "snapshot_rows_written": 0
-    },
-    {
-      "source_name": "TPEx OpenAPI - tpex_mainboard_quotes",
-      "source_url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes",
-      "status": "endpoint_catalog_verified_rows_not_independently_retrieved",
-      "snapshot_rows_written": 0
-    },
-    {
-      "source_name": "TAIFEX OpenAPI - PutCallRatio",
-      "source_url": "https://openapi.taifex.com.tw/v1/PutCallRatio",
-      "status": "endpoint_catalog_verified_rows_not_independently_parsed",
-      "snapshot_rows_written": 0
-    },
-    {
-      "source_name": "TAIFEX OpenAPI - institutional derivatives",
-      "source_url": "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersGeneralBytheDate",
-      "status": "endpoint_catalog_verified_rows_not_independently_parsed",
-      "snapshot_rows_written": 0
+      "source_name": "TWSE OpenAPI - BWIBBU_ALL",
+      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL",
+      "data_date": "2026-08-07",
+      "status": "source_and_schema_rows_independently_readable_but_complete_snapshot_not_materialized",
+      "fallback_eligible": false
     }
   ],
   "website_changes": {
-    "official_snapshot_path": "taiex-trend-dashboard/official-snapshot-latest.json",
-    "live_official_api_priority": true,
-    "snapshot_fallback_requires_live_empty_verified_and_nonempty": true,
-    "unverified_snapshot_backfill_forbidden": true,
-    "current_verified_snapshot_datasets": ["twse_indices"],
-    "current_unverified_empty_snapshot_datasets": [
-      "twse_listed_quotes",
-      "tpex_quotes",
-      "twse_funds",
-      "twse_margin",
-      "tpex_margin",
-      "taifex_institutional",
-      "taifex_put_call"
-    ],
-    "market_view_official_macro_calendar": true,
-    "source_manifest_updated": true,
-    "qa_snapshot_contract_version": 2,
-    "static_workflow_snapshot_boundary_check_added": true
+    "snapshot_catalog_created": true,
+    "on_demand_verified_snapshot_fallback_added": true,
+    "on_demand_scope": ["valuation", "monthly revenue", "company profile", "material information", "financial statement families", "TPEx institutional datasets"],
+    "initial_market_refresh_disables_old_snapshot_race": true,
+    "freshness_guard_added": true,
+    "twse_t86_frontend_fallback_enabled": false,
+    "source_manifest_catalog_bound": true,
+    "qa_contract_version": 3,
+    "snapshot_specific_workflow_added": ".github/workflows/lumen-snapshot-check.yml"
   },
   "automation": {
     "provider": "ChatGPT automation",
@@ -131,56 +83,54 @@
     "timezone": "Asia/Taipei",
     "times": ["08:30", "21:30"],
     "enabled": true,
-    "updated_this_run": true,
-    "official_snapshot_refresh_required_each_run": true,
-    "maintenance_latest_refresh_required_each_run": true
+    "catalog_driven": true,
+    "new_catalog_dataset_automatically_enters_update_scope": true,
+    "every_catalog_dataset_requires_each_run_status": true
   },
   "analysis": {
     "raw_facts": [
-      "TAIEX closed 2026-08-07 at 44,225.91, down 170.79 points or 0.38% according to TWSE MI_INDEX.",
-      "Verified future official macro events were added from BLS, BEA and Federal Reserve calendars."
+      "The canonical official update registry now contains 44 datasets.",
+      "Only twse_indices currently contains verified snapshot rows.",
+      "TWSE BWIBBU_ALL was readable with 2026-08-07 valuation rows, but the complete dataset was not materialized into the repository snapshot in this run."
     ],
     "lumen_calculation": [
-      "No directional forecast value was persisted. Runtime indicators continue to be calculated from available official market data."
+      "No investment-direction value was generated or persisted by this build."
     ],
     "rule_interpretation": [
-      "The verified snapshot is a resilience layer, not a replacement data vendor. Live official APIs remain canonical and take priority."
+      "Catalog registration means a dataset is in the recurring verification queue; it does not mean the dataset is already online with verified rows.",
+      "The generic fallback layer expands resilience for on-demand stock tabs without allowing unverified or partial data to masquerade as current official data."
     ],
     "risk_limitations": [
-      "Taiwan has no new closing session on Sunday 2026-08-09.",
-      "Listed/OTC quote rows and TAIFEX derivative rows were not independently retrievable or parseable in this maintenance fetch layer and therefore were not added to the verified snapshot.",
-      "A live browser/CORS click-through test was not independently completed.",
-      "An independent git clone/static execution attempt could not run because the maintenance container could not resolve github.com; this is recorded as an environment limitation, not as a repository pass or failure."
+      "43 catalog datasets are not yet eligible as verified snapshot fallback datasets.",
+      "TWSE T86 remains registered but frontend fallback is deliberately disabled until reliable trading-date binding is implemented.",
+      "No live-browser click-through/CORS smoke test was independently completed in this run.",
+      "GitHub combined status returned no status records for the latest QA commit, so CI success is not claimed.",
+      "Cloudflare lumen-script.pages.dev writable project remains unverified/not synchronized."
     ]
   },
   "validation": {
     "github_file_writes_succeeded": true,
-    "official_snapshot_json_written": true,
-    "static_workflow_updated_to_validate_snapshot_policy": true,
+    "catalog_and_snapshot_schema_written": true,
+    "snapshot_contract_workflow_written": true,
     "github_combined_status_records": 0,
     "ci_explicit_success_evidence": false,
-    "independent_container_clone_completed": false,
-    "independent_container_clone_failure": "Could not resolve host: github.com",
     "live_browser_runtime_smoke_test_completed": false
   },
   "github": {
     "feature_commits": [
-      "5078c8d8f218b7123b365fdacfc247993ea3ab83",
-      "375d827c32326ac658ad6343ece24fe215c4f594",
-      "752c0aa041240e42045bfd48db37add4fbb6d792",
-      "430b5d8e34e030b658af42418050945156d749c9",
-      "825a4229c62d237722561034229d8e6dcabaca24",
-      "8e470317067dd059d26555660f80be9e27096d0b",
-      "2bc8227a125dba6d718f895d481cf1f8004d779d"
+      "ddd19a3aa1fc359b0e837a9a3cc32d166a0cfc95",
+      "234f8b04f9aed547ea71e5615a05d7c9b7f6af44",
+      "d05e14bbbc20d4bf2bc883fa981e50d67545a0bc",
+      "d22c47e191202bc1aff609fb47134d5a827c767a",
+      "59e23281b37396a2cf0eb526ed30c4a40f672c6c",
+      "f4ac848b94c2f184caf5cac4e7910a8c61d63a80"
     ],
-    "prior_maintenance_commit": "ddb2a4ec1fff495ba979686931ba025a8bca7976",
-    "ci_note": "No combined status records were returned; do not label CI as passed."
+    "ci_note": "No combined status records were returned for f4ac848b94c2f184caf5cac4e7910a8c61d63a80; do not label CI as passed."
   },
   "deployment": {
     "github_pages_canonical_source": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "github_pages_source_updated": true,
     "github_pages_live_deployment_verified": false,
-    "github_pages_verification_note": "Public URL could not be independently fetched by the available web layer in this run; source update is confirmed, live deployment is not claimed.",
     "cloudflare_lumen_script_writable_source_verified": false,
     "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   }
