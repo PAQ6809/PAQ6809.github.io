@@ -7,6 +7,7 @@ on:
       - 'taiex-trend-dashboard/official-snapshot-latest.json'
       - 'taiex-trend-dashboard/lumen.js'
       - 'taiex-trend-dashboard/lumen-status.js'
+      - 'taiex-trend-dashboard/lumen-relay.js'
       - 'taiex-trend-dashboard/lumen-boot.js'
       - '.github/workflows/lumen-snapshot-check.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'taiex-trend-dashboard/official-snapshot-latest.json'
       - 'taiex-trend-dashboard/lumen.js'
       - 'taiex-trend-dashboard/lumen-status.js'
+      - 'taiex-trend-dashboard/lumen-relay.js'
       - 'taiex-trend-dashboard/lumen-boot.js'
       - '.github/workflows/lumen-snapshot-check.yml'
 
@@ -33,6 +35,7 @@ jobs:
         run: |
           node --check taiex-trend-dashboard/lumen.js
           node --check taiex-trend-dashboard/lumen-status.js
+          node --check taiex-trend-dashboard/lumen-relay.js
           node --check taiex-trend-dashboard/lumen-boot.js
       - name: Snapshot catalog contract
         shell: python
@@ -108,10 +111,12 @@ jobs:
                   raise SystemExit(f'missing runtime snapshot guard: {token}')
 
           loader = (root / 'lumen.js').read_text(encoding='utf-8')
-          if './lumen-status.js' not in loader:
-              raise SystemExit('truthful status module is not loaded')
-          if loader.index('./lumen-status.js') > loader.index('./lumen-boot.js'):
-              raise SystemExit('status module must load before boot')
+          required_modules = ['./lumen-status.js', './lumen-cloud.js', './lumen-relay.js', './lumen-boot.js']
+          for module in required_modules:
+              if module not in loader:
+                  raise SystemExit(f'missing runtime module: {module}')
+          if not (loader.index('./lumen-status.js') < loader.index('./lumen-cloud.js') < loader.index('./lumen-relay.js') < loader.index('./lumen-boot.js')):
+              raise SystemExit('status/cloud/relay/boot module order is unsafe')
 
           status = (root / 'lumen-status.js').read_text(encoding='utf-8')
           status_contract = [
@@ -126,4 +131,27 @@ jobs:
               if token not in status:
                   raise SystemExit(f'missing truthful status contract: {token}')
 
-          print(f'Lumen snapshot catalog OK: {len(ids)} datasets')
+          relay = (root / 'lumen-relay.js').read_text(encoding='utf-8')
+          relay_contract = [
+              'lumen-official-relay',
+              'official_source_url',
+              'relay_transport:true',
+              'twse_stock_history',
+              'tpex_stock_history',
+              'twse_t86',
+              'LUMEN_RELAY_STATIC',
+              'LUMEN_DIRECT_GET_DATA'
+          ]
+          for token in relay_contract:
+              if token not in relay:
+                  raise SystemExit(f'missing official relay contract: {token}')
+          forbidden_relay_patterns = [
+              'relay.searchParams.set(\'url\'',
+              'targetUrl',
+              'proxyUrl'
+          ]
+          for token in forbidden_relay_patterns:
+              if token in relay:
+                  raise SystemExit(f'arbitrary-url relay pattern is forbidden: {token}')
+
+          print(f'Lumen snapshot + relay contract OK: {len(ids)} datasets')
