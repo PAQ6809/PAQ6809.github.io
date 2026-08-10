@@ -2,10 +2,12 @@ const API = 'https://goedzzhhvvnfczgnkqlv.supabase.co/functions/v1/atlas-library
 const API_KEY = 'sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN';
 const ALLOWED_ORIGIN = 'https://paq6809.github.io';
 const REQUEST_TIMEOUT_MS = 10000;
+const SLOW_REQUEST_MS = 3000;
 
 async function request(path, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const startedAt = Date.now();
   try {
     const response = await fetch(`${API}${path}`, {
       ...options,
@@ -18,7 +20,13 @@ async function request(path, options = {}) {
       },
     });
     const body = await response.json().catch(() => ({}));
-    return { response, body };
+    const durationMs = Date.now() - startedAt;
+    const label = `${options.method || 'GET'} ${path}`;
+    console.log(`TIMING: ${label} ${durationMs}ms`);
+    if (durationMs > SLOW_REQUEST_MS) {
+      console.warn(`WARN: slow Edge request ${label} took ${durationMs}ms`);
+    }
+    return { response, body, durationMs };
   } finally {
     clearTimeout(timeout);
   }
@@ -60,6 +68,11 @@ const blockedOrigin = await request('?action=health', {
   headers: { Origin: 'https://not-allowed.invalid' },
 });
 assert(blockedOrigin.response.status === 403 && blockedOrigin.body.error === 'ORIGIN_NOT_ALLOWED', 'unapproved browser origin is rejected', blockedOrigin.body);
+
+const timings = [health, search, nonHttps, privateHost, telegram, legal, blockedOrigin].map((item) => item.durationMs);
+const maxLatencyMs = Math.max(...timings);
+const avgLatencyMs = Math.round(timings.reduce((sum, value) => sum + value, 0) / timings.length);
+console.log(`SUMMARY: Edge smoke latency avg=${avgLatencyMs}ms max=${maxLatencyMs}ms requests=${timings.length}`);
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log('Atlas Edge Function regression matrix passed.');
