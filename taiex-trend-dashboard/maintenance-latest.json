@@ -1,38 +1,40 @@
 {
-  "run_type": "scheduled_morning_official_source_maintenance",
-  "run_at": "2026-08-10T08:29:19+08:00",
+  "run_type": "scheduled_evening_official_source_maintenance",
+  "run_at": "2026-08-10T21:31:41+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
     "other_projects_modified": false
   },
   "market_context": {
-    "taiwan_market_state": "pre_open",
-    "taiwan_latest_trading_day": "2026-08-07",
-    "next_expected_taiwan_trading_day": "2026-08-10",
+    "taiwan_market_state": "post_close_expected_but_current_official_web_materialization_not_confirmed",
+    "latest_independently_verified_taiwan_trading_day": "2026-08-07",
+    "calendar_note": "TWSE annual holiday schedule does not list 2026-08-10 as a scheduled market holiday, but this maintenance environment did not obtain a complete, current 2026-08-10 official post-close dataset.",
     "evidence": [
-      "TWSE MI_INDEX returned 1150807",
-      "TWSE STOCK_DAY_ALL now also returned 1150807, resolving the prior web-transport date mismatch"
+      "TWSE MI_INDEX readable official copy still reports 1150807; TAIEX 44225.91, -0.38%",
+      "TWSE STOCK_DAY_ALL web transport copy observed during this run still exposed stale 1150806 rows",
+      "No 2026-08-10 financial values were promoted from incomplete or stale transport results"
     ]
   },
   "official_source_checks": {
-    "twse_indices": {"status":"read","data_date":"2026-08-07","result":"official endpoint current for latest completed trading day"},
-    "twse_listed_quotes": {"status":"read","data_date":"2026-08-07","result":"official endpoint now agrees with MI_INDEX on 1150807; full universe was not promoted to snapshot because complete row-by-row materialization/verification was not performed"},
-    "twse_funds": {"status":"official_endpoint_reference_available","result":"fund master remains canonical structured ETF identity source; current web copy was not used to create a fresh verified full-dataset snapshot"},
-    "0050_etfortune": {"status":"bounded_official_page_reverification","result":"identity regression unchanged; official page also shows 2026-08-10 distribution payment date and 0.6 per unit, retained only as event context and not stored in identity registry"},
-    "tpex_taifex_and_other_catalog_datasets": {"status":"not_fully_materialized_this_run","result":"canonical sources remain cataloged; no unverified rows were promoted to snapshot fallback"}
+    "twse_indices": {"status":"official_read_but_not_current_for_expected_post_close","data_date":"2026-08-07","result":"complete current 2026-08-10 materialization not obtained; do not fabricate today's close"},
+    "twse_listed_quotes": {"status":"stale_web_transport_copy","observed_data_date":"2026-08-06","result":"stale transport result rejected for snapshot and current-price use"},
+    "twse_valuation": {"status":"official_endpoint_read","latest_observed_date":"2026-08-07","result":"not promoted to snapshot because complete current full dataset was not independently materialized"},
+    "tpex_quotes_and_related": {"status":"transport_not_materialized","result":"official endpoint access through this environment did not yield a usable complete dataset; no rows promoted"},
+    "taifex": {"status":"transport_not_materialized","result":"official PutCall endpoint was not materialized by the web transport; no values guessed or promoted"},
+    "0050_etfortune": {"status":"bounded_official_reverification","result":"identity unchanged; TWSE e添富 confirms 0050 remains 台股ETF, issuer 元大證券投資信託股份有限公司, benchmark 富時臺灣證券交易所臺灣50指數. Official page/search copy also shows 2026-08-10 distribution payment of 0.6 per unit; dynamic event data remains outside identity registry."}
   },
   "relay_health": {
     "lumen-official-relay": {"status":"ACTIVE","version":2,"role":"transport_only"},
     "lumen-context-relay": {"status":"ACTIVE","version":1,"role":"transport_only"},
-    "boundary_note": "Both functions remain allowlisted transports with origin checks and publishable-key authentication inside the functions; neither is an arbitrary URL proxy and neither replaces canonical source attribution."
+    "boundary_note": "Both Lumen relay functions remain ACTIVE. Existing implementation retains allowlisted source resolution, allowed-origin checks and publishable-key authentication; they are not canonical data sources and are not arbitrary URL proxies."
   },
   "snapshot": {
     "path": "taiex-trend-dashboard/official-snapshot-latest.json",
     "schema_version": 3,
-    "last_content_commit_sha": "59d3df753cb65be6a0cf6f38106debbb2ef5352c",
     "content_changed_this_run": false,
-    "reason_not_rewritten": "No catalog dataset was completely materialized and independently verified to the level required for a new fallback row set. Rewriting only the timestamp would create false freshness, so the snapshot contents were intentionally preserved and this run status is recorded here instead.",
+    "reason_not_rewritten": "No catalog dataset was completely materialized and independently verified as a fresh 2026-08-10 full dataset. Updating only run_at would create false freshness. Existing non-verified datasets remain ineligible for fallback and rows remain empty.",
+    "latest_snapshot_run_at": "2026-08-09T21:30:41+08:00",
     "verified_fallback_dataset_count": 0,
     "nonverified_rows_are_empty": true,
     "partial_dataset_must_not_be_marked_verified": true
@@ -47,26 +49,26 @@
       "benchmark": "富時臺灣證券交易所臺灣50指數",
       "security_type": "台股ETF",
       "official_source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
-      "official_page_additional_context": {"distribution_payment_date":"2026-08-10","distribution_per_unit":"0.6","performance_data_date":"2026-08-07"}
+      "event_context": {"distribution_payment_date":"2026-08-10","distribution_per_unit":"0.6"}
     },
     "registry_file_updated": false,
-    "reason_not_updated": "Verified identity fields were unchanged. Dynamic distribution data is intentionally excluded from the identity registry."
+    "reason_not_updated": "Verified identity fields did not change. Distribution/payment data is dynamic and intentionally excluded from etf-profile-verified.json."
   },
   "macro_events": [
-    {"event":"美國 7 月 CPI","date":"2026-08-12","time":"08:30 ET","source":"BLS","research_relevance":"高：利率預期、估值與大型權值股折現率"},
+    {"event":"美國 7 月 CPI + Real Earnings","date":"2026-08-12","time":"08:30 ET","source":"BLS","research_relevance":"高：利率預期、估值與大型權值折現率"},
     {"event":"美國 7 月 PPI","date":"2026-08-13","time":"08:30 ET","source":"BLS","research_relevance":"高：成本與通膨路徑"},
     {"event":"FOMC 7/28–7/29 會議紀要","date":"2026-08-19","time":"14:00 ET","source":"Federal Reserve","research_relevance":"高：利率與流動性預期"},
-    {"event":"美國第二季 GDP 第二次估計 + 7月 Personal Income and Outlays","date":"2026-08-26","time":"08:30 ET","source":"BEA","research_relevance":"中高：景氣與消費需求"}
+    {"event":"美國第二季 GDP 第二次估計 + 7 月 Personal Income and Outlays","date":"2026-08-26","time":"08:30 ET","source":"BEA","research_relevance":"中高：景氣與消費需求"}
   ],
   "rule_interpretation": {
-    "0050": "0050 追蹤臺灣50大型權值股；本週 CPI/PPI 與後續 FOMC 紀要對利率預期、折現率及大型科技權值風險偏好具有較高研究關聯。今日收益分配發放本身屬基金事件，不應直接推論為價格方向訊號。",
+    "0050": "0050 追蹤臺灣50大型權值股；8/12 CPI、8/13 PPI 與 8/19 FOMC 紀要對利率預期、折現率及大型科技權值風險偏好具有較高研究關聯。8/10 收益分配發放屬基金事件，不直接代表價格方向。",
     "risk_limit": "關聯高不等於一定受惠或受害，不保證漲跌。"
   },
   "github_ci": {
-    "checked_commit": "7a78e634db33b90b64d31843c370c168111c87f6",
+    "checked_commit": "191724cbc236d3fe6db9d6c917c71e4660bc973b",
     "explicit_success_evidence_for_checked_commit": false,
     "combined_status_entries": [],
-    "note": "No explicit status/check conclusion=success was returned for the latest prior maintenance commit, so CI is not reported as passed for this run."
+    "note": "GitHub combined status returned no explicit checks/status entries for the prior Lumen maintenance commit. CI is therefore not reported as passed."
   },
   "deployment": {
     "github_pages_source_updated": true,
@@ -75,10 +77,10 @@
     "cloudflare_deployment_status": "not_verified_or_not_synchronized"
   },
   "risk_limitations": [
-    "At 08:29 Asia/Taipei the Taiwan cash market had not yet opened; latest completed official trading date remains 2026-08-07.",
-    "TWSE STOCK_DAY_ALL and MI_INDEX now agree on 2026-08-07, but the complete quote universe was not independently materialized and verified for snapshot fallback in this run.",
-    "Several TPEx/TAIFEX, financial-statement, governance and macro datasets were not fully materialized in this run; they were not guessed or promoted to fallback rows.",
-    "TWSE ETF e添富 prohibits unauthorized automated downloading; only bounded verification of the existing 0050 identity profile and visible event context was performed.",
-    "GitHub Actions explicit success, GitHub Pages propagation and Cloudflare synchronization were not independently verified for this new maintenance commit."
+    "A complete current 2026-08-10 official post-close TWSE/TPEx universe was not independently materialized in this environment; latest independently verified cash-market date remains 2026-08-07.",
+    "The observed STOCK_DAY_ALL web transport copy was stale and was explicitly rejected rather than treated as current market data.",
+    "TPEx and TAIFEX official endpoints were not fully materialized by the available web transport; this is recorded as a transport verification limitation, not an exchange-source outage.",
+    "ETF identity was bounded-reverified from TWSE e添富; dynamic financial/event values are not stored in the verified identity registry.",
+    "No explicit GitHub Actions conclusion=success is available for the checked maintenance commit; GitHub Pages propagation and Cloudflare synchronization remain independently unverified."
   ]
 }
