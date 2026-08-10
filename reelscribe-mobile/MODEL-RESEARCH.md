@@ -74,6 +74,9 @@ Upstream:
 
 - Apache-2.0 model family published for multilingual recognition, Chinese dialects, streaming, timestamps, hotwords and singing-oriented scenarios.
 - Particularly relevant to short-form Chinese, Cantonese and mixed-language videos.
+- The official model card now advertises a CPU/edge GGUF path through llama.cpp-compatible tooling, which makes a future native-phone evaluation more plausible than the original PyTorch-only path.
+- The canonical Hugging Face repository remains about 1.99 GB and its main `model.pt` is about 1.97 GB; that upstream default artifact is not approved for first-release mobile download or bundling.
+- Any GGUF/prebuilt path remains research-only until ReelScribe pins an upstream revision, exact artifact URL, byte size and SHA-256 and records reproducible conversion provenance plus iOS/Android device evidence.
 - It is tracked as a sherpa-onnx/native candidate, not bundled into version 1.0.
 - Promotion gate: verified mobile artifact, exact license chain, timestamps, iOS/Android native runtime, memory and thermal benchmark, and a lower error/hallucination rate than Whisper Base on the ReelScribe fixture set.
 
