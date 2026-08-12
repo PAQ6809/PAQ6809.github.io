@@ -27,6 +27,73 @@ function lumenNewestDate(values) {
   return best;
 }
 
+function lumenNewestRowDate(rows) {
+  return lumenNewestDate((Array.isArray(rows)?rows:[]).map(row => sourceDate(row)).filter(Boolean));
+}
+
+async function lumenFetchCacheBustedOfficialArray(key,url) {
+  const requestUrl = `${url}${url.includes('?')?'&':'?'}lumen_fresh=${Date.now()}`;
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(),8000);
+  const started = performance.now();
+  try {
+    const response = await fetch(requestUrl,{
+      signal:controller.signal,
+      cache:'no-store',
+      headers:{Accept:'application/json'}
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const parsed = await response.json();
+    const rows = Array.isArray(parsed) ? parsed : rowsOf(parsed);
+    if (!Array.isArray(rows) || !rows.length) throw new Error('empty official payload');
+    STATE.status[key] = {
+      ok:true,
+      rows:rows.length,
+      ms:Math.round(performance.now()-started),
+      at:new Date().toISOString(),
+      url,
+      official_source_url:url,
+      request_url:requestUrl,
+      transport:'official_direct_cache_busted',
+      freshness_probe:true
+    };
+    return rows;
+  } catch (error) {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Keep the existing direct -> allowlisted relay behavior, but for the TWSE
+// daily quote batch make one official cache-busted probe and accept it only
+// when its source date is newer than the normal official response.
+const LUMEN_BASE_GET_DATA_FOR_FRESHNESS = getData;
+getData = async function getDataWithTwseFreshnessProbe(key,url,options={}) {
+  const normal = await LUMEN_BASE_GET_DATA_FOR_FRESHNESS(key,url,options);
+  if (url!==API.twse.quotes || options.disableFreshnessProbe===true) return normal;
+
+  const probe = await lumenFetchCacheBustedOfficialArray(`${key} freshness probe`,url);
+  if (!probe.length) return normal;
+
+  const normalDate = lumenNewestRowDate(normal);
+  const probeDate = lumenNewestRowDate(probe);
+  if (lumenQuoteDateKey(probeDate) > lumenQuoteDateKey(normalDate)) {
+    STATE.status[key] = {
+      ...(STATE.status[`${key} freshness probe`]||{}),
+      ok:true,
+      rows:probe.length,
+      url,
+      official_source_url:url,
+      data_date:probeDate,
+      fresher_than_standard_response:true
+    };
+    STATE.latestVerifiedCashMarketDate = probeDate;
+    return probe;
+  }
+  return normal;
+};
+
 // The old implementation used the first quote carrying a date. A stale first
 // row could therefore make the whole site report yesterday even when a newer
 // official row had already been validated elsewhere in STATE.
@@ -85,7 +152,8 @@ async function lumenRefreshSelectedOfficialQuote(q, options={}) {
       allowSnapshotFallback:false,
       relayAttempts:3,
       relayTimeout:15000,
-      timeout:9000
+      timeout:9000,
+      disableFreshnessProbe:true
     });
     const rows = lumenNormalizeLatestDailyRows(payload)
       .sort((a,b)=>lumenQuoteDateKey(a.date)-lumenQuoteDateKey(b.date));
