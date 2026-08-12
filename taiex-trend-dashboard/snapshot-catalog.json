@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "Lumen official data update catalog",
   "timezone": "Asia/Taipei",
-  "scheduled_runs": ["08:30", "21:30"],
+  "scheduled_runs": ["08:00", "13:40"],
   "policy": {
     "source_first": true,
     "primary_sources_only_for_financial_values": true,
