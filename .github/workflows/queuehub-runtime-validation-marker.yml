@@ -1,0 +1,83 @@
+name: QueueHub Runtime Validation Marker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-runtime-validation-marker.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate current QueueHub runtime and write marker
+        shell: bash
+        run: |
+          set +e
+          mkdir -p queuehub/project/diagnostics
+          marker=queuehub/project/diagnostics/runtime-validation.txt
+          : > "$marker"
+          failed=0
+          while IFS= read -r -d '' file; do
+            output="$(node --check "$file" 2>&1)"
+            rc=$?
+            if [ "$rc" -ne 0 ]; then
+              failed=1
+              echo "FAIL syntax: $file" >> "$marker"
+              printf '%s\n' "$output" >> "$marker"
+            fi
+          done < <(find queuehub/src -type f -name '*.js' -print0 | sort -z)
+          output="$(node --check queuehub/sw.js 2>&1)"
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            failed=1
+            echo 'FAIL syntax: queuehub/sw.js' >> "$marker"
+            printf '%s\n' "$output" >> "$marker"
+          fi
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+          root=Path('queuehub')
+          html=(root/'index.html').read_text(encoding='utf-8')
+          class A(HTMLParser):
+              def __init__(self): super().__init__(); self.refs=[]
+              def handle_starttag(self,tag,attrs):
+                  d=dict(attrs)
+                  if tag=='script' and d.get('src','').startswith('./'): self.refs.append(d['src'])
+                  if tag=='link' and d.get('rel')=='stylesheet' and d.get('href','').startswith('./'): self.refs.append(d['href'])
+          a=A(); a.feed(html)
+          sw=(root/'sw.js').read_text(encoding='utf-8')
+          refs=a.refs+re.findall(r"['\"](\./[^'\"]+)['\"]",sw)
+          missing=[]
+          for ref in sorted(set(refs)):
+              clean=ref.split('?',1)[0].split('#',1)[0]
+              if clean=='./': continue
+              target=root/clean.removeprefix('./')
+              if not target.exists(): missing.append((ref,str(target)))
+          if missing:
+              with open(root/'project/diagnostics/runtime-validation.txt','a',encoding='utf-8') as f:
+                  for ref,target in missing: f.write(f'FAIL asset: {ref} -> {target}\n')
+              raise SystemExit(1)
+          PY
+          assets_rc=$?
+          if [ "$assets_rc" -ne 0 ]; then failed=1; fi
+          if [ "$failed" -eq 0 ]; then
+            echo 'PASS: all QueueHub JavaScript parses and all local runtime assets exist.' > "$marker"
+          fi
+          cat "$marker"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$marker"
+          git diff --cached --quiet || { git commit -m 'ci(queuehub): record final runtime validation marker' && git push origin HEAD:main; }
+          exit "$failed"
