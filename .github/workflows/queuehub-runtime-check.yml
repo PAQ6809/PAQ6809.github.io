@@ -1,0 +1,90 @@
+name: QueueHub Runtime Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'queuehub/**/*.js'
+      - 'queuehub/index.html'
+      - 'queuehub/sw.js'
+      - '.github/workflows/queuehub-runtime-check.yml'
+  pull_request:
+    paths:
+      - 'queuehub/**/*.js'
+      - 'queuehub/index.html'
+      - 'queuehub/sw.js'
+      - '.github/workflows/queuehub-runtime-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: queuehub-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: JavaScript syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          find queuehub/src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --check queuehub/sw.js
+
+      - name: Verify local runtime assets
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+
+          root = Path('queuehub')
+          html = (root / 'index.html').read_text(encoding='utf-8')
+
+          class Assets(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.refs = []
+              def handle_starttag(self, tag, attrs):
+                  data = dict(attrs)
+                  if tag == 'script' and data.get('src', '').startswith('./'):
+                      self.refs.append(data['src'])
+                  if tag == 'link' and data.get('rel') == 'stylesheet' and data.get('href', '').startswith('./'):
+                      self.refs.append(data['href'])
+
+          parser = Assets()
+          parser.feed(html)
+
+          sw = (root / 'sw.js').read_text(encoding='utf-8')
+          sw_refs = re.findall(r"['\"](\./[^'\"]+)['\"]", sw)
+
+          missing = []
+          for ref in sorted(set(parser.refs + sw_refs)):
+              clean = ref.split('?', 1)[0].split('#', 1)[0]
+              target = root / clean.removeprefix('./')
+              if clean in ('./',):
+                  continue
+              if not target.exists():
+                  missing.append((ref, str(target)))
+
+          if missing:
+              print('Missing QueueHub runtime assets:')
+              for ref, target in missing:
+                  print(f'  {ref} -> {target}')
+              raise SystemExit(1)
+
+          print(f'Validated {len(set(parser.refs))} HTML local assets and {len(set(sw_refs))} Service Worker refs.')
+          PY
