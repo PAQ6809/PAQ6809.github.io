@@ -1,139 +1,61 @@
-# System Architecture
+# QueueHub System Architecture
 
-負責 QueueHub 的核心 domain、資料流、後端、Realtime、整合、安全、可靠性與容量。介面層只能透過這裡定義的 service / contract 使用資料。
+Architecture v2 is now the active organization model. Historical phase documents remain as migration evidence, but new architecture work is grouped by runtime responsibility instead of chronological phase.
 
-## 01 Domain Model
-- Venue
-- Restaurant
-- QueueSession
-- QueueStatus
-- QueueEvent
-- VisitorSession
-- TrackedOrder
-- NotificationPreference
-- IntegrationConfig
-- Staff / Role
+## Active architecture domains
 
-## 02 Frontend Architecture
-- Router
-- State management
-- Domain services
-- Storage / recovery
-- Realtime client
-- PWA / service worker
-- Error boundary
-- Feature flags
+1. `clients/` — Mobile Web, Mobile PWA, Desktop, Tablet Operator, Public Display, Kiosk, future Gateway Device.
+2. `frontend/` — routing, state, commands, queries, providers, PWA shell.
+3. `backend/` — public read, admin commands, secure QR, push, integrations.
+4. `realtime/` — broadcast, reconnect, authoritative resync, stale detection.
+5. `data/` — schema, migrations, RLS, indexes, retention, backup.
+6. `auth/` — visitor, staff, RBAC, device authorization.
+7. `network/` — normal online, weak network, offline, LAN/gateway.
+8. `security/` — browser, DB, command, QR, push, device/gateway security.
+9. `reliability/` — idempotency, retries, outbox, degraded mode, recovery.
+10. `observability/` — logs, metrics, traces, lag, delivery health.
+11. `deployment/` — dev/staging/production, CI/CD, migrations, rollback.
+12. `scale/` — connection budgets, fanout, load testing, 3,000-user target.
 
-## 03 Backend Architecture
-- API gateway
-- Queue command service
-- Queue query service
-- Session service
-- Notification service
-- Integration service
-- Admin service
+See `ARCHITECTURE_V2.md` for dependency and migration rules.
 
-## 04 Data Layer
-- PostgreSQL / Supabase
-- Schema / migrations
-- Indexes
-- Snapshot + event history
-- Retention
-- Backup / restore
-- RLS
+## Client split
 
-## 05 Realtime
-- WebSocket / Supabase Realtime / SSE
-- Subscription channels
-- Event version
-- Sequence number
-- Reconnect
-- Replay
-- Snapshot recovery
-- Stale source detection
+- `clients/mobile-web.md`
+- `clients/mobile-pwa.md`
+- `clients/desktop.md`
+- `clients/tablet.md`
+- `clients/public-display.md`
+- `clients/kiosk.md`
 
-## 06 Integration Layer
-- API adapter
-- Webhook adapter
-- Manual tablet adapter
-- Local Gateway adapter
-- Vendor normalization
-- Signature validation
-- Idempotency
+Client-specific modules may depend on shared frontend/core services, but must not own database credentials, service-role secrets, production authorization, or vendor secrets.
 
-## 07 Authentication / Authorization
-- Anonymous visitor session
-- Staff authentication
-- Venue admin
-- Restaurant operator
-- Developer/API role
-- RLS / policy
-- Device/session revocation
+## Core dependency direction
 
-## 08 Security
-- Signed / opaque order token
-- No enumerable ticket access
-- Rate limiting
-- Secret management
-- Audit trail
-- Input validation
-- Webhook verification
-- Abuse protection
+```text
+Client / Device Adapter
+        ↓
+Frontend Commands + Queries
+        ↓
+Core Domain / Repositories / Providers
+        ↓
+Backend / Realtime / Data
+```
 
-## 09 Notifications
-- In-page alerts
-- Web Notification
-- Web Push
-- PWA deep link
-- Threshold rules
-- Deduplication
-- Delivery status
+## Current production capabilities retained during migration
 
-## 10 Scale / Performance
-- 3,000 concurrent users baseline target
-- 50–100 restaurants target
-- Realtime fanout
-- Cache
-- DB query budget
-- Backpressure
-- Load test
-- Failure isolation
+- Supabase public read provider and Local fallback
+- authoritative queue resync
+- Supabase Broadcast realtime
+- Admin JWT/RBAC remote commands
+- idempotent queue command path
+- secure QR issue/redeem/revoke
+- Runtime Health
+- PWA + service worker
+- Web Push backend and partial browser subscription runtime
 
-## 11 Reliability
-- Health checks
-- Heartbeat
-- Retry policy
-- Dead-letter handling
-- Event idempotency
-- Circuit breaker
-- Degraded mode
-- Recovery procedure
+## Migration rule
 
-## 12 Observability
-- Structured logs
-- Metrics
-- Traces
-- Event lag
-- Realtime connections
-- API latency
-- Notification delivery
-- Error rate
+Architecture v2 does not permit a big-bang rewrite. Each responsibility is mapped, moved/split, validated by Runtime CI and deployed before its old path can be removed.
 
-## 13 Deployment
-- Development
-- Staging
-- Production
-- Environment config
-- CI/CD
-- Migration strategy
-- Rollback
-- Release evidence
-
-## 現有實作對應
-- `types.ts`
-- `ARCHITECTURE.md`
-- `supabase/`
-- `loadtest/`
-- `sw.js`
-
-下一階段架構重構會以本分類作為主索引。
+Historical `PHASE*.md`, `CURRENT_RUNTIME.md`, and load-test documents are evidence and must not be treated as the active ownership map when they conflict with Architecture v2.
