@@ -3,23 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#245cff" />
+  <meta name="theme-color" content="#101828" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="叫號通" />
   <meta name="description" content="QueueHub 叫號通：休息站與美食街多餐廳即時叫號、QR 掃碼、多訂單追蹤 Prototype。" />
-  <title>叫號通 QueueHub｜多餐廳叫號</title>
+  <title>叫號通 QueueHub｜掃一次，追蹤多家餐廳叫號</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./ux-v4.css" />
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div class="shell topin">
-      <button class="brand" onclick="go('/')"><span class="brandmark">Q</span><span>叫號通 QueueHub</span><span class="demo">DEMO</span></button>
+      <button class="brand" onclick="go('/')" aria-label="回叫號通首頁"><span class="brandmark">Q</span><span>叫號通 QueueHub</span><span class="demo">DEMO</span></button>
       <div class="spacer"></div>
       <nav class="nav" aria-label="主要導覽">
-        <button data-nav="/" onclick="go('/')">總覽</button>
+        <button data-nav="/" onclick="go('/')">餐廳總覽</button>
         <button data-nav="/my-orders" onclick="go('/my-orders')">我的取餐</button>
         <button data-nav="/board" onclick="go('/board')">公共看板</button>
         <button data-nav="/admin" onclick="go('/admin')">店家後台</button>
@@ -32,9 +33,10 @@
     <button data-nav="/" onclick="go('/')"><b>⌂</b>總覽</button>
     <button data-nav="/my-orders" onclick="go('/my-orders')"><b>◎</b>我的取餐</button>
     <button data-nav="/board" onclick="go('/board')"><b>▦</b>看板</button>
-    <button data-nav="/admin" onclick="go('/admin')"><b>⚙</b>後台</button>
+    <button data-nav="/admin" onclick="go('/admin')"><b>⚙</b>店家</button>
   </nav>
   <script src="./app.js"></script>
   <script src="./features-admin.js"></script>
+  <script src="./ux-v4.js"></script>
 </body>
 </html>
