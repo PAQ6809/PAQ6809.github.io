@@ -6,7 +6,7 @@ const QueueHubSupabaseRealtime={
     if(this.channel)return true;
     const c=window.QueueHubRuntimeConfig.supabase;this.client=window.supabase.createClient(c.url,c.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
     const topic=`queuehub:venue:${venue.dbId}:queue`;
-    this.channel=this.client.channel(topic,{config:{private:false,broadcast:{ack:false,self:false}}).on('broadcast',{event:'queue_status'},()=>{QueueHubRuntimeHealth?.markBroadcast();this.scheduleResync('broadcast')}).subscribe(status=>{this.status=String(status||'unknown').toLowerCase();QueueHubRuntimeHealth?.markRealtime(this.status);if(status==='SUBSCRIBED')this.scheduleResync('subscribed',80)});
+    this.channel=this.client.channel(topic,{config:{private:false,broadcast:{ack:false,self:false}}}).on('broadcast',{event:'queue_status'},()=>{QueueHubRuntimeHealth?.markBroadcast();this.scheduleResync('broadcast')}).subscribe(status=>{this.status=String(status||'unknown').toLowerCase();QueueHubRuntimeHealth?.markRealtime(this.status);if(status==='SUBSCRIBED')this.scheduleResync('subscribed',80)});
     if(!this._bound){this._bound=true;document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')this.scheduleResync('visibility',100)});window.addEventListener('online',()=>{QueueHubRuntimeHealth?.syncBanner();this.scheduleResync('online',100)});window.addEventListener('offline',()=>QueueHubRuntimeHealth?.syncBanner())}
     return true;
   },
