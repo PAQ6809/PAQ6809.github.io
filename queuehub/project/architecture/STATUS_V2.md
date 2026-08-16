@@ -1,14 +1,17 @@
 # QueueHub Architecture v2 Status
 
 ## Overall architecture remake
-Estimated completion: 92% for the architecture reorganization itself. This does not mean all product capabilities are production-complete.
+Architecture v2 responsibility design is complete. Runtime migration is still in progress and is tracked separately below.
+
+## Runtime migration
+Estimated completion: ~40%.
 
 ## Client architecture
 - Mobile Web: 88% capability, dedicated adapter migration pending.
-- Mobile PWA: 82% capability, device lifecycle split and real-device Push E2E pending.
+- Mobile PWA: 88% capability; runtime ownership split complete, real-device Push E2E pending.
 - Desktop: 80% capability, dedicated desktop adapter pending.
 - Tablet Operator: 60% capability, dedicated touch/operator layout pending.
-- Public Display: 70% architecture/runtime migration; implementation now owned by `src/clients/public-display/`.
+- Public Display: 75% capability/runtime migration; implementation owned by `src/clients/public-display/`.
 - Kiosk: 20% architecture only.
 - Gateway Device: 10% architecture only.
 
@@ -33,18 +36,24 @@ Estimated completion: 92% for the architecture reorganization itself. This does 
 - [x] Add runtime client capability profile.
 - [x] Physically move Public Display implementation into `src/clients/public-display/`.
 - [x] Cache new client runtime through Service Worker.
-- [ ] Split Mobile PWA lifecycle from generic notification/core code.
+- [x] Split Mobile PWA lifecycle from generic notification/core code.
 - [ ] Split Desktop vs Tablet Admin presentation.
 - [ ] Introduce dedicated Mobile Web adapter boundaries.
 - [ ] Remove remaining consumer/admin legacy override layers.
 - [ ] Add Kiosk runtime profile.
 - [ ] Implement Gateway agent/device auth.
 
+## Mobile PWA ownership now
+- `src/clients/mobile-pwa/service-worker-client.js` — Service Worker registration/ready lifecycle.
+- `src/clients/mobile-pwa/web-push.js` — VAPID, PushManager, subscription/watch synchronization.
+- `src/clients/mobile-pwa/lifecycle.js` — notification enable/restore and notification transport.
+- root `sw.js` — platform-required Service Worker entrypoint owned by Mobile PWA architecture.
+- `src/core/notifications/queue-notifications.js` — domain transition rules only.
+
 ## Next execution order
-1. Mobile PWA device lifecycle and Web Push ownership split.
-2. Desktop / Tablet Admin presentation split.
-3. Mobile Web adapter extraction.
-4. Legacy UI runtime removal.
-5. Reconnect controller + observability.
-6. Capacity verification.
-7. POS/Gateway integration platform.
+1. Desktop / Tablet Admin presentation split.
+2. Mobile Web adapter extraction.
+3. Legacy UI runtime removal.
+4. Reconnect controller + observability.
+5. Capacity verification.
+6. POS/Gateway integration platform.
