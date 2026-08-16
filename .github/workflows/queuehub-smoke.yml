@@ -1,0 +1,54 @@
+name: QueueHub Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'queuehub/tools/loadtest/**'
+      - '.github/workflows/queuehub-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: queuehub-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: https://goedzzhhvvnfczgnkqlv.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN
+      VENUE_SLUG: beichen
+      PROFILE: smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Public REST recovery smoke
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            -e SUPABASE_URL \
+            -e SUPABASE_PUBLISHABLE_KEY \
+            -e VENUE_SLUG \
+            -e PROFILE \
+            grafana/k6:2.1.0 run queuehub/tools/loadtest/k6.js
+
+      - name: Realtime public channel smoke
+        env:
+          HOLD_SECONDS: '20'
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            -e SUPABASE_URL \
+            -e SUPABASE_PUBLISHABLE_KEY \
+            -e VENUE_SLUG \
+            -e PROFILE \
+            -e HOLD_SECONDS \
+            grafana/k6:2.1.0 run queuehub/tools/loadtest/realtime.js
