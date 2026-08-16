@@ -1,0 +1,1 @@
+(()=>{const profile=window.QueueHubClientProfile;if(!profile?.tablet)return;document.documentElement.dataset.qhAdminClient='tablet';window.QueueHubAdminClient={mode:'tablet',touch:true,compact:true};})();
