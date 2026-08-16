@@ -1,11 +1,17 @@
 name: QueueHub Order QR Redeem E2E
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/queuehub-order-redeem-e2e.yml'
   workflow_dispatch:
+    inputs:
+      test_token:
+        description: 'Short-lived test token already seeded in queuehub_order_qr_tokens'
+        required: true
+        type: string
+      expected_ticket:
+        description: 'Expected ticket number'
+        required: true
+        default: '991'
+        type: string
 
 permissions:
   contents: read
@@ -17,7 +23,8 @@ jobs:
     env:
       SUPABASE_URL: https://goedzzhhvvnfczgnkqlv.supabase.co
       SUPABASE_PUBLISHABLE_KEY: sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN
-      TEST_TOKEN: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      TEST_TOKEN: ${{ inputs.test_token }}
+      EXPECTED_TICKET: ${{ inputs.expected_ticket }}
     steps:
       - name: Redeem short-lived test token
         shell: bash
@@ -29,4 +36,13 @@ jobs:
             -H "Origin: https://paq6809.github.io" \
             -H 'Content-Type: application/json' \
             --data "{\"token\":\"$TEST_TOKEN\"}")"
-          echo "$response" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["ok"] is True; assert d["restaurantSlug"]=="harbor-noodles"; assert d["ticketNumber"]==991; assert d["queueSessionId"]; assert d["expiresAt"]; print("Secure order QR redemption E2E: PASS")'
+          RESPONSE="$response" python3 - <<'PY'
+          import json, os
+          d = json.loads(os.environ['RESPONSE'])
+          assert d['ok'] is True
+          assert d['restaurantSlug'] == 'harbor-noodles'
+          assert d['ticketNumber'] == int(os.environ['EXPECTED_TICKET'])
+          assert d['queueSessionId']
+          assert d['expiresAt']
+          print('Secure order QR redemption E2E: PASS')
+          PY
