@@ -4,4 +4,4 @@ function statusText(r){return r.status==='open'?'叫號中':r.status==='paused'?
 function getRestaurant(id){return QueueHubQueries.restaurant(id)}
 function activeOrders(){return QueueHubQueries.activeOrders()}
 function orderStatus(order,sourceState=QueueHubQueries.state()){const r=sourceState.restaurants.find(x=>x.id===order.restaurantId);if(!r)return{diff:999,label:'資料異常',cls:'waiting',estimate:0,rank:99};const diff=order.ticketNumber-r.current;if(diff<0)return{diff,label:'可能已過號',cls:'soon',estimate:0,rank:0};if(diff===0)return{diff,label:'正在叫你的號碼',cls:'soon',estimate:0,rank:1};if(diff<=order.notificationLead)return{diff,label:`快到了 · 剩約 ${diff} 組`,cls:'soon',estimate:estimate(r,diff),rank:2};return{diff,label:`等待中 · 前面約 ${diff} 組`,cls:'waiting',estimate:estimate(r,diff),rank:3}}
-function currentQueueSession(r){return `${new Date().toISOString().slice(0,10).replaceAll('-','')}-${r.id}-demo`}
+function currentQueueSession(r){return r?.queueSessionId||`${new Date().toISOString().slice(0,10).replaceAll('-','')}-${r.id}-demo`}
