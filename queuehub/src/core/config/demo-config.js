@@ -1,6 +1,5 @@
 const STORAGE='queuehub-v3';
 const CHANNEL='queuehub-v3';
-const channel='BroadcastChannel' in window?new BroadcastChannel(CHANNEL):null;
 const venue={id:'beichen',name:'北辰休息站（Demo）',location:'示範場域',capacityTarget:3000};
 const seed=[
 {id:'harbor-noodles',name:'港町麵屋',category:'麵食',aliases:['拉麵','麵','noodle'],current:152,recent:[151,150,149],status:'open',avg:45,updated:Date.now()-22000,integration:'manual'},
