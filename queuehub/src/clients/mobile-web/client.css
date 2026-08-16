@@ -1,0 +1,6 @@
+html[data-qh-mobile-web="active"] body{min-height:var(--qh-mobile-vh,100dvh)}
+html[data-qh-mobile-web="active"] main{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+html[data-qh-mobile-web="active"] .bottomNav{padding-bottom:max(8px,env(safe-area-inset-bottom))}
+html[data-qh-mobile-web="active"] button,html[data-qh-mobile-web="active"] a{touch-action:manipulation}
+html[data-qh-mobile-web="active"] input,html[data-qh-mobile-web="active"] select,html[data-qh-mobile-web="active"] textarea{font-size:max(16px,1em)}
+html[data-qh-mobile-web="active"] .topbar{padding-top:env(safe-area-inset-top)}
