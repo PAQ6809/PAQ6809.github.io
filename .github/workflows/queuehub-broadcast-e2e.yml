@@ -1,10 +1,6 @@
 name: QueueHub Broadcast E2E
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/queuehub-broadcast-e2e.yml'
   workflow_dispatch:
 
 permissions:
@@ -31,6 +27,7 @@ jobs:
 
       - name: Listen for DB-triggered QueueHub broadcast
         run: |
+          echo "This manual workflow requires an authorized DB queue_status UPDATE while listeners are connected."
           docker run --rm \
             -v "$PWD:/work" \
             -w /work \
