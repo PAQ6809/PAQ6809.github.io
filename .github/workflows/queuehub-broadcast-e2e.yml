@@ -1,0 +1,43 @@
+name: QueueHub Broadcast E2E
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-broadcast-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: queuehub-broadcast-e2e
+  cancel-in-progress: true
+
+jobs:
+  broadcast-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: https://goedzzhhvvnfczgnkqlv.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN
+      VENUE_SLUG: beichen
+      PROFILE: smoke
+      HOLD_SECONDS: '40'
+      EXPECT_BROADCAST: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Listen for DB-triggered QueueHub broadcast
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            -e SUPABASE_URL \
+            -e SUPABASE_PUBLISHABLE_KEY \
+            -e VENUE_SLUG \
+            -e PROFILE \
+            -e HOLD_SECONDS \
+            -e EXPECT_BROADCAST \
+            grafana/k6:2.1.0 run queuehub/tools/loadtest/realtime.js
