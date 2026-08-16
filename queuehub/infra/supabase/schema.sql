@@ -5,6 +5,8 @@
 --   migrations/20260816_03_queuehub_performance_hardening.sql
 --   migrations/20260816_04_queuehub_realtime_broadcast.sql
 --   migrations/20260816_05_queuehub_queue_command_idempotency.sql
+--   migrations/20260816_06_queuehub_remove_legacy_queue_command_rpc.sql
+--   migrations/20260816_07_queuehub_revoke_broadcast_rpc_execute.sql
 --
 -- All production objects use the queuehub_* prefix so QueueHub can coexist
 -- with the user's other applications in the same Supabase project.
