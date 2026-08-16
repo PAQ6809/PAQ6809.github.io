@@ -3,7 +3,7 @@ window.QueueHubRuntimeConfig=Object.freeze({
   venueSlug:'beichen',
   venueProvider:'supabase',
   visitorProvider:'local',
-  adminAuthMode:'demo',
+  adminAuthMode:'hybrid',
   failOpenToLocal:true,
   supabase:{
     url:'https://goedzzhhvvnfczgnkqlv.supabase.co',
