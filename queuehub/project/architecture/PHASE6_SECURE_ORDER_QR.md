@@ -2,7 +2,7 @@
 
 ## Status
 
-**Backend token vault, Edge Functions, browser secure redemption, privacy hardening, Security Advisor checks and public redemption E2E are implemented.**
+**Backend token vault, Edge Functions, browser secure redemption, privacy hardening, QR revocation, Security Advisor checks and public redemption E2E are implemented.**
 
 ## Security model
 
@@ -31,7 +31,8 @@ Redemption:
 
 Persistence hardening:
 - Router never persists `/redeem?token=...` as `lastRoute`
-- legacy restaurant deep links no longer persist a raw token into tracked orders
+- tracked-order domain objects no longer accept or persist an `orderToken` field
+- legacy restaurant deep links cannot forward a raw bearer token into tracked orders
 - production raw token may exist temporarily in the issuing QR DOM/current-tab memory, but is never written to QueueHub localStorage
 
 ## Database
@@ -43,6 +44,7 @@ Stored:
 - SHA-256 token hash only
 - expiry / revocation timestamp
 - issuer user ID
+- revoking user ID and optional reason
 - first / last redemption timestamp
 - redemption count
 
@@ -50,10 +52,10 @@ Controls:
 - RLS enabled
 - anon/authenticated table privileges revoked
 - explicit deny-all RLS policy for browser roles
-- issue/redeem RPCs executable by `service_role` only
-- indexes cover restaurant/session lookup, expiry, issuer FK and queue-session FK
+- issue/redeem/revoke RPCs executable by `service_role` only
+- indexes cover restaurant/session lookup, expiry, issuer FK, revoker FK and queue-session FK
 
-## Service-layer rollback test — PASS
+## Service-layer issue/redeem rollback test — PASS
 
 A transaction-only test temporarily granted an existing Auth user an operator membership, issued ticket `168` using a known 64-character test hash, redeemed it twice, inspected the audit row, and rolled the entire transaction back.
 
@@ -67,6 +69,23 @@ Observed:
 - stored token representation length: `64` hex characters
 
 No staff membership or QR token from this test persisted after rollback.
+
+## Revocation rollback test — PASS
+
+A second transaction-only test issued a short-lived test token, revoked it through `queuehub_revoke_order_qr_service`, then attempted redemption before rolling back.
+
+Observed:
+- revoke: `ok=true`
+- `revoked_at` written
+- `revoked_by` written
+- reason persisted
+- redeem after revoke: `ok=false`, `reason=revoked`
+
+The test transaction was rolled back, so no test staff membership or token persisted.
+
+## Live staff revocation UI — IMPLEMENTED
+
+`queuehub-order-qr-revoke` is ACTIVE with JWT verification enabled. The Admin QR card can revoke the currently displayed live QR. Reissuing a live QR for the same restaurant/ticket first revokes the previously displayed token, then mints the replacement, preventing two current UI-issued tokens for that ticket from remaining valid at the same time.
 
 ## Public Edge Function valid-token E2E — PASS
 
@@ -99,6 +118,5 @@ Performance Advisor identified the queue-session FK as needing a standalone inde
 
 ## Remaining Phase 6 work
 
-1. Verify the JWT-protected **issue** Edge Function end-to-end after one real QueueHub staff identity is deliberately selected; no existing user is auto-promoted.
-2. Add token revocation/void UI or POS lifecycle hook for canceled orders.
-3. Integrate issuance with a real POS/queue vendor so production receipts can be minted automatically.
+1. Verify the JWT-protected **issue/revoke** Edge Functions end-to-end after one real QueueHub staff identity is deliberately selected; no existing user is auto-promoted.
+2. Integrate issue/revoke lifecycle with a real POS/queue vendor so production receipts can be minted and voided automatically.
