@@ -1,1 +1,0 @@
-async function registerPwa(){if('serviceWorker'in navigator){try{await navigator.serviceWorker.register('./sw.js',{scope:'./'})}catch(e){console.warn('QueueHub service worker registration failed',e)}}}
