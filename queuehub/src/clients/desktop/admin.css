@@ -1,0 +1,4 @@
+html[data-qh-admin-client="desktop"] .adminV4{grid-template-columns:300px minmax(0,1fr)}
+html[data-qh-admin-client="desktop"] .staffSidebar{position:sticky;top:84px}
+html[data-qh-admin-client="desktop"] .queueConsoleNo{font-size:96px}
+html[data-qh-admin-client="desktop"] .staffCards{grid-template-columns:1fr 1fr}
