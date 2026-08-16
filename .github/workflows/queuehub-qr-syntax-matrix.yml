@@ -1,0 +1,43 @@
+name: QueueHub QR Syntax Matrix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-qr-syntax-matrix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.files.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: files
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          files = sorted(str(p) for p in Path('queuehub/src/admin/qr').glob('*.js'))
+          print('files=' + json.dumps(files, separators=(',', ':')))
+          PY
+
+  syntax:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJson(needs.prepare.outputs.files) }}
+    name: syntax · ${{ matrix.file }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check '${{ matrix.file }}'
