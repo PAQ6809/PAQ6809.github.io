@@ -1,31 +1,27 @@
-# Phase 3 Provider and Command Boundaries
+# Phase 3 Provider, Command and Query Boundaries
 
-## Completed boundaries
+## Completed
 
-### Storage
-`QueueHubStorage` hides LocalStorage access.
+### Provider boundary
+- `QueueHubStorage`: persistence transport.
+- `QueueHubRealtime`: realtime transport.
 
-### Realtime
-`QueueHubRealtime` hides BroadcastChannel access.
+### Repository boundary
+- `QueueHubStateRepository`: central mutation/persistence boundary.
 
-### State repository
-`QueueHubStateRepository` centralizes persistence, optional notification transition checks, and render-after-mutation behavior.
+### Command boundary
+- `QueueHubOrderCommands`
+- `QueueHubQueueCommands`
+- `QueueHubIntegrationCommands`
 
-### Commands
-- `QueueHubOrderCommands`: track / complete / remove order.
-- `QueueHubQueueCommands`: next / skip / pause-resume / set queue number.
-- `QueueHubIntegrationCommands`: persist per-restaurant integration config.
+### Query / Read Model boundary
+`QueueHubQueries` centralizes reads for restaurants, visitor state, active/ordered orders, integrations and QueueEvents. Base User views now consume the Read Model instead of traversing the full state object directly.
 
-UI callback names are preserved as thin adapters for compatibility with current presentation scripts, but they no longer perform domain-state writes directly.
+## Compatibility
+Storage/channel names, hash routes, QR links and presentation override callbacks remain unchanged.
 
-## Preserved invariants
-- Storage key: `queuehub-v3`
-- Realtime channel: `queuehub-v3`
-- Existing tracked orders remain readable.
-- Hash routes and QR deep links remain unchanged.
+## Remaining direct state reads
+Some v4/v5 presentation override scripts still read state directly. They are intentionally isolated under `legacy/` and will be removed during the UI component consolidation phase; domain writes are already command-controlled.
 
-## Next
-1. Replace global read access with query/repository APIs.
-2. Separate visitor/order state from shared venue/queue state.
-3. Add production provider contract for Supabase.
-4. Add auth/RBAC boundary before enabling remote Admin mutations.
+## Next architecture boundary
+Separate local visitor/order state from shared venue/queue state, then introduce a production provider contract for Supabase without exposing Admin writes directly to the browser.
