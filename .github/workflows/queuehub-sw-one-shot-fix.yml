@@ -1,0 +1,53 @@
+name: QueueHub SW One-shot Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-sw-one-shot-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch only the known syntax defect and bump cache
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('queuehub/sw.js')
+          s = p.read_text(encoding='utf-8')
+          bad = "self.skipWaiting()));"
+          good = "self.skipWaiting())));"
+          if bad not in s:
+              raise SystemExit('Expected known skipWaiting syntax defect not found; refusing broad rewrite.')
+          s = s.replace(bad, good, 1)
+          m = re.search(r"const CACHE='queuehub-shell-v(\d+)-([^']+)';", s)
+          if not m:
+              raise SystemExit('QueueHub cache declaration not found.')
+          version = int(m.group(1)) + 1
+          suffix = m.group(2)
+          s = s[:m.start()] + f"const CACHE='queuehub-shell-v{version}-{suffix}-syntaxfix';" + s[m.end():]
+          p.write_text(s, encoding='utf-8')
+          PY
+          node --check queuehub/sw.js
+      - name: Commit exact fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add queuehub/sw.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix(queuehub): repair service worker syntax without overwriting runtime'
+          git push origin HEAD:main
