@@ -1,112 +1,77 @@
 # QueueHub Code Ownership / Migration Map
 
-## Migration status
+## Status
 
-**Physical file migration: COMPLETE.**
-
-線上 runtime 已從根目錄切換到模組化路徑；舊根目錄 JS / CSS / data / load-test 檔案已刪除。下一階段是「拆 legacy 內容」，不是再搬檔。
+- Physical migration: **COMPLETE**
+- Core/User runtime monolith split: **COMPLETE**
+- Admin runtime monolith split: **COMPLETE**
+- UI presentation overrides: **ACTIVE / next cleanup target**
+- Production backend migration: **NOT STARTED**
 
 ## Root entry points
 
-以下檔案刻意保留在 `queuehub/` 根目錄：
+`index.html`、`sw.js`、`manifest.webmanifest`、`README.md` 保留在 `queuehub/` 根目錄。`sw.js` 必須留在此層，才能維持 `/queuehub/` 的 Service Worker scope。
 
-| 檔案 | 原因 |
-|---|---|
-| `index.html` | Web entry point，只負責 shell 與載入順序 |
-| `sw.js` | Service Worker 必須留在此 scope 才能控制整個 `/queuehub/` |
-| `manifest.webmanifest` | PWA platform manifest |
-| `README.md` | Repository entry documentation |
+## Core
 
-## Current runtime ownership
-
-| 現在路徑 | Responsibility | 狀態 |
+| Path | Responsibility | Status |
 |---|---|---|
-| `src/design-system/legacy/base.css` | UIUX legacy base | 待拆 tokens / components |
-| `src/design-system/legacy/user-v4.css` | UIUX / User legacy | 待收斂 |
-| `src/design-system/user/minimal-v5.css` | User presentation | active |
-| `src/design-system/theme/adaptive-gradient-v6.css` | Theme / contrast / system mode | active |
-| `src/design-system/theme/system-theme.js` | Browser / system theme sync | active |
-| `src/admin/styles/staff-v4.css` | Admin presentation | active |
-| `src/core/legacy/app.js` | Core + User mixed legacy runtime | **下一階段主要拆分目標** |
-| `src/core/domain/types.ts` | Domain types | migrated |
-| `src/user/legacy/user-v4.js` | User UI legacy overrides | 待拆 |
-| `src/user/legacy/minimal-v5.js` | User UI current overrides | 待拆 |
-| `src/admin/legacy/features-admin.js` | Admin + integration mixed runtime | **下一階段主要拆分目標** |
-| `src/admin/legacy/staff-v4.js` | Admin UI overrides | 待拆 |
-| `infra/supabase/` | Database / RLS / schema | migrated |
-| `tools/loadtest/` | Performance testing | migrated |
-| `project/architecture/LEGACY_ARCHITECTURE.md` | Historical architecture reference | migrated |
+| `src/core/config/demo-config.js` | Demo venue / restaurant seed / runtime constants | active |
+| `src/core/state/local-state.js` | localStorage + BroadcastChannel state | active, demo provider |
+| `src/core/router/hash-router.js` | hash route parsing / navigation | active |
+| `src/core/domain/queue.js` | queue status / wait estimate / order status | active |
+| `src/core/notifications/queue-notifications.js` | browser notification transitions | active |
+| `src/core/pwa/register.js` | Service Worker registration | active |
+| `src/core/bootstrap/app-bootstrap.js` | root render / startup | active |
+| `src/core/domain/types.ts` | domain types | active reference |
 
-## Current top-level structure
+`src/core/legacy/app.js` 已刪除。
 
-```text
-queuehub/
-├─ index.html
-├─ sw.js
-├─ manifest.webmanifest
-├─ README.md
-├─ src/
-│  ├─ design-system/
-│  │  ├─ legacy/
-│  │  ├─ user/
-│  │  └─ theme/
-│  ├─ core/
-│  │  ├─ domain/
-│  │  └─ legacy/
-│  ├─ user/
-│  │  └─ legacy/
-│  └─ admin/
-│     ├─ styles/
-│     └─ legacy/
-├─ infra/
-│  └─ supabase/
-├─ tools/
-│  └─ loadtest/
-└─ project/
-   ├─ uiux/
-   ├─ architecture/
-   └─ interfaces/
-```
+## User interface runtime
 
-## Target decomposition — Phase 2
+| Path | Responsibility |
+|---|---|
+| `src/user/shared/ui.js` | escape / toast / nav / shared UI helpers |
+| `src/user/home/home.js` | search / filtering / home rendering |
+| `src/user/restaurant/restaurant.js` | restaurant detail / ticket preview |
+| `src/user/orders/orders.js` | track / complete / remove / orders page |
+| `src/user/board/board.js` | public queue board |
+| `src/user/qr/deep-link.js` | receipt QR deep-link redemption flow |
 
-Physical location 已整理完成，接下來把 legacy monolith 拆成真正責任模組：
+## Admin runtime
 
-```text
-src/
-├─ design-system/
-│  ├─ tokens/
-│  ├─ theme/
-│  ├─ components/
-│  └─ accessibility/
-├─ core/
-│  ├─ domain/
-│  ├─ router/
-│  ├─ state/
-│  ├─ storage/
-│  ├─ realtime/
-│  ├─ notifications/
-│  └─ integrations/
-├─ user/
-│  ├─ home/
-│  ├─ search/
-│  ├─ restaurant/
-│  ├─ orders/
-│  ├─ qr/
-│  └─ board/
-├─ admin/
-│  ├─ auth/
-│  ├─ queue-console/
-│  ├─ restaurants/
-│  ├─ qr/
-│  ├─ integrations/
-│  └─ audit/
-└─ developer/
-   ├─ api-docs/
-   ├─ playground/
-   ├─ event-explorer/
-   └─ adapter-tools/
-```
+| Path | Responsibility |
+|---|---|
+| `src/admin/state/selection.js` | selected restaurant UI state |
+| `src/admin/audit/events.js` | QueueEvent creation / labels |
+| `src/admin/queue-console/actions.js` | next / skip / pause / set queue |
+| `src/admin/qr/qr.js` | venue / restaurant / order QR generation |
+| `src/admin/integrations/integration.js` | integration configuration state |
+| `src/admin/views/admin-base.js` | base admin / integration rendering |
+| `src/admin/routing/render-bridge.js` | admin route composition |
+
+`src/admin/legacy/features-admin.js` 已刪除。
+
+## Presentation / UIUX
+
+目前仍保留以下 presentation override，因為它們只處理視覺與版面，不再承擔核心 state / queue / integration business logic：
+
+- `src/user/legacy/user-v4.js`
+- `src/user/legacy/minimal-v5.js`
+- `src/admin/legacy/staff-v4.js`
+- `src/design-system/legacy/base.css`
+- `src/design-system/legacy/user-v4.css`
+- `src/design-system/user/minimal-v5.css`
+- `src/admin/styles/staff-v4.css`
+- `src/design-system/theme/adaptive-gradient-v6.css`
+
+下一個 UIUX 重構階段會把 override 收斂成 `design-system/tokens`、`components`、`user/views`、`admin/views`，並逐步移除 `legacy` 命名。
+
+## Infrastructure / developer
+
+- `infra/supabase/`：production database / RLS scaffold，尚未套用到實際專案。
+- `tools/loadtest/`：k6 load-test scaffold，尚未對 production backend 執行。
+- `project/`：規格、ownership、architecture 與 interface 文件。
 
 ## Dependency rule
 
@@ -121,17 +86,18 @@ Infrastructure / external systems
 ```
 
 禁止反向依賴：
-- Core 不 import User / Admin UI。
-- User 不 import Admin。
+- Core 不 import User / Admin presentation。
+- User 不 import Admin page logic。
 - Admin 不 import User page logic。
-- Developer tools 不直接寫 production state；必須走受控 API。
-- Design System 不知道 QueueEvent、Restaurant API 等 business logic。
+- Design System 不知道 QueueEvent / Restaurant API 等 business rules。
+- Developer tools 不直接寫 production state。
 
-## Change workflow
+## Next architecture phase
 
-1. 標記 `[UIUX] / [ARCH] / [USER] / [ADMIN] / [DEV]`。
-2. 指定子模組與 Acceptance Criteria。
-3. 一次只搬／拆一個責任邊界。
-4. 保持舊行為直到新模組驗證完成。
-5. Build → Deploy → runtime verification。
-6. 再刪除相對應 legacy code。
+1. 將 LocalStorage provider 抽象成 Store / Repository interface。
+2. 建立 `LocalQueueProvider` 與未來 `SupabaseQueueProvider`。
+3. 將 BroadcastChannel 抽象成 Realtime transport。
+4. 將 order command 從 DOM / toast 解耦。
+5. Admin 加入 Auth / RBAC boundary。
+6. Integration adapter 改為 server-side contract。
+7. 後端接通後再做 100 → 500 → 1500 → 3000 VU 實測。
