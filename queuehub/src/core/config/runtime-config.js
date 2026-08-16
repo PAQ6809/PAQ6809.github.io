@@ -1,9 +1,12 @@
 window.QueueHubRuntimeConfig=Object.freeze({
-  environment:'demo',
+  environment:'production-read',
   venueSlug:'beichen',
-  venueProvider:'local',
+  venueProvider:'supabase',
   visitorProvider:'local',
   adminAuthMode:'demo',
   failOpenToLocal:true,
-  supabase:{url:'',publishableKey:''}
+  supabase:{
+    url:'https://goedzzhhvvnfczgnkqlv.supabase.co',
+    publishableKey:'sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN'
+  }
 });
