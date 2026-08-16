@@ -1,0 +1,14 @@
+{
+  "name": "叫號通 QueueHub",
+  "short_name": "叫號通",
+  "description": "多餐廳叫號集中追蹤、QR 掃碼與取餐提醒",
+  "lang": "zh-Hant",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fa",
+  "theme_color": "#245cff",
+  "icons": [
+    {"src": "../favicon.ico", "sizes": "any", "type": "image/x-icon", "purpose": "any maskable"}
+  ]
+}
