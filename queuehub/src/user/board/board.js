@@ -1,1 +1,2 @@
-function renderBoard(){const restaurants=QueueHubQueries.restaurants();return `<section class="board"><div class="row between" style="margin-bottom:15px"><div><div class="eyebrow" style="color:#9ab4ff">PUBLIC BOARD</div><h2 style="margin:4px 0">${venue.name}</h2></div><button class="btn" onclick="go('/')">離開看板</button></div><div class="boardGrid">${restaurants.map(r=>`<div class="boardCard"><div><div class="bname">${r.name}</div><small>${r.category} · ${statusText(r)}</small></div><div class="bn">${r.current}</div><small>${fmtAgo(r.updated)}更新</small></div>`).join('')}</div></section>`}
+// Architecture v2 compatibility shim.
+// Public Display implementation now lives in src/clients/public-display/board.js
