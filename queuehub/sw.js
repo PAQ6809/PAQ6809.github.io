@@ -1,5 +1,5 @@
-const CACHE='queuehub-shell-v4-ux2';
-const CORE=['./','./index.html','./styles.css','./ux-v4.css','./ux-staff-v4.css','./app.js','./features-admin.js','./ux-v4.js','./ux-staff-v4.js','./manifest.webmanifest'];
+const CACHE='queuehub-shell-v5-minimal';
+const CORE=['./','./index.html','./styles.css','./ux-v4.css','./ux-staff-v4.css','./ux-minimal-v5.css','./app.js','./features-admin.js','./ux-v4.js','./ux-staff-v4.js','./ux-minimal-v5.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
