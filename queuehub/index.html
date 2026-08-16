@@ -11,12 +11,12 @@
   <meta name="description" content="叫號通：多餐廳即時叫號與取餐追蹤。" />
   <title>叫號通</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css" />
-  <link rel="stylesheet" href="./ux-v4.css" />
-  <link rel="stylesheet" href="./ux-staff-v4.css" />
-  <link rel="stylesheet" href="./ux-minimal-v5.css" />
-  <link rel="stylesheet" href="./ux-gradient-v6.css" />
-  <script src="./theme-v6.js"></script>
+  <link rel="stylesheet" href="./src/design-system/legacy/base.css" />
+  <link rel="stylesheet" href="./src/design-system/legacy/user-v4.css" />
+  <link rel="stylesheet" href="./src/admin/styles/staff-v4.css" />
+  <link rel="stylesheet" href="./src/design-system/user/minimal-v5.css" />
+  <link rel="stylesheet" href="./src/design-system/theme/adaptive-gradient-v6.css" />
+  <script src="./src/design-system/theme/system-theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
 </head>
 <body>
@@ -40,10 +40,10 @@
     <button data-nav="/board" onclick="go('/board')"><b>▦</b>看板</button>
     <button data-nav="/admin" onclick="go('/admin')"><b>⚙</b>店家</button>
   </nav>
-  <script src="./app.js"></script>
-  <script src="./features-admin.js"></script>
-  <script src="./ux-v4.js"></script>
-  <script src="./ux-staff-v4.js"></script>
-  <script src="./ux-minimal-v5.js"></script>
+  <script src="./src/core/legacy/app.js"></script>
+  <script src="./src/admin/legacy/features-admin.js"></script>
+  <script src="./src/user/legacy/user-v4.js"></script>
+  <script src="./src/admin/legacy/staff-v4.js"></script>
+  <script src="./src/user/legacy/minimal-v5.js"></script>
 </body>
 </html>
