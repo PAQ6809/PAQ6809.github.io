@@ -7,6 +7,7 @@
 --   migrations/20260816_05_queuehub_queue_command_idempotency.sql
 --   migrations/20260816_06_queuehub_remove_legacy_queue_command_rpc.sql
 --   migrations/20260816_07_queuehub_revoke_broadcast_rpc_execute.sql
+--   migrations/20260816_08_queuehub_secure_order_qr_tokens.sql
 --
 -- All production objects use the queuehub_* prefix so QueueHub can coexist
 -- with the user's other applications in the same Supabase project.
