@@ -1,5 +1,20 @@
-const CACHE='queuehub-shell-v6-gradient';
-const CORE=['./','./index.html','./styles.css','./ux-v4.css','./ux-staff-v4.css','./ux-minimal-v5.css','./ux-gradient-v6.css','./app.js','./features-admin.js','./ux-v4.js','./ux-staff-v4.js','./ux-minimal-v5.js','./theme-v6.js','./manifest.webmanifest'];
+const CACHE='queuehub-shell-v7-modular';
+const CORE=[
+  './',
+  './index.html',
+  './src/design-system/legacy/base.css',
+  './src/design-system/legacy/user-v4.css',
+  './src/admin/styles/staff-v4.css',
+  './src/design-system/user/minimal-v5.css',
+  './src/design-system/theme/adaptive-gradient-v6.css',
+  './src/design-system/theme/system-theme.js',
+  './src/core/legacy/app.js',
+  './src/admin/legacy/features-admin.js',
+  './src/user/legacy/user-v4.js',
+  './src/admin/legacy/staff-v4.js',
+  './src/user/legacy/minimal-v5.js',
+  './manifest.webmanifest'
+];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
