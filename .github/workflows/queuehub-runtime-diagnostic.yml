@@ -1,0 +1,48 @@
+name: QueueHub Runtime Diagnostic
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-runtime-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: find queuehub/src/core -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+
+  user:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: find queuehub/src/user -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+
+  admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: find queuehub/src/admin -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+
+  service-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check queuehub/sw.js
