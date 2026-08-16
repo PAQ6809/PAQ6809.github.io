@@ -6,11 +6,13 @@ import { Rate, Trend } from 'k6/metrics';
 const joinSuccess = new Rate('realtime_join_success');
 const realtimeErrors = new Rate('realtime_errors');
 const joinLatency = new Trend('realtime_join_latency', true);
+const broadcastReceived = new Rate('realtime_broadcast_received');
 
 const SUPABASE_URL = String(__ENV.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_PUBLISHABLE_KEY = __ENV.SUPABASE_PUBLISHABLE_KEY || '';
 const VENUE_SLUG = __ENV.VENUE_SLUG || 'beichen';
 const PROFILE = __ENV.PROFILE || 'smoke';
+const EXPECT_BROADCAST = __ENV.EXPECT_BROADCAST === '1';
 const HOLD_SECONDS = Math.max(10, Number(__ENV.HOLD_SECONDS || (PROFILE === 'smoke' ? 20 : 120)));
 const TARGET_3000_GATE = 'YES_I_HAVE_3000_REALTIME_CAPACITY_AND_A_STAGING_TARGET';
 
@@ -26,7 +28,7 @@ const profiles = {
     executor: 'per-vu-iterations',
     vus: 5,
     iterations: 1,
-    maxDuration: '45s',
+    maxDuration: '60s',
   },
   'free-safe': {
     // 150 leaves headroom under the current Free-plan 200-connection quota.
@@ -52,6 +54,7 @@ export const options = {
     realtime_errors: ['rate<0.01'],
     realtime_join_latency: ['p(95)<3000', 'p(99)<5000'],
     ws_connecting: ['p(95)<3000'],
+    ...(EXPECT_BROADCAST ? { realtime_broadcast_received: ['rate>0.99'] } : {}),
   },
 };
 
@@ -86,6 +89,7 @@ export default function (data) {
   const started = Date.now();
   let recorded = false;
   let joined = false;
+  let broadcastSeen = false;
 
   const response = ws.connect(socketUrl, { tags: { name: 'queuehub_realtime', profile: PROFILE } }, (socket) => {
     socket.on('open', () => {
@@ -124,6 +128,11 @@ export default function (data) {
           socket.close();
         }
       }
+
+      const queueBroadcast =
+        (message.event === 'broadcast' && message.payload?.event === 'queue_status') ||
+        message.event === 'queue_status';
+      if (queueBroadcast) broadcastSeen = true;
     });
 
     socket.on('error', () => {
@@ -151,8 +160,11 @@ export default function (data) {
     joinSuccess.add(false);
     realtimeErrors.add(true);
   }
+  if (EXPECT_BROADCAST) broadcastReceived.add(broadcastSeen);
 }
 
 // This script opens exactly one Realtime connection per VU.
 // Default smoke = 5 connections. Free-safe = 150 connections.
+// EXPECT_BROADCAST=1 requires an external, authorized QueueHub DB update while
+// the sockets are connected and validates DB trigger -> Broadcast -> client.
 // target-3000 is hard-gated and must not be used on the current shared Free plan.
