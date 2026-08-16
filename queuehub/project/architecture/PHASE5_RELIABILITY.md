@@ -47,17 +47,31 @@ After the idempotent browser client was deployed successfully on GitHub Pages ru
 - v2 ACL: `postgres` + `service_role`
 - Broadcast trigger function direct-execute ACL: `postgres` only
 
-## Advisor verification
+## Advisor verification — PASS FOR QUEUEHUB
 
 QueueHub-specific Security Advisor warnings were cleared after revoking direct execution of the SECURITY DEFINER broadcast trigger function. Remaining security/performance notices in the shared project belong to other applications or project-wide Auth configuration.
 
 Performance Advisor currently reports QueueHub indexes as unused INFO entries. They are newly created / low-traffic and include FK/query support indexes, so they are intentionally retained until meaningful production statistics exist.
 
-## Remaining reliability work
+## Runtime health — DEPLOYED
 
-1. Add stale-source / provider health UI and lightweight retry telemetry.
-2. Test a deliberately assigned real staff account before switching Admin from Hybrid to strict Supabase mode.
-3. Add server-verified signed/opaque order QR redemption.
-4. Add Web Push subscription/delivery for browser-closed notifications.
-5. Stage a 25–50 connection sustained test before considering the 150-connection Free-plan-safe profile.
-6. 3,000 concurrent verification requires a separate approved target with sufficient Supabase quota.
+QueueHub now tracks provider/realtime health locally in the current tab and shows a compact warning only when the runtime is degraded. Covered states include offline mode, Supabase-to-local fallback, provider errors, Realtime connection failure, authoritative resync failure and stale production data while Realtime is unavailable. A manual authoritative resync action is available when recovery is possible.
+
+No third-party analytics were added. Diagnostics are available through `QueueHubDiagnostics.snapshot()` and contain counters/status timestamps only, not passwords, access tokens, service-role credentials or order tokens.
+
+## Runtime CI — PASS
+
+`QueueHub Runtime Check` now automatically performs:
+- `node --check` for browser JavaScript and `sw.js`
+- local JS/CSS asset existence checks for `index.html`
+- Service Worker local asset existence checks
+
+The first run caught a real Realtime provider syntax regression that Jekyll did not detect. The syntax error was fixed, the Service Worker cache was bumped to v20, and the subsequent Runtime Check completed successfully.
+
+## Remaining reliability / production work
+
+1. Test a deliberately assigned real staff account before switching Admin from Hybrid to strict Supabase mode.
+2. Add server-verified signed/opaque order QR redemption.
+3. Add Web Push subscription/delivery for browser-closed notifications.
+4. Stage a 25–50 connection sustained test before considering the 150-connection Free-plan-safe profile.
+5. 3,000 concurrent verification requires a separate approved target with sufficient Supabase quota.
