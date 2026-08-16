@@ -10,6 +10,7 @@
 --   migrations/20260816_08_queuehub_secure_order_qr_tokens.sql
 --   migrations/20260816_09_queuehub_order_qr_explicit_deny_policy.sql
 --   migrations/20260816_10_queuehub_order_qr_queue_session_index.sql
+--   migrations/20260816_11_queuehub_order_qr_revocation.sql
 --
 -- All production objects use the queuehub_* prefix so QueueHub can coexist
 -- with the user's other applications in the same Supabase project.
