@@ -5,25 +5,25 @@
 - QueueHub tables: 7 isolated `queuehub_*` tables.
 - Venue seed: `beichen`; restaurants: 8; queue status rows: 8.
 - RLS enabled on every QueueHub table.
-- `queuehub_queue_status` is in Realtime publication (browser Realtime subscription is a later checkpoint).
 - Edge Function `queuehub-admin-command`: ACTIVE, JWT required.
+
+## Realtime
+- Queue status UPDATE/INSERT has a database trigger calling public `realtime.send` on topic `queuehub:venue:<venue_uuid>:queue`.
+- Browser uses pinned `@supabase/supabase-js@2.111.0` Broadcast client.
+- Broadcast payload is intentionally treated as untrusted invalidation only. It never directly changes the displayed number.
+- After an event, clients coalesce/throttle with jitter and re-fetch the authoritative Supabase venue snapshot; reconnect/visibility/online also resync.
+- The old `queuehub_queue_status` Postgres Changes publication was removed.
+- Supabase creates `realtime.messages` daily partitions when the first WebSocket client connects. A missing partition before any client connects is documented platform behavior, not a reason to hand-edit the managed realtime schema.
 
 ## Admin checkpoint
 - Browser Auth provider supports password sign-in, refresh, session restore and local-scope sign-out.
-- Auth tokens are kept in `sessionStorage`, not in the QueueHub local venue/order payload.
+- Auth tokens are kept in `sessionStorage`.
 - Staff role is loaded from `queuehub_staff_members` for the current venue.
-- When a signed-in user has a QueueHub role, queue/integration actions use the JWT Edge Function and service-role-only RPC.
-- Without a QueueHub role, Hybrid mode stays Demo Local; it does not grant production writes.
-- No existing Supabase user has been auto-promoted to QueueHub staff.
-
-## Security boundary
-- Browser contains only Supabase URL + publishable key.
-- Service role and vendor credentials remain server-side.
-- Service-only RPCs independently validate actor membership and role.
-- QueueHub-specific Security Advisor findings from the initial RPC version were removed.
+- A signed-in user with a QueueHub role uses the JWT Edge Function for queue/integration writes.
+- Without a QueueHub role, Hybrid mode stays Demo Local; no existing Auth user has been auto-promoted.
 
 ## Remaining
-1. Assign one explicit existing Auth user to a QueueHub staff role (only after identity is deliberately selected).
-2. Switch `adminAuthMode` from `hybrid` to `supabase` after live staff login is verified.
-3. Add browser Realtime subscription/resync for cross-device queue updates.
-4. Run staged load tests before claiming 3,000 concurrent capacity.
+1. Deliberately assign one existing Auth user to a QueueHub staff role.
+2. Verify live staff login + remote write, then switch `adminAuthMode` from `hybrid` to `supabase`.
+3. Verify browser WebSocket subscription from a real client and observe Realtime partition creation.
+4. Run staged load tests before claiming 3,000 concurrent capacity. Public Broadcast is more scalable than Postgres Changes, but this application still adds authoritative REST resyncs and must be benchmarked as a whole.

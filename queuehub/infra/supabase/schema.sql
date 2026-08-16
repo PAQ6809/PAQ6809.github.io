@@ -3,6 +3,7 @@
 --   migrations/20260816_01_queuehub_core_production_schema.sql
 --   migrations/20260816_02_queuehub_harden_admin_write_boundary.sql
 --   migrations/20260816_03_queuehub_performance_hardening.sql
+--   migrations/20260816_04_queuehub_realtime_broadcast.sql
 --
 -- All production objects use the queuehub_* prefix so QueueHub can coexist
 -- with the user's other applications in the same Supabase project.
