@@ -1,0 +1,45 @@
+name: QueueHub Runtime Annotate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-runtime-annotate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  annotate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Annotated JavaScript syntax check
+        shell: bash
+        run: |
+          set +e
+          failed=0
+          while IFS= read -r -d '' file; do
+            output="$(node --check "$file" 2>&1)"
+            rc=$?
+            if [ "$rc" -ne 0 ]; then
+              failed=1
+              first="$(printf '%s\n' "$output" | tail -n 1)"
+              echo "::error file=$file,title=QueueHub JavaScript syntax error::$first"
+              printf '%s\n' "$output"
+            fi
+          done < <(find queuehub/src -type f -name '*.js' -print0)
+          output="$(node --check queuehub/sw.js 2>&1)"
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            failed=1
+            first="$(printf '%s\n' "$output" | tail -n 1)"
+            echo "::error file=queuehub/sw.js,title=QueueHub Service Worker syntax error::$first"
+            printf '%s\n' "$output"
+          fi
+          exit "$failed"
