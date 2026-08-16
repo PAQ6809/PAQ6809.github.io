@@ -1,0 +1,9 @@
+window.QueueHubRuntimeConfig=Object.freeze({
+  environment:'demo',
+  venueSlug:'beichen',
+  venueProvider:'local',
+  visitorProvider:'local',
+  adminAuthMode:'demo',
+  failOpenToLocal:true,
+  supabase:{url:'',publishableKey:''}
+});
