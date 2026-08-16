@@ -1,0 +1,32 @@
+name: QueueHub Order QR Redeem E2E
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-order-redeem-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  redeem-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      SUPABASE_URL: https://goedzzhhvvnfczgnkqlv.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN
+      TEST_TOKEN: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    steps:
+      - name: Redeem short-lived test token
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --silent --show-error --fail-with-body \
+            -X POST "$SUPABASE_URL/functions/v1/queuehub-order-redeem" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Origin: https://paq6809.github.io" \
+            -H 'Content-Type: application/json' \
+            --data "{\"token\":\"$TEST_TOKEN\"}")"
+          echo "$response" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["ok"] is True; assert d["restaurantSlug"]=="harbor-noodles"; assert d["ticketNumber"]==991; assert d["queueSessionId"]; assert d["expiresAt"]; print("Secure order QR redemption E2E: PASS")'
