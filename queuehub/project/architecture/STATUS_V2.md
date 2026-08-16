@@ -4,10 +4,10 @@
 Architecture v2 responsibility design is complete. Runtime migration is still in progress and is tracked separately below.
 
 ## Runtime migration
-Estimated completion: ~50%.
+Estimated completion: ~60%.
 
 ## Client architecture
-- Mobile Web: 88% capability, dedicated adapter migration pending.
+- Mobile Web: 92% capability; dedicated runtime adapter active, browser-specific real-device QA remains.
 - Mobile PWA: 88% capability; runtime ownership split complete, real-device Push E2E pending.
 - Desktop: 86% capability; dedicated Admin client adapter and presentation rules active.
 - Tablet Operator: 72% capability; dedicated touch-first Admin client adapter active.
@@ -38,12 +38,13 @@ Estimated completion: ~50%.
 - [x] Cache new client runtime through Service Worker.
 - [x] Split Mobile PWA lifecycle from generic notification/core code.
 - [x] Split Desktop vs Tablet Admin presentation.
-- [ ] Introduce dedicated Mobile Web adapter boundaries.
+- [x] Introduce dedicated Mobile Web adapter boundaries.
 - [ ] Remove remaining consumer legacy override layers.
 - [ ] Add Kiosk runtime profile.
 - [ ] Implement Gateway agent/device auth.
 
 ## Active client ownership
+- `src/clients/mobile-web/` — mobile browser viewport/safe-area/touch behavior.
 - `src/clients/mobile-pwa/` — Service Worker client, Web Push and PWA lifecycle.
 - `src/clients/desktop/` — desktop Admin client behavior/presentation rules.
 - `src/clients/tablet/` — touch-first Admin client behavior/presentation rules.
@@ -51,8 +52,7 @@ Estimated completion: ~50%.
 - `src/admin/presentation/shared-v4.js` — shared Admin presentation markup; no Auth/Command ownership.
 
 ## Next execution order
-1. Mobile Web adapter extraction.
-2. Consumer legacy UI runtime removal.
-3. Reconnect controller + observability.
-4. Capacity verification.
-5. POS/Gateway integration platform.
+1. Consumer legacy UI runtime removal.
+2. Reconnect controller + observability.
+3. Capacity verification.
+4. POS/Gateway integration platform.
