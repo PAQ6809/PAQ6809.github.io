@@ -1,0 +1,13 @@
+html[data-qh-admin-client="tablet"] .adminV4{grid-template-columns:1fr}
+html[data-qh-admin-client="tablet"] .staffSidebar{position:static;padding:14px}
+html[data-qh-admin-client="tablet"] .staffRestaurantList{display:flex;overflow-x:auto;max-height:none;padding-bottom:4px;scroll-snap-type:x proximity}
+html[data-qh-admin-client="tablet"] .staffRestaurant{min-width:190px;min-height:60px;scroll-snap-align:start}
+html[data-qh-admin-client="tablet"] .queueConsole{padding:22px}
+html[data-qh-admin-client="tablet"] .queueConsoleNo{font-size:104px;margin:28px 0 20px}
+html[data-qh-admin-client="tablet"] .primaryQueueAction{min-height:72px;font-size:20px}
+html[data-qh-admin-client="tablet"] .secondaryQueueActions .btn{min-height:58px;font-size:16px}
+html[data-qh-admin-client="tablet"] .safeSetRow{grid-template-columns:1fr auto}
+html[data-qh-admin-client="tablet"] .safeSetRow input,html[data-qh-admin-client="tablet"] .safeSetRow .btn{min-height:54px}
+html[data-qh-admin-client="tablet"] .staffCards{grid-template-columns:1fr}
+html[data-qh-admin-client="tablet"] .integrationIntro{grid-template-columns:1fr 1fr}
+html[data-qh-admin-client="tablet"] button,html[data-qh-admin-client="tablet"] select,html[data-qh-admin-client="tablet"] input{touch-action:manipulation}
