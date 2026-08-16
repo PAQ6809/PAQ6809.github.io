@@ -1,34 +1,31 @@
-# Phase 3 Provider Boundary
+# Phase 3 Provider and Command Boundaries
 
-## Goal
+## Completed boundaries
 
-Remove direct browser persistence and realtime transport details from application state so the same User/Admin runtime can later run on Local demo providers or Supabase production providers.
+### Storage
+`QueueHubStorage` hides LocalStorage access.
 
-## Current providers
+### Realtime
+`QueueHubRealtime` hides BroadcastChannel access.
 
-```text
-QueueHubStorage
-└─ LocalStorage provider
+### State repository
+`QueueHubStateRepository` centralizes persistence, optional notification transition checks, and render-after-mutation behavior.
 
-QueueHubRealtime
-└─ BroadcastChannel provider
-```
+### Commands
+- `QueueHubOrderCommands`: track / complete / remove order.
+- `QueueHubQueueCommands`: next / skip / pause-resume / set queue number.
+- `QueueHubIntegrationCommands`: persist per-restaurant integration config.
 
-`local-state.js` now depends on the provider contracts rather than directly calling `localStorage` or constructing `BroadcastChannel`.
+UI callback names are preserved as thin adapters for compatibility with current presentation scripts, but they no longer perform domain-state writes directly.
 
-## Preserved behavior
+## Preserved invariants
+- Storage key: `queuehub-v3`
+- Realtime channel: `queuehub-v3`
+- Existing tracked orders remain readable.
+- Hash routes and QR deep links remain unchanged.
 
-- Storage key remains `queuehub-v3`.
-- Channel name remains `queuehub-v3`.
-- Existing local orders remain readable.
-- Same-browser tab sync remains available.
-- User/Admin code does not need to know which storage or realtime transport is active.
-
-## Production replacement path
-
-```text
-LocalStorageProvider      → SupabaseRepository / session cache
-BroadcastProvider        → Supabase Realtime / WebSocket transport
-```
-
-The next step is to isolate mutations behind repository/command APIs so `state` is no longer written directly across User/Admin modules.
+## Next
+1. Replace global read access with query/repository APIs.
+2. Separate visitor/order state from shared venue/queue state.
+3. Add production provider contract for Supabase.
+4. Add auth/RBAC boundary before enabling remote Admin mutations.

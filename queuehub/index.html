@@ -1,30 +1,10 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#101522" />
-  <meta name="color-scheme" content="dark light" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="叫號通" />
-  <meta name="description" content="叫號通：多餐廳即時叫號與取餐追蹤。" />
-  <title>叫號通</title>
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/design-system/legacy/base.css" />
-  <link rel="stylesheet" href="./src/design-system/legacy/user-v4.css" />
-  <link rel="stylesheet" href="./src/admin/styles/staff-v4.css" />
-  <link rel="stylesheet" href="./src/design-system/user/minimal-v5.css" />
-  <link rel="stylesheet" href="./src/design-system/theme/adaptive-gradient-v6.css" />
-  <script src="./src/design-system/theme/system-theme.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
-</head>
-<body>
-  <header class="topbar"><div class="shell topin"><button class="brand" onclick="go('/')" aria-label="首頁"><span class="brandmark">Q</span><span>叫號通</span></button><div class="spacer"></div><nav class="nav" aria-label="導覽"><button data-nav="/" onclick="go('/')">總覽</button><button data-nav="/my-orders" onclick="go('/my-orders')">取餐</button><button data-nav="/board" onclick="go('/board')">看板</button><button data-nav="/admin" onclick="go('/admin')">店家</button><button data-nav="/integrations" onclick="go('/integrations')">系統</button></nav></div></header>
-  <main><div class="shell" id="app" aria-live="polite"></div></main>
-  <nav class="bottomNav" aria-label="手機導覽"><button data-nav="/" onclick="go('/')"><b>⌂</b>總覽</button><button data-nav="/my-orders" onclick="go('/my-orders')"><b>◎</b>取餐</button><button data-nav="/board" onclick="go('/board')"><b>▦</b>看板</button><button data-nav="/admin" onclick="go('/admin')"><b>⚙</b>店家</button></nav>
-  <script src="./src/core/config/demo-config.js"></script><script src="./src/core/storage/local-storage-provider.js"></script><script src="./src/core/realtime/broadcast-provider.js"></script><script src="./src/core/state/local-state.js"></script><script src="./src/core/router/hash-router.js"></script><script src="./src/core/domain/queue.js"></script><script src="./src/user/shared/ui.js"></script><script src="./src/core/notifications/queue-notifications.js"></script><script src="./src/user/home/home.js"></script><script src="./src/user/restaurant/restaurant.js"></script><script src="./src/user/orders/orders.js"></script><script src="./src/user/board/board.js"></script><script src="./src/user/qr/deep-link.js"></script><script src="./src/core/pwa/register.js"></script><script src="./src/core/bootstrap/app-bootstrap.js"></script>
-  <script src="./src/admin/state/selection.js"></script><script src="./src/admin/audit/events.js"></script><script src="./src/admin/queue-console/actions.js"></script><script src="./src/admin/qr/qr.js"></script><script src="./src/admin/integrations/integration.js"></script><script src="./src/admin/views/admin-base.js"></script><script src="./src/admin/routing/render-bridge.js"></script>
-  <script src="./src/user/legacy/user-v4.js"></script><script src="./src/admin/legacy/staff-v4.js"></script><script src="./src/user/legacy/minimal-v5.js"></script>
-</body>
-</html>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /><meta name="theme-color" content="#101522" /><meta name="color-scheme" content="dark light" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="叫號通" /><meta name="description" content="叫號通：多餐廳即時叫號與取餐追蹤。" /><title>叫號通</title>
+  <link rel="manifest" href="./manifest.webmanifest" /><link rel="stylesheet" href="./src/design-system/legacy/base.css" /><link rel="stylesheet" href="./src/design-system/legacy/user-v4.css" /><link rel="stylesheet" href="./src/admin/styles/staff-v4.css" /><link rel="stylesheet" href="./src/design-system/user/minimal-v5.css" /><link rel="stylesheet" href="./src/design-system/theme/adaptive-gradient-v6.css" /><script src="./src/design-system/theme/system-theme.js"></script><script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
+</head><body>
+<header class="topbar"><div class="shell topin"><button class="brand" onclick="go('/')" aria-label="首頁"><span class="brandmark">Q</span><span>叫號通</span></button><div class="spacer"></div><nav class="nav" aria-label="導覽"><button data-nav="/" onclick="go('/')">總覽</button><button data-nav="/my-orders" onclick="go('/my-orders')">取餐</button><button data-nav="/board" onclick="go('/board')">看板</button><button data-nav="/admin" onclick="go('/admin')">店家</button><button data-nav="/integrations" onclick="go('/integrations')">系統</button></nav></div></header><main><div class="shell" id="app" aria-live="polite"></div></main><nav class="bottomNav" aria-label="手機導覽"><button data-nav="/" onclick="go('/')"><b>⌂</b>總覽</button><button data-nav="/my-orders" onclick="go('/my-orders')"><b>◎</b>取餐</button><button data-nav="/board" onclick="go('/board')"><b>▦</b>看板</button><button data-nav="/admin" onclick="go('/admin')"><b>⚙</b>店家</button></nav>
+<script src="./src/core/config/demo-config.js"></script><script src="./src/core/storage/local-storage-provider.js"></script><script src="./src/core/realtime/broadcast-provider.js"></script><script src="./src/core/state/local-state.js"></script><script src="./src/core/router/hash-router.js"></script><script src="./src/core/domain/queue.js"></script><script src="./src/core/repository/state-repository.js"></script><script src="./src/user/shared/ui.js"></script><script src="./src/core/notifications/queue-notifications.js"></script><script src="./src/core/orders/order-commands.js"></script><script src="./src/user/home/home.js"></script><script src="./src/user/restaurant/restaurant.js"></script><script src="./src/user/orders/actions.js"></script><script src="./src/user/orders/view.js"></script><script src="./src/user/board/board.js"></script><script src="./src/user/qr/deep-link.js"></script><script src="./src/core/pwa/register.js"></script><script src="./src/core/bootstrap/app-bootstrap.js"></script>
+<script src="./src/admin/state/selection.js"></script><script src="./src/admin/audit/events.js"></script><script src="./src/core/queue/queue-commands.js"></script><script src="./src/admin/queue-console/actions.js"></script><script src="./src/admin/qr/qr.js"></script><script src="./src/core/integrations/integration-commands.js"></script><script src="./src/admin/integrations/integration.js"></script><script src="./src/admin/views/admin-base.js"></script><script src="./src/admin/routing/render-bridge.js"></script><script src="./src/user/legacy/user-v4.js"></script><script src="./src/admin/legacy/staff-v4.js"></script><script src="./src/user/legacy/minimal-v5.js"></script>
+</body></html>

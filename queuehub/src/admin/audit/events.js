@@ -1,2 +1,2 @@
-function addEvent(restaurant,type,number){state.events.unshift({id:'evt_'+cryptoRandom(),restaurantId:restaurant.id,queueSessionId:currentQueueSession(restaurant),type,number,occurredAt:new Date().toISOString(),source:restaurant.integration||'manual'});state.events=state.events.slice(0,80)}
+function appendQueueEvent(targetState,restaurant,type,number){targetState.events.unshift({id:'evt_'+cryptoRandom(),restaurantId:restaurant.id,queueSessionId:currentQueueSession(restaurant),type,number,occurredAt:new Date().toISOString(),source:restaurant.integration||'manual'});targetState.events=targetState.events.slice(0,80)}
 function eventLabel(e){return({called:'叫號',skipped:'跳號',paused:'暫停',resumed:'恢復',reset:'重設'})[e.type]||e.type}
