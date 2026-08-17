@@ -13,7 +13,7 @@ const SUPABASE_PUBLISHABLE_KEY = __ENV.SUPABASE_PUBLISHABLE_KEY || '';
 const VENUE_SLUG = __ENV.VENUE_SLUG || 'beichen';
 const PROFILE = __ENV.PROFILE || 'smoke';
 const EXPECT_BROADCAST = __ENV.EXPECT_BROADCAST === '1';
-const HOLD_SECONDS = Math.max(10, Number(__ENV.HOLD_SECONDS || (PROFILE === 'smoke' ? 20 : 120)));
+const HOLD_SECONDS = Math.max(10, Number(__ENV.HOLD_SECONDS || (PROFILE === 'smoke' ? 20 : PROFILE === 'baseline-100' ? 45 : 120)));
 const TARGET_3000_GATE = 'YES_I_HAVE_3000_REALTIME_CAPACITY_AND_A_STAGING_TARGET';
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
@@ -30,8 +30,15 @@ const profiles = {
     iterations: 1,
     maxDuration: '60s',
   },
+  'baseline-100': {
+    // 100 connections uses at most half of the current Free-plan 200-connection quota.
+    executor: 'per-vu-iterations',
+    vus: 100,
+    iterations: 1,
+    maxDuration: '90s',
+  },
   'free-safe': {
-    // 150 leaves headroom under the current Free-plan 200-connection quota.
+    // 150 leaves limited headroom under the current Free-plan 200-connection quota.
     executor: 'per-vu-iterations',
     vus: 150,
     iterations: 1,
@@ -164,7 +171,7 @@ export default function (data) {
 }
 
 // This script opens exactly one Realtime connection per VU.
-// Default smoke = 5 connections. Free-safe = 150 connections.
+// Smoke = 5, baseline-100 = 100, free-safe = 150 connections.
 // EXPECT_BROADCAST=1 requires an external, authorized QueueHub DB update while
 // the sockets are connected and validates DB trigger -> Broadcast -> client.
 // target-3000 is hard-gated and must not be used on the current shared Free plan.
