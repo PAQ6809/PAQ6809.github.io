@@ -5,16 +5,20 @@ on:
     branches: [main]
     paths:
       - 'queuehub/**/*.js'
+      - 'queuehub/**/*.css'
       - 'queuehub/tools/tests/**/*.cjs'
       - 'queuehub/index.html'
       - 'queuehub/sw.js'
+      - 'queuehub/manifest.webmanifest'
       - '.github/workflows/queuehub-runtime-check.yml'
   pull_request:
     paths:
       - 'queuehub/**/*.js'
+      - 'queuehub/**/*.css'
       - 'queuehub/tools/tests/**/*.cjs'
       - 'queuehub/index.html'
       - 'queuehub/sw.js'
+      - 'queuehub/manifest.webmanifest'
       - '.github/workflows/queuehub-runtime-check.yml'
   workflow_dispatch:
 
@@ -47,6 +51,9 @@ jobs:
 
       - name: Reconnect controller behavior smoke
         run: node queuehub/tools/tests/reconnect-controller.test.cjs
+
+      - name: Kiosk client policy behavior smoke
+        run: node queuehub/tools/tests/kiosk-policy.test.cjs
 
       - name: Verify local runtime assets
         shell: bash
