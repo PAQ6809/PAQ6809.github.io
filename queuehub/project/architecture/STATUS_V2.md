@@ -4,7 +4,7 @@
 Architecture v2 responsibility design is complete. Runtime migration is still in progress and is tracked separately below.
 
 ## Runtime migration
-Estimated completion: ~74%.
+Estimated completion: ~80%.
 
 ## Client architecture
 - Mobile Web: 92% capability; dedicated runtime adapter active, browser-specific real-device QA remains.
@@ -12,11 +12,11 @@ Estimated completion: ~74%.
 - Desktop: 86% capability; dedicated Admin client adapter and presentation rules active.
 - Tablet Operator: 72% capability; dedicated touch-first Admin client adapter active.
 - Public Display: 75% capability/runtime migration; implementation owned by `src/clients/public-display/`.
-- Kiosk: 20% architecture only.
+- Kiosk: 20% architecture only; runtime profile is next.
 - Gateway Device: 10% architecture only.
 
 ## Shared architecture
-- Frontend boundaries: 94%; consumer JS override layers are no longer legacy-owned.
+- Frontend boundaries: 96%; consumer JavaScript and active CSS ownership are no longer legacy-owned.
 - Backend services: 80–95% by service.
 - Realtime: ~94%; centralized reconnect controller with exponential backoff, jitter, coalescing and wake-up recovery is active. Controller behavior CI passes, 100 concurrent Realtime joins pass, and a 50-client reconnect storm passes. Higher tiers remain unverified.
 - Data: 90% shared queue/venue; visitor cross-device incomplete.
@@ -52,11 +52,15 @@ Detailed evidence: `project/architecture/scale/CAPACITY_BASELINE.md`.
 - [x] Add centralized Realtime reconnect controller and runtime diagnostics ownership.
 - [x] Verify reconnect controller behavior in Runtime CI.
 - [x] Verify production-safe 100-user REST/Realtime baseline and 50-client reconnect storm.
-- [ ] Consolidate remaining legacy design-system CSS layers.
+- [x] Consolidate active legacy design-system CSS ownership without visual changes.
 - [ ] Add Kiosk runtime profile.
 - [ ] Implement Gateway agent/device auth.
 
 ## Active client and runtime ownership
+- `src/design-system/base.css` — shared global base primitives.
+- `src/user/presentation/consumer-v4.css` — consumer presentation layer.
+- `src/user/presentation/consumer-minimal-v5.css` — current minimal consumer presentation layer.
+- `src/admin/presentation/shared-v4.css` — shared Admin presentation styling.
 - `src/clients/mobile-web/` — mobile browser viewport/safe-area/touch behavior.
 - `src/clients/mobile-pwa/` — Service Worker client, Web Push and PWA lifecycle.
 - `src/clients/desktop/` — desktop Admin client behavior/presentation rules.
@@ -71,7 +75,6 @@ Detailed evidence: `project/architecture/scale/CAPACITY_BASELINE.md`.
 - `src/core/health/runtime-health.js` — health state and degraded-mode UI only.
 
 ## Next execution order
-1. Legacy design-system CSS consolidation.
-2. Kiosk runtime profile.
-3. POS/Gateway integration platform.
-4. Higher capacity tiers only after staging/quota approval.
+1. Kiosk runtime profile.
+2. POS/Gateway integration platform.
+3. Higher capacity tiers only after staging/quota approval.
