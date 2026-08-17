@@ -1,10 +1,6 @@
 name: QueueHub Capacity Baseline
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/queuehub-capacity-baseline.yml'
   workflow_dispatch:
 
 permissions:
