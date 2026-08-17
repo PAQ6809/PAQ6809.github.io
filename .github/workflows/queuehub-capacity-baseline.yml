@@ -1,0 +1,70 @@
+name: QueueHub Capacity Baseline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/queuehub-capacity-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: queuehub-capacity-baseline
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SUPABASE_URL: https://goedzzhhvvnfczgnkqlv.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_6whjqbImNMa7BR9i-96M-w_dFIOFeMN
+      VENUE_SLUG: beichen
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: REST authoritative recovery baseline - 100 VUs
+        env:
+          PROFILE: baseline-100
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            -e SUPABASE_URL \
+            -e SUPABASE_PUBLISHABLE_KEY \
+            -e VENUE_SLUG \
+            -e PROFILE \
+            grafana/k6:2.1.0 run queuehub/tools/loadtest/k6.js
+
+      - name: Realtime connection baseline - 100 connections
+        env:
+          PROFILE: baseline-100
+          HOLD_SECONDS: '45'
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            -e SUPABASE_URL \
+            -e SUPABASE_PUBLISHABLE_KEY \
+            -e VENUE_SLUG \
+            -e PROFILE \
+            -e HOLD_SECONDS \
+            grafana/k6:2.1.0 run queuehub/tools/loadtest/realtime.js
+
+      - name: Realtime reconnect storm baseline - 50 clients
+        env:
+          RECONNECT_VUS: '50'
+          HOLD_SECONDS: '5'
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            -e SUPABASE_URL \
+            -e SUPABASE_PUBLISHABLE_KEY \
+            -e VENUE_SLUG \
+            -e RECONNECT_VUS \
+            -e HOLD_SECONDS \
+            grafana/k6:2.1.0 run queuehub/tools/loadtest/reconnect-storm.js
