@@ -4,7 +4,7 @@
 Architecture v2 responsibility design is complete. Runtime migration is still in progress and is tracked separately below.
 
 ## Runtime migration
-Estimated completion: ~72%.
+Estimated completion: ~74%.
 
 ## Client architecture
 - Mobile Web: 92% capability; dedicated runtime adapter active, browser-specific real-device QA remains.
@@ -18,15 +18,24 @@ Estimated completion: ~72%.
 ## Shared architecture
 - Frontend boundaries: 94%; consumer JS override layers are no longer legacy-owned.
 - Backend services: 80–95% by service.
-- Realtime: ~92% core; centralized reconnect controller with exponential backoff, jitter, coalescing and wake-up recovery is active. Large-scale reconnect-storm verification remains.
+- Realtime: ~94%; centralized reconnect controller with exponential backoff, jitter, coalescing and wake-up recovery is active. Controller behavior CI passes, 100 concurrent Realtime joins pass, and a 50-client reconnect storm passes. Higher tiers remain unverified.
 - Data: 90% shared queue/venue; visitor cross-device incomplete.
 - Auth/RBAC: 80–90% backend; device auth incomplete.
-- Network modes: 70–90% for browser clients; offline and reconnect ownership are now separated from the Supabase channel provider.
+- Network modes: 75–90% for browser clients; offline and reconnect ownership are separated from the Supabase channel provider.
 - Security: 85–95% browser/DB/command/QR; gateway security incomplete.
-- Reliability: ~86%; idempotency, retry, outbox, health and reconnect controls active; DR/SLO/dead-letter incomplete.
-- Observability: ~68%; diagnostics now have counters, gauges, timings and reconnect/resync events, but no external metrics backend yet.
+- Reliability: ~90%; idempotency, retry, outbox, health, reconnect controls and reconnect behavior smoke are active; DR/SLO/dead-letter incomplete.
+- Observability: ~72%; diagnostics have counters, gauges, timings and reconnect/resync events, but no external metrics backend yet.
 - Deployment: ~80%; staging/automated rollback incomplete.
-- Scale architecture: ~68%; reconnect storm controls exist but 3,000-user proof remains ~10–15%.
+- Scale architecture: ~78%; a production-safe 100-user baseline and 50-client reconnect storm are verified. 500/1,000/3,000 remain staging-only and unverified.
+- 3,000-user proof: ~10–15%; NOT VERIFIED and blocked from production testing by the current shared Free-plan Realtime quota.
+
+## Verified scale baseline — 2026-08-17
+GitHub Actions run `32005625037`, commit `aea8bf92f4e10e49ee1a2ae1e81cfef8eb3263e7`:
+- 100-VU authoritative REST recovery: PASS, 0% failures, HTTP p95 196.85 ms, p99 419.60 ms.
+- 100 concurrent Realtime connections: PASS, 100/100 joins, 0% errors, join p95 299.20 ms, p99 417.88 ms.
+- 50-client disconnect/jitter/reconnect storm: PASS, 50/50 initial joins and 50/50 second joins, 0% errors, second-join p95 208.10 ms, p99 789.33 ms.
+
+Detailed evidence: `project/architecture/scale/CAPACITY_BASELINE.md`.
 
 ## Architecture v2 migration checklist
 - [x] Replace phase-centric active ownership with responsibility domains.
@@ -41,6 +50,8 @@ Estimated completion: ~72%.
 - [x] Introduce dedicated Mobile Web adapter boundaries.
 - [x] Remove consumer legacy JavaScript override layers.
 - [x] Add centralized Realtime reconnect controller and runtime diagnostics ownership.
+- [x] Verify reconnect controller behavior in Runtime CI.
+- [x] Verify production-safe 100-user REST/Realtime baseline and 50-client reconnect storm.
 - [ ] Consolidate remaining legacy design-system CSS layers.
 - [ ] Add Kiosk runtime profile.
 - [ ] Implement Gateway agent/device auth.
@@ -60,8 +71,7 @@ Estimated completion: ~72%.
 - `src/core/health/runtime-health.js` — health state and degraded-mode UI only.
 
 ## Next execution order
-1. Reconnect/observability CI and browser behavior verification.
-2. Capacity verification.
-3. Legacy design-system CSS consolidation.
-4. Kiosk runtime profile.
-5. POS/Gateway integration platform.
+1. Legacy design-system CSS consolidation.
+2. Kiosk runtime profile.
+3. POS/Gateway integration platform.
+4. Higher capacity tiers only after staging/quota approval.
