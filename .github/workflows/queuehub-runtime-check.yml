@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'queuehub/**/*.js'
+      - 'queuehub/tools/tests/**/*.cjs'
       - 'queuehub/index.html'
       - 'queuehub/sw.js'
       - '.github/workflows/queuehub-runtime-check.yml'
   pull_request:
     paths:
       - 'queuehub/**/*.js'
+      - 'queuehub/tools/tests/**/*.cjs'
       - 'queuehub/index.html'
       - 'queuehub/sw.js'
       - '.github/workflows/queuehub-runtime-check.yml'
@@ -42,6 +44,9 @@ jobs:
           set -euo pipefail
           find queuehub/src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           node --check queuehub/sw.js
+
+      - name: Reconnect controller behavior smoke
+        run: node queuehub/tools/tests/reconnect-controller.test.cjs
 
       - name: Verify local runtime assets
         shell: bash
