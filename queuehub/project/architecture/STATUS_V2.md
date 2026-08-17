@@ -4,7 +4,7 @@
 Architecture v2 responsibility design is complete. Runtime migration is still in progress and is tracked separately below.
 
 ## Runtime migration
-Estimated completion: ~60%.
+Estimated completion: ~70%.
 
 ## Client architecture
 - Mobile Web: 92% capability; dedicated runtime adapter active, browser-specific real-device QA remains.
@@ -16,17 +16,17 @@ Estimated completion: ~60%.
 - Gateway Device: 10% architecture only.
 
 ## Shared architecture
-- Frontend boundaries: 90%
-- Backend services: 80–95% by service
-- Realtime: 80–90% core; reconnect-storm controls incomplete
-- Data: 90% shared queue/venue; visitor cross-device incomplete
-- Auth/RBAC: 80–90% backend; device auth incomplete
-- Network modes: 55–90% depending on mode
-- Security: 85–95% browser/DB/command/QR; gateway security incomplete
-- Reliability: 70–90% controls; DR/SLO/dead-letter incomplete
-- Observability: ~50%
-- Deployment: ~80%; staging/automated rollback incomplete
-- Scale architecture: ~65%; 3,000-user proof ~10–15%
+- Frontend boundaries: 94%; consumer JS override layers are no longer legacy-owned.
+- Backend services: 80–95% by service.
+- Realtime: 80–90% core; reconnect-storm controls incomplete.
+- Data: 90% shared queue/venue; visitor cross-device incomplete.
+- Auth/RBAC: 80–90% backend; device auth incomplete.
+- Network modes: 55–90% depending on mode.
+- Security: 85–95% browser/DB/command/QR; gateway security incomplete.
+- Reliability: 70–90% controls; reconnect controller, DR/SLO/dead-letter incomplete.
+- Observability: ~50%.
+- Deployment: ~80%; staging/automated rollback incomplete.
+- Scale architecture: ~65%; 3,000-user proof ~10–15%.
 
 ## Architecture v2 migration checklist
 - [x] Replace phase-centric active ownership with responsibility domains.
@@ -39,7 +39,8 @@ Estimated completion: ~60%.
 - [x] Split Mobile PWA lifecycle from generic notification/core code.
 - [x] Split Desktop vs Tablet Admin presentation.
 - [x] Introduce dedicated Mobile Web adapter boundaries.
-- [ ] Remove remaining consumer legacy override layers.
+- [x] Remove consumer legacy JavaScript override layers.
+- [ ] Consolidate remaining legacy design-system CSS layers.
 - [ ] Add Kiosk runtime profile.
 - [ ] Implement Gateway agent/device auth.
 
@@ -49,10 +50,13 @@ Estimated completion: ~60%.
 - `src/clients/desktop/` — desktop Admin client behavior/presentation rules.
 - `src/clients/tablet/` — touch-first Admin client behavior/presentation rules.
 - `src/clients/public-display/` — public board runtime.
+- `src/user/navigation/order-badge.js` — consumer navigation order count.
+- `src/user/presentation/consumer-minimal-v5.js` — current consumer presentation override without Admin/Public Display ownership.
 - `src/admin/presentation/shared-v4.js` — shared Admin presentation markup; no Auth/Command ownership.
 
 ## Next execution order
-1. Consumer legacy UI runtime removal.
-2. Reconnect controller + observability.
-3. Capacity verification.
-4. POS/Gateway integration platform.
+1. Reconnect controller + observability.
+2. Capacity verification.
+3. Legacy design-system CSS consolidation.
+4. Kiosk runtime profile.
+5. POS/Gateway integration platform.
