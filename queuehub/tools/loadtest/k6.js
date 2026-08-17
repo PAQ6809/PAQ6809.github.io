@@ -24,6 +24,18 @@ const profiles = {
     vus: 5,
     duration: '25s',
   },
+  'baseline-100': {
+    executor: 'ramping-vus',
+    startVUs: 0,
+    stages: [
+      { duration: '20s', target: 25 },
+      { duration: '20s', target: 50 },
+      { duration: '30s', target: 100 },
+      { duration: '60s', target: 100 },
+      { duration: '20s', target: 0 },
+    ],
+    gracefulRampDown: '15s',
+  },
   'free-safe': {
     executor: 'ramping-vus',
     startVUs: 0,
@@ -114,7 +126,7 @@ export default function (data) {
 
 // Safe examples:
 // docker run --rm -v "$PWD:/work" -w /work \
-//   -e SUPABASE_URL -e SUPABASE_PUBLISHABLE_KEY -e PROFILE=smoke \
+//   -e SUPABASE_URL -e SUPABASE_PUBLISHABLE_KEY -e PROFILE=baseline-100 \
 //   grafana/k6:2.1.0 run queuehub/tools/loadtest/k6.js
 //
 // The target-3000 profile is intentionally locked and must NOT be run against
