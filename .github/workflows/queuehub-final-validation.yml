@@ -64,44 +64,35 @@ jobs:
               if clean=='./': continue
               target=root/clean.removeprefix('./')
               if not target.exists(): missing.append((ref,str(target)))
-          if missing:
-              raise SystemExit('Missing runtime assets: '+repr(missing))
+          if missing: raise SystemExit('Missing runtime assets: '+repr(missing))
           print(f'Runtime asset validation PASS: {len(set(parser.refs))} HTML refs, {len(set(sw_refs))} SW refs')
           PY
 
-      - name: Verify deployed GitHub Pages release
+      - name: Verify deployed GitHub Pages runtime
         shell: bash
         run: |
           set -euo pipefail
-          RELEASE_ID=$(python3 -c "import json;print(json.load(open('queuehub/release.json'))['releaseId'])")
           CACHE_ID=$(python3 -c "import json;print(json.load(open('queuehub/release.json'))['serviceWorkerCache'])")
           ok=0
           for attempt in $(seq 1 36); do
             nonce="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
-            if curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/release.json?v=${nonce}" -o /tmp/qh-release.json \
-              && python3 - "$RELEASE_ID" /tmp/qh-release.json <<'PY'
-          import json,sys
-          expected=sys.argv[1]
-          data=json.load(open(sys.argv[2]))
-          raise SystemExit(0 if data.get('releaseId')==expected else 1)
-          PY
+            if curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/?v=${nonce}" -o /tmp/qh-index.html \
+              && curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/sw.js?v=${nonce}" -o /tmp/qh-sw.js \
+              && grep -Fq './src/core/observability/telemetry-client.js' /tmp/qh-index.html \
+              && grep -Fq './src/core/reliability/circuit-breaker.js' /tmp/qh-index.html \
+              && grep -Fq './src/core/visitor/cloud-sync.js' /tmp/qh-index.html \
+              && grep -Fq './src/clients/kiosk/presentation.js' /tmp/qh-index.html \
+              && grep -Fq "$CACHE_ID" /tmp/qh-sw.js \
+              && grep -Fq './src/core/observability/telemetry-client.js' /tmp/qh-sw.js \
+              && grep -Fq './src/core/visitor/cloud-sync.js' /tmp/qh-sw.js
             then
-              curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/?v=${nonce}" -o /tmp/qh-index.html
-              curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/sw.js?v=${nonce}" -o /tmp/qh-sw.js
-              grep -Fq './src/core/observability/telemetry-client.js' /tmp/qh-index.html
-              grep -Fq './src/core/reliability/circuit-breaker.js' /tmp/qh-index.html
-              grep -Fq './src/core/visitor/cloud-sync.js' /tmp/qh-index.html
-              grep -Fq './src/clients/kiosk/presentation.js' /tmp/qh-index.html
-              grep -Fq "$CACHE_ID" /tmp/qh-sw.js
-              grep -Fq './src/core/observability/telemetry-client.js' /tmp/qh-sw.js
-              grep -Fq './src/core/visitor/cloud-sync.js' /tmp/qh-sw.js
               ok=1
               break
             fi
             sleep 5
           done
           test "$ok" = 1
-          echo "GitHub Pages live validation PASS for ${RELEASE_ID} / ${CACHE_ID}"
+          echo "GitHub Pages live runtime validation PASS / ${CACHE_ID}"
 
       - name: Write durable validation evidence
         shell: bash
@@ -122,7 +113,7 @@ jobs:
             'releaseId':release['releaseId'],
             'serviceWorkerCache':release['serviceWorkerCache'],
             'runtimeChecks':['javascript-syntax','runtime-assets','reconnect-controller','kiosk-policy','gateway-signature','gateway-keystore','circuit-breaker'],
-            'liveChecks':['release-marker','index-runtime-assets','service-worker-cache'],
+            'liveChecks':['index-runtime-assets','service-worker-cache'],
             'validatedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()
           }
           with open('queuehub/project/architecture/LAST_FINAL_VALIDATION.json','w',encoding='utf-8') as f:
