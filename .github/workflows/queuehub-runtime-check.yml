@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'queuehub/**/*.js'
+      - 'queuehub/**/*.mjs'
       - 'queuehub/**/*.css'
       - 'queuehub/tools/tests/**/*.cjs'
       - 'queuehub/index.html'
@@ -14,6 +15,7 @@ on:
   pull_request:
     paths:
       - 'queuehub/**/*.js'
+      - 'queuehub/**/*.mjs'
       - 'queuehub/**/*.css'
       - 'queuehub/tools/tests/**/*.cjs'
       - 'queuehub/index.html'
@@ -47,6 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           find queuehub/src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          find queuehub/tools/gateway-agent -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
           node --check queuehub/sw.js
 
       - name: Reconnect controller behavior smoke
@@ -54,6 +57,9 @@ jobs:
 
       - name: Kiosk client policy behavior smoke
         run: node queuehub/tools/tests/kiosk-policy.test.cjs
+
+      - name: Gateway signing protocol smoke
+        run: node queuehub/tools/tests/gateway-protocol.test.cjs
 
       - name: Verify local runtime assets
         shell: bash
@@ -79,10 +85,8 @@ jobs:
 
           parser = Assets()
           parser.feed(html)
-
           sw = (root / 'sw.js').read_text(encoding='utf-8')
           sw_refs = re.findall(r"['\"](\./[^'\"]+)['\"]", sw)
-
           missing = []
           for ref in sorted(set(parser.refs + sw_refs)):
               clean = ref.split('?', 1)[0].split('#', 1)[0]
@@ -91,12 +95,10 @@ jobs:
                   continue
               if not target.exists():
                   missing.append((ref, str(target)))
-
           if missing:
               print('Missing QueueHub runtime assets:')
               for ref, target in missing:
                   print(f'  {ref} -> {target}')
               raise SystemExit(1)
-
           print(f'Validated {len(set(parser.refs))} HTML local assets and {len(set(sw_refs))} Service Worker refs.')
           PY
