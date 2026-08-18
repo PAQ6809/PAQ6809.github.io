@@ -1,0 +1,136 @@
+name: QueueHub Final Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'queuehub/**'
+      - '!queuehub/project/architecture/LAST_FINAL_VALIDATION.json'
+      - '.github/workflows/queuehub-final-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: queuehub-final-validation
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate QueueHub runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          find queuehub/src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          find queuehub/tools/gateway-agent -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+          node --check queuehub/sw.js
+          node queuehub/tools/tests/reconnect-controller.test.cjs
+          node queuehub/tools/tests/kiosk-policy.test.cjs
+          node queuehub/tools/tests/gateway-protocol.test.cjs
+          node queuehub/tools/tests/gateway-keystore.test.cjs
+          node queuehub/tools/tests/circuit-breaker.test.cjs
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+          root=Path('queuehub')
+          html=(root/'index.html').read_text(encoding='utf-8')
+          class Assets(HTMLParser):
+              def __init__(self): super().__init__(); self.refs=[]
+              def handle_starttag(self,tag,attrs):
+                  data=dict(attrs)
+                  if tag=='script' and data.get('src','').startswith('./'): self.refs.append(data['src'])
+                  if tag=='link' and data.get('rel')=='stylesheet' and data.get('href','').startswith('./'): self.refs.append(data['href'])
+          parser=Assets(); parser.feed(html)
+          sw=(root/'sw.js').read_text(encoding='utf-8')
+          sw_refs=re.findall(r"['\"](\./[^'\"]+)['\"]",sw)
+          missing=[]
+          for ref in sorted(set(parser.refs+sw_refs)):
+              clean=ref.split('?',1)[0].split('#',1)[0]
+              if clean=='./': continue
+              target=root/clean.removeprefix('./')
+              if not target.exists(): missing.append((ref,str(target)))
+          if missing:
+              raise SystemExit('Missing runtime assets: '+repr(missing))
+          print(f'Runtime asset validation PASS: {len(set(parser.refs))} HTML refs, {len(set(sw_refs))} SW refs')
+          PY
+
+      - name: Verify deployed GitHub Pages release
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_ID=$(python3 -c "import json;print(json.load(open('queuehub/release.json'))['releaseId'])")
+          CACHE_ID=$(python3 -c "import json;print(json.load(open('queuehub/release.json'))['serviceWorkerCache'])")
+          ok=0
+          for attempt in $(seq 1 36); do
+            nonce="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
+            if curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/release.json?v=${nonce}" -o /tmp/qh-release.json \
+              && python3 - "$RELEASE_ID" /tmp/qh-release.json <<'PY'
+          import json,sys
+          expected=sys.argv[1]
+          data=json.load(open(sys.argv[2]))
+          raise SystemExit(0 if data.get('releaseId')==expected else 1)
+          PY
+            then
+              curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/?v=${nonce}" -o /tmp/qh-index.html
+              curl -fsS -H 'Cache-Control: no-cache' "https://paq6809.github.io/queuehub/sw.js?v=${nonce}" -o /tmp/qh-sw.js
+              grep -Fq './src/core/observability/telemetry-client.js' /tmp/qh-index.html
+              grep -Fq './src/core/reliability/circuit-breaker.js' /tmp/qh-index.html
+              grep -Fq './src/core/visitor/cloud-sync.js' /tmp/qh-index.html
+              grep -Fq './src/clients/kiosk/presentation.js' /tmp/qh-index.html
+              grep -Fq "$CACHE_ID" /tmp/qh-sw.js
+              grep -Fq './src/core/observability/telemetry-client.js' /tmp/qh-sw.js
+              grep -Fq './src/core/visitor/cloud-sync.js' /tmp/qh-sw.js
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ok" = 1
+          echo "GitHub Pages live validation PASS for ${RELEASE_ID} / ${CACHE_ID}"
+
+      - name: Write durable validation evidence
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,datetime
+          release=json.load(open('queuehub/release.json'))
+          evidence={
+            'status':'PASS',
+            'sourceSha':os.environ['SOURCE_SHA'],
+            'workflowRunId':int(os.environ['RUN_ID']),
+            'workflowRunAttempt':int(os.environ['RUN_ATTEMPT']),
+            'releaseId':release['releaseId'],
+            'serviceWorkerCache':release['serviceWorkerCache'],
+            'runtimeChecks':['javascript-syntax','runtime-assets','reconnect-controller','kiosk-policy','gateway-signature','gateway-keystore','circuit-breaker'],
+            'liveChecks':['release-marker','index-runtime-assets','service-worker-cache'],
+            'validatedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          with open('queuehub/project/architecture/LAST_FINAL_VALIDATION.json','w',encoding='utf-8') as f:
+              json.dump(evidence,f,indent=2,ensure_ascii=False);f.write('\n')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add queuehub/project/architecture/LAST_FINAL_VALIDATION.json
+          git commit -m "ci(queuehub): record final validation evidence"
+          git pull --rebase origin main
+          git push origin HEAD:main
