@@ -55,6 +55,8 @@ jobs:
         run: node queuehub/tools/tests/kiosk-policy.test.cjs
       - name: Gateway signing protocol smoke
         run: node queuehub/tools/tests/gateway-protocol.test.cjs
+      - name: Gateway encrypted keystore smoke
+        run: node queuehub/tools/tests/gateway-keystore.test.cjs
       - name: Circuit breaker behavior smoke
         run: node queuehub/tools/tests/circuit-breaker.test.cjs
       - name: Verify local runtime assets
