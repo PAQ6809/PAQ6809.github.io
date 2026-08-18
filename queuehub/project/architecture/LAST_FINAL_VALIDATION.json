@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "sourceSha": "2af7857cac2aca46bdde64e95715e151833fb44f",
-  "workflowRunId": 32117122436,
+  "sourceSha": "e83586f4cae856a22f214f077a7533c60aa4f31b",
+  "workflowRunId": 32117368834,
   "workflowRunAttempt": 1,
   "releaseId": "queuehub-architecture-v2-software-20260818",
   "serviceWorkerCache": "queuehub-shell-v36-visitor-sync",
@@ -15,9 +15,8 @@
     "circuit-breaker"
   ],
   "liveChecks": [
-    "release-marker",
     "index-runtime-assets",
     "service-worker-cache"
   ],
-  "validatedAt": "2026-08-18T08:37:13.302635+00:00"
+  "validatedAt": "2026-08-18T08:38:16.730035+00:00"
 }
