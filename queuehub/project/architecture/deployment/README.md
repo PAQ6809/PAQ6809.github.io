@@ -2,22 +2,32 @@
 
 ## Environments
 - Development
-- Staging (target; not fully separated yet)
-- Production (GitHub Pages + Supabase)
+- Production: GitHub Pages + Supabase
+- Dedicated Staging: required before high-capacity/destructive validation; not provisioned because it is a separate resource/cost decision
 
-## Required gates
-1. Runtime syntax check
-2. Runtime local-asset existence check
-3. Security/DB validation where relevant
-4. E2E or smoke for behavior-critical changes
-5. GitHub Pages build + deploy success
+## Active gates
+1. Runtime JavaScript syntax check
+2. Reconnect controller behavior smoke
+3. Kiosk policy behavior smoke
+4. Gateway signature + encrypted-keystore behavior smoke
+5. Circuit-breaker behavior smoke
+6. Runtime local-asset existence check
+7. DB/Edge migration verification where relevant
+8. GitHub Pages build + deploy success
 
 ## Migration policy
 - database DDL through tracked migrations
-- Edge Function source mirrored in repo
-- no secret material committed
-- service-worker cache version changed for behavior-critical client updates
-- legacy path removed only after replacement deploy succeeds
+- applied Supabase migrations mirrored under `infra/supabase/migrations/`
+- Edge Function source mirrored in `infra/supabase/functions/`
+- no service-role/private key material committed
+- Service Worker cache version changes for behavior-critical browser updates
+- legacy paths removed only after replacement deploy succeeds
+
+## Rollback
+`.github/workflows/queuehub-rollback.yml` is a manual-trigger rollback workflow. It accepts a known-good ancestor commit SHA, restores only the `queuehub/` tree, runs QueueHub behavior/runtime validation, commits the restored tree and pushes it back to `main` only if validation passes.
 
 ## Current completion
-CI/runtime checks strong; dedicated staging and automated rollback remain incomplete.
+Production deployment automation/rollback: ~92%.
+
+## External environment gate remaining
+A truly isolated staging backend is intentionally not auto-created from the shared Free-plan project. It should be provisioned only after quota/cost approval, and is required before 500/1,000/3,000 connection verification or destructive restore drills.
