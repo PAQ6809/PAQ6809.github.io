@@ -1,22 +1,32 @@
 # Reliability Architecture
 
-## Controls
+## Active controls
 - idempotent production queue commands
 - in-flight client command locks
-- retry with same command ID
+- retry with the same command ID
 - authoritative resync after error
-- push outbox + lease + retry
-- invalid subscription cleanup
-- degraded/fallback status
-- runtime health diagnostics
+- centralized Realtime reconnect controller with exponential backoff, jitter and coalescing
+- 50-client reconnect-storm verification
+- public REST circuit breaker with half-open recovery
+- push outbox + lease + bounded retry
+- Push dead-letter after 8 failed attempts with exponential backoff
+- Gateway local outbox + retry plus cloud dead-letter
+- invalid push-subscription cleanup
+- degraded/fallback runtime health state
+- first-party runtime telemetry and operational health aggregation
+- automatic data lifecycle maintenance via `pg_cron`
+- manual-trigger, validation-first GitHub rollback workflow
+- failure-mode runbook (`RUNBOOK.md`)
+- engineering SLOs (`SLO.md`)
 
-## Required next controls
-- reconnect-storm protection
-- dead-letter handling
-- explicit circuit breaker policies
-- backup/restore drills
-- failure-mode runbooks
-- SLO/SLA targets
+## Recovery model
+Frontend/runtime rollback is automated through the `QueueHub Rollback` workflow and only restores the `queuehub/` tree after behavior tests pass. Database changes are tracked as additive migrations and service functions are mirrored in the repository.
 
 ## Current completion
-Idempotency 100%, retry/outbox 85–90%, health ~70%, dead-letter/recovery/SLO incomplete.
+Software reliability controls: ~96%.
+
+## External recovery acceptance remaining
+- a real point-in-time / off-site database restore drill against a separate Supabase recovery or staging project
+- production incident exercise with the real kiosk/gateway hardware
+
+Those require a separate recovery target and/or physical devices. They are intentionally not represented as completed by unit/smoke tests.
