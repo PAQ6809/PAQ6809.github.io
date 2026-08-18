@@ -1,0 +1,79 @@
+name: QueueHub Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: 'Known-good commit SHA whose queuehub/ tree should be restored'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: queuehub-rollback
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate target
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          git cat-file -e "$TARGET^{commit}"
+          git merge-base --is-ancestor "$TARGET" HEAD || { echo 'Target must be an ancestor of current main'; exit 1; }
+          git ls-tree -d "$TARGET" queuehub | grep -q queuehub
+      - name: Restore QueueHub tree
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          git checkout "$TARGET" -- queuehub
+      - name: Validate restored runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          find queuehub/src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          if [ -d queuehub/tools/gateway-agent ]; then find queuehub/tools/gateway-agent -type f -name '*.mjs' -print0 | xargs -0 -r -n1 node --check; fi
+          node --check queuehub/sw.js
+          [ ! -f queuehub/tools/tests/reconnect-controller.test.cjs ] || node queuehub/tools/tests/reconnect-controller.test.cjs
+          [ ! -f queuehub/tools/tests/kiosk-policy.test.cjs ] || node queuehub/tools/tests/kiosk-policy.test.cjs
+          [ ! -f queuehub/tools/tests/gateway-protocol.test.cjs ] || node queuehub/tools/tests/gateway-protocol.test.cjs
+          [ ! -f queuehub/tools/tests/circuit-breaker.test.cjs ] || node queuehub/tools/tests/circuit-breaker.test.cjs
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          root=Path('queuehub'); html=(root/'index.html').read_text(encoding='utf-8')
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.refs=[]
+              def handle_starttag(self,tag,attrs):
+                  d=dict(attrs)
+                  if tag=='script' and d.get('src','').startswith('./'): self.refs.append(d['src'])
+                  if tag=='link' and d.get('rel')=='stylesheet' and d.get('href','').startswith('./'): self.refs.append(d['href'])
+          p=P(); p.feed(html)
+          missing=[r for r in p.refs if not (root/r[2:].split('?',1)[0]).exists()]
+          if missing: raise SystemExit(f'Missing assets: {missing}')
+          PY
+      - name: Commit rollback
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet --cached && git diff --quiet; then echo 'QueueHub already matches target'; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add queuehub
+          git commit -m "rollback(queuehub): restore queuehub tree from ${TARGET:0:12}"
+          git push origin HEAD:main
