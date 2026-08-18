@@ -1,0 +1,7 @@
+import { createHash, generateKeyPairSync, randomBytes, sign as cryptoSign, verify as cryptoVerify } from 'node:crypto';
+export const PROTOCOL_VERSION=1;
+export function sha256Hex(text){return createHash('sha256').update(text).digest('hex')}
+export function canonical(timestamp,nonce,bodyText){return `${timestamp}\n${nonce}\n${sha256Hex(bodyText)}`}
+export function signRequest(privateKeyPem,bodyText,{timestamp=String(Date.now()),nonce=randomBytes(18).toString('base64url'),keyVersion=1,deviceKey}={}){if(!deviceKey)throw new Error('deviceKey required');const message=canonical(timestamp,nonce,bodyText);const signature=cryptoSign(null,Buffer.from(message),privateKeyPem).toString('base64');return{'content-type':'application/json','x-queuehub-device':deviceKey,'x-queuehub-timestamp':timestamp,'x-queuehub-nonce':nonce,'x-queuehub-key-version':String(keyVersion),'x-queuehub-signature':signature}}
+export function verifyRequest(publicKeyPem,bodyText,headers){const message=canonical(headers['x-queuehub-timestamp'],headers['x-queuehub-nonce'],bodyText);return cryptoVerify(null,Buffer.from(message),publicKeyPem,Buffer.from(headers['x-queuehub-signature'],'base64'))}
+export function generateIdentity(){const {publicKey,privateKey}=generateKeyPairSync('ed25519');return{deviceKey:`gw_${randomBytes(18).toString('base64url')}`,publicKeyPem:publicKey.export({type:'spki',format:'pem'}),privateKeyPem:privateKey.export({type:'pkcs8',format:'pem'}),keyVersion:1}}
