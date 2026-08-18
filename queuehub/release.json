@@ -1,0 +1,12 @@
+{
+  "releaseId": "queuehub-architecture-v2-software-20260818",
+  "softwareStatus": "complete-with-external-acceptance-gates",
+  "serviceWorkerCache": "queuehub-shell-v36-visitor-sync",
+  "verifiedCapacity": {
+    "restVUs": 100,
+    "realtimeConnections": 100,
+    "reconnectStormClients": 50,
+    "target3000Verified": false
+  },
+  "publishedFor": "QueueHub Architecture v2 software convergence"
+}
