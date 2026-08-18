@@ -38,12 +38,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: JavaScript syntax check
         shell: bash
         run: |
@@ -51,16 +49,14 @@ jobs:
           find queuehub/src -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           find queuehub/tools/gateway-agent -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
           node --check queuehub/sw.js
-
       - name: Reconnect controller behavior smoke
         run: node queuehub/tools/tests/reconnect-controller.test.cjs
-
       - name: Kiosk client policy behavior smoke
         run: node queuehub/tools/tests/kiosk-policy.test.cjs
-
       - name: Gateway signing protocol smoke
         run: node queuehub/tools/tests/gateway-protocol.test.cjs
-
+      - name: Circuit breaker behavior smoke
+        run: node queuehub/tools/tests/circuit-breaker.test.cjs
       - name: Verify local runtime assets
         shell: bash
         run: |
@@ -68,37 +64,21 @@ jobs:
           from html.parser import HTMLParser
           from pathlib import Path
           import re
-
-          root = Path('queuehub')
-          html = (root / 'index.html').read_text(encoding='utf-8')
-
+          root=Path('queuehub');html=(root/'index.html').read_text(encoding='utf-8')
           class Assets(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.refs = []
-              def handle_starttag(self, tag, attrs):
-                  data = dict(attrs)
-                  if tag == 'script' and data.get('src', '').startswith('./'):
-                      self.refs.append(data['src'])
-                  if tag == 'link' and data.get('rel') == 'stylesheet' and data.get('href', '').startswith('./'):
-                      self.refs.append(data['href'])
-
-          parser = Assets()
-          parser.feed(html)
-          sw = (root / 'sw.js').read_text(encoding='utf-8')
-          sw_refs = re.findall(r"['\"](\./[^'\"]+)['\"]", sw)
-          missing = []
-          for ref in sorted(set(parser.refs + sw_refs)):
-              clean = ref.split('?', 1)[0].split('#', 1)[0]
-              target = root / clean.removeprefix('./')
-              if clean in ('./',):
-                  continue
-              if not target.exists():
-                  missing.append((ref, str(target)))
+              def __init__(self):super().__init__();self.refs=[]
+              def handle_starttag(self,tag,attrs):
+                  data=dict(attrs)
+                  if tag=='script' and data.get('src','').startswith('./'):self.refs.append(data['src'])
+                  if tag=='link' and data.get('rel')=='stylesheet' and data.get('href','').startswith('./'):self.refs.append(data['href'])
+          parser=Assets();parser.feed(html);sw=(root/'sw.js').read_text(encoding='utf-8');sw_refs=re.findall(r"['\"](\./[^'\"]+)['\"]",sw);missing=[]
+          for ref in sorted(set(parser.refs+sw_refs)):
+              clean=ref.split('?',1)[0].split('#',1)[0];target=root/clean.removeprefix('./')
+              if clean=='./':continue
+              if not target.exists():missing.append((ref,str(target)))
           if missing:
               print('Missing QueueHub runtime assets:')
-              for ref, target in missing:
-                  print(f'  {ref} -> {target}')
+              for ref,target in missing:print(f'  {ref} -> {target}')
               raise SystemExit(1)
           print(f'Validated {len(set(parser.refs))} HTML local assets and {len(set(sw_refs))} Service Worker refs.')
           PY
