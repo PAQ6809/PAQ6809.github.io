@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "sourceSha": "2af7857cac2aca46bdde64e95715e151833fb44f",
+  "workflowRunId": 32117122436,
+  "workflowRunAttempt": 1,
+  "releaseId": "queuehub-architecture-v2-software-20260818",
+  "serviceWorkerCache": "queuehub-shell-v36-visitor-sync",
+  "runtimeChecks": [
+    "javascript-syntax",
+    "runtime-assets",
+    "reconnect-controller",
+    "kiosk-policy",
+    "gateway-signature",
+    "gateway-keystore",
+    "circuit-breaker"
+  ],
+  "liveChecks": [
+    "release-marker",
+    "index-runtime-assets",
+    "service-worker-cache"
+  ],
+  "validatedAt": "2026-08-18T08:37:13.302635+00:00"
+}
