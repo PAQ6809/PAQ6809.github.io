@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-20T13:38:32+08:00",
+  "generated_at": "2026-08-21T08:02:48+08:00",
   "policy": {
     "official_identity_only": true,
     "not_for_market_prices_or_nav": true,
@@ -19,7 +19,7 @@
       "theme": "大型權值",
       "source_name": "臺灣證券交易所 ETF e添富",
       "source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
-      "verified_at": "2026-08-20T13:38:32+08:00"
+      "verified_at": "2026-08-21T08:02:48+08:00"
     }
   }
 }
