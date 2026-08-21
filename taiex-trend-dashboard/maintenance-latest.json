@@ -1,7 +1,7 @@
 {
   "schema_version": 10,
   "run_type": "scheduled_source_first_maintenance",
-  "run_at": "2026-08-21T08:02:48+08:00",
+  "run_at": "2026-08-21T13:41:27+08:00",
   "project_identity": {
     "name": "Lumen 台股分析平台",
     "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
@@ -10,26 +10,46 @@
   "market_context": {
     "latest_expected_completed_taiwan_cash_market_session": "2026-08-20",
     "latest_independently_observed_taiwan_cash_market_session": "2026-08-20",
-    "current_session": "2026-08-21 pre-open",
-    "twse_index_fact": {
+    "current_session": "2026-08-21 post-close edge; not promoted without complete official post-close rows",
+    "twse_index_probe_this_run": {
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
+      "observed_source_data_date": "2026-08-07",
+      "status": "stale runtime payload; rejected as current-session market fact"
+    },
+    "prior_same_day_verified_market_fact": {
       "source_data_date": "2026-08-20",
       "taiex_close": 44933.74,
       "change_points": 214.39,
       "change_percent": 0.48,
-      "fetched_at": "2026-08-21T08:02:48+08:00"
+      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
+      "provenance": "2026-08-21 premarket maintenance independently observed official payload"
     },
     "listed_quote_probe": {
       "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
-      "observed_source_data_date": "2026-08-19",
-      "status": "stale_relative_to_MI_INDEX; not promoted as latest listed quote universe"
+      "status": "runtime internal/transport error; no rows promoted"
     },
-    "note": "TWSE MI_INDEX directly exposed 2026-08-20 rows and was treated as the latest independently observed market-session fact. STOCK_DAY_ALL observed in this runtime remained on 2026-08-19, so it was not treated as a complete 2026-08-20 quote universe. TPEx and TAIFEX direct probes returned runtime transport/internal errors; these are not exchange-outage claims."
+    "note": "At 13:41 TST, the 2026-08-21 cash session had just passed the 13:30 close. This run did not obtain a complete canonical 2026-08-21 quote/index row set, so 2026-08-21 was not promoted as final. Current web runtime MI_INDEX was stale at 2026-08-07; STOCK_DAY_ALL, TPEx, TAIFEX and t187ap47_L probes were transport/internal-error limited. These are runtime observations, not exchange-outage claims."
   },
   "transport": {
     "read_order": ["official_direct","allowlisted_relay","verified_snapshot_catalog_only","explicit_missing"],
-    "lumen_official_relay": {"status":"ACTIVE_from_current_code_contract","role":"allowlisted_transport_only","server_runtime_reprobe":"not completed this run","arbitrary_url_proxy":false},
-    "lumen_context_relay": {"status":"ACTIVE_from_current_code_contract","role":"allowlisted_transport_only","server_runtime_reprobe":"not completed this run","arbitrary_url_proxy":false}
+    "lumen_official_relay": {
+      "status": "ACTIVE_from_current_code_contract",
+      "role": "allowlisted_transport_only",
+      "auth": "publishable apikey header required by client contract",
+      "cors": "server runtime CORS not independently re-probed this run",
+      "allowlist": "LUMEN_RELAY_STATIC plus validated twse_t86/twse_stock_history/tpex_stock_history parameterized routes",
+      "source_mismatch_guard": true,
+      "arbitrary_url_proxy": false
+    },
+    "lumen_context_relay": {
+      "status": "ACTIVE_from_current_code_contract",
+      "role": "allowlisted_transport_only",
+      "auth": "publishable apikey header required by client contract",
+      "cors": "server runtime CORS not independently re-probed this run",
+      "allowlist": "fixed LUMEN_CONTEXT_SOURCE ids; source_url prefix mismatch rejected",
+      "source_mismatch_guard": true,
+      "arbitrary_url_proxy": false
+    }
   },
   "snapshot": {
     "path": "taiex-trend-dashboard/official-snapshot-latest.json",
@@ -38,25 +58,27 @@
     "verified_dataset_count": 0,
     "verified_fallback_dataset_count": 0,
     "nonverified_rows_are_empty": true,
-    "file_updated_this_run": false,
-    "reason": "No complete canonical dataset was safely materialized into a full persistable row set in this runtime. Existing non-verified rows remain empty; no partial dataset was promoted."
+    "file_updated_this_run": true,
+    "commit_sha": "b9205d22fee082a08c403ebe52f400a70ce13990",
+    "latest_taiwan_trading_day_marker": "2026-08-20",
+    "reason": "No complete canonical dataset was safely materialized, parsed and independently validated into a full persistable row set in this runtime. All 44 dataset statuses were refreshed; non-verified rows remain empty and no partial dataset was promoted."
   },
   "coverage": {
-    "market_and_industry": "TWSE MI_INDEX directly verified for 2026-08-20; TAIEX close 44,933.74, +214.39 (+0.48%).",
-    "listed_and_otc_quotes": "TWSE STOCK_DAY_ALL observed at 2026-08-19 and therefore stale versus MI_INDEX; TPEx direct probe transport-limited. No third-party fallback.",
-    "etf": "TWSE t187ap47_L remains primary structured fund master. 0050 identity independently reverified from official TWSE ETF e添富; registry timestamp refreshed, dynamic values excluded.",
-    "technical": "MA/RSI/MACD remain dependent on verified official OHLC; no guessed recomputation.",
-    "fundamental_financial_company": "TWSE/TPEx/MOPS contracts retained; no unverified financial rows persisted.",
-    "valuation_peers": "Official-only contracts retained; no unverified values persisted.",
-    "institutional_margin_taifex": "TAIFEX direct Put/Call probe transport-limited in this runtime; no third-party substitution.",
-    "events_governance_regulatory_esg_news": "Official catalog boundaries retained; no unverified major facts promoted.",
-    "macro_taiwan": "DGBAS, MOEA export orders and Customs remain canonical; no fresh numerical release persisted without official payload validation.",
-    "macro_us": "BEA official schedule rechecked; next major releases remain 2026-08-26 08:30 ET for Q2 GDP second estimate/corporate profits and July Personal Income and Outlays."
+    "market_and_industry": "TWSE MI_INDEX direct probe executed; current runtime returned stale 2026-08-07 rows, so no new market/industry values were promoted. Prior same-day verified 2026-08-20 market fact remains the trusted marker.",
+    "listed_and_otc_quotes": "TWSE STOCK_DAY_ALL and TPEx mainboard direct probes were transport/internal-error limited. No third-party fallback and no 2026-08-21 post-close promotion.",
+    "etf": "TWSE t187ap47_L remains primary structured fund master. Direct fund-master probe was transport-limited this run. 0050 identity was rechecked on the official TWSE ETF e添富 page; registry identity remains unchanged and dynamic values remain excluded.",
+    "technical": "Official OHLC remains the only basis for MA5/MA20/MA60, RSI14 and MACD/signal. No technical indicator is recomputed from missing or third-party rows.",
+    "fundamental_financial_company": "TWSE/TPEx/MOPS revenue, income statement, balance sheet and company-profile contracts retained; no unverified financial rows persisted.",
+    "valuation_peers": "TWSE BWIBBU_ALL and TPEx official P/E/P/B/dividend-yield sources remain canonical; no unverified values persisted.",
+    "institutional_margin_taifex": "TWSE/TPEx margin, institutional and TAIFEX contracts retained; TAIFEX Put/Call direct probe was runtime-limited and no third-party substitution occurred.",
+    "events_governance_regulatory_esg_news": "TWSE/TPEx/MOPS governance, ownership, penalties, information violations, business-scope changes, dividends, ESG and official-news context boundaries remain intact. No unverified company-specific fact was promoted.",
+    "company_business": "GCIS remains canonical for registered business items; registration scope is explicitly not treated as revenue mix.",
+    "macro_taiwan": "DGBAS/stat.gov.tw official July 2026 CPI release remains available: CPI y/y +2.54%. MOEA official external-order table retrieved in this run still showed data through June 2026; no guessed July external-order value was persisted. Customs remains the canonical import/export source and no fresh customs row was persisted without direct payload validation.",
+    "macro_us": "BLS official schedule confirms State Employment and Unemployment for July 2026 at 2026-08-21 10:00 ET (still upcoming at this run). BEA confirms 2026-08-26 08:30 ET for Q2 GDP second estimate/corporate profits and July Personal Income and Outlays. Federal Reserve official calendar confirms FOMC Minutes for the July 28-29 meeting were scheduled for 2026-08-19 14:00 ET; this run did not persist minutes content without retrieving the current official release payload."
   },
   "etf_profile_registry": {
     "path": "taiex-trend-dashboard/etf-profile-verified.json",
-    "registry_file_updated": true,
-    "commit_sha": "7a84e1a86e37deb31be6f283225e37de75e9815b",
+    "registry_file_updated": false,
     "0050": {
       "status": "verified_unchanged",
       "issuer": "元大證券投資信託股份有限公司",
@@ -70,9 +92,46 @@
     "dynamic_value_policy": "identity-only; price/NAV/AUM/performance/premium-discount/volume/trade value excluded"
   },
   "official_current_events": {
+    "taiwan": {
+      "cpi_latest": {
+        "classification": "raw_official_fact",
+        "reference_period": "2026-07",
+        "year_over_year_percent": 2.54,
+        "source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236540"
+      },
+      "export_orders_latest_retrieved": {
+        "classification": "raw_official_fact",
+        "reference_period": "2026-06",
+        "amount_usd_million": 95262,
+        "year_over_year_percent": 59.43,
+        "source_url": "https://service.moea.gov.tw/EE521/common/Common.aspx?code=B&no=1",
+        "limitation": "No July value persisted because this run did not retrieve a current official July row."
+      }
+    },
     "us": {
-      "bls_today": {"classification":"official_schedule_fact","event":"State Employment and Unemployment, July 2026","release_date":"2026-08-21","release_time":"10:00 ET","source_url":"https://www.bls.gov/schedule/2026/08_sched.htm"},
-      "bea_next": {"classification":"official_schedule_fact","event":"GDP Second Estimate and Corporate Profits Q2 2026; Personal Income and Outlays July 2026","release_date":"2026-08-26","release_time":"08:30 ET","source_url":"https://www.bea.gov/news/schedule"}
+      "bls_today": {
+        "classification": "official_schedule_fact",
+        "event": "State Employment and Unemployment, July 2026",
+        "release_date": "2026-08-21",
+        "release_time": "10:00 ET",
+        "source_url": "https://www.bls.gov/schedule/2026/08_sched.htm",
+        "status_at_run": "upcoming"
+      },
+      "bea_next": {
+        "classification": "official_schedule_fact",
+        "event": "GDP Second Estimate and Corporate Profits Q2 2026; Personal Income and Outlays July 2026",
+        "release_date": "2026-08-26",
+        "release_time": "08:30 ET",
+        "source_url": "https://www.bea.gov/news/schedule"
+      },
+      "fed_minutes": {
+        "classification": "official_schedule_fact",
+        "event": "FOMC Minutes — meeting of July 28-29, 2026",
+        "release_date": "2026-08-19",
+        "release_time": "14:00 ET",
+        "source_url": "https://www.federalreserve.gov/newsevents/2026-august.htm",
+        "content_persisted": false
+      }
     }
   },
   "analysis_boundaries": {
@@ -83,8 +142,16 @@
   },
   "github_ci": {
     "policy": "Only explicit workflow conclusion=success is success.",
-    "workflow_contracts_checked": [".github/workflows/lumen-static-check.yml",".github/workflows/lumen-snapshot-check.yml",".github/workflows/lumen-context-check.yml",".github/workflows/lumen-etf-check.yml"],
-    "current_run": {"explicit_success_observed":false,"note":"Workflow run listing was not available through the current connector path; no CI success claimed."}
+    "workflow_contracts_checked": [
+      ".github/workflows/lumen-static-check.yml",
+      ".github/workflows/lumen-snapshot-check.yml",
+      ".github/workflows/lumen-context-check.yml",
+      ".github/workflows/lumen-etf-check.yml"
+    ],
+    "current_run": {
+      "explicit_success_observed": false,
+      "note": "The connector exposed no explicit success conclusion for the newly written snapshot commit at maintenance-write time; no CI success is claimed."
+    }
   },
   "deployment": {
     "github_pages_source_updated": true,
@@ -93,12 +160,12 @@
     "cloudflare_status": "unverified/not synchronized with canonical Taiwan-stock platform"
   },
   "risk_limitations": [
-    "TWSE MI_INDEX is current through 2026-08-20, while STOCK_DAY_ALL observed here remained at 2026-08-19; do not merge them as if they were the same session.",
-    "TPEx and TAIFEX direct probes returned runtime transport/internal errors; this does not establish exchange outages.",
-    "No complete canonical dataset was safely persisted as verified snapshot rows this run; existing non-verified snapshot rows remain empty.",
-    "0050 identity was reverified from official TWSE ETF e添富; dynamic values were deliberately excluded from the registry.",
-    "Relay server runtime CORS/auth was not independently re-probed.",
+    "The 2026-08-21 cash session had only just closed; without complete official post-close rows it is not promoted as final.",
+    "TWSE MI_INDEX returned stale 2026-08-07 rows in this runtime; STOCK_DAY_ALL, TPEx, TAIFEX and fund-master direct probes were runtime-limited. These observations do not establish exchange outages.",
+    "No complete canonical dataset was safely persisted as verified snapshot rows this run; all non-verified snapshot rows remain empty.",
+    "0050 identity was reverified from official TWSE ETF e添富; dynamic market/NAV/AUM/performance values remain excluded from the registry.",
+    "Relay code contracts confirm fixed allowlists, publishable-key client auth and source-mismatch guards; server-side CORS/auth behavior was not independently re-probed in this runtime.",
     "No CI workflow is marked success without an explicit conclusion=success.",
-    "GitHub Pages source update and public propagation are separate; Cloudflare remains unverified/not synchronized."
+    "GitHub source update and Pages public propagation are separate; Cloudflare remains unverified/not synchronized."
   ]
 }
