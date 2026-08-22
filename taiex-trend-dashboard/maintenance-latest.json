@@ -1,102 +1,28 @@
 {
   "schema_version": 10,
   "run_type": "scheduled_source_first_maintenance",
-  "run_at": "2026-08-22T13:40:00+08:00",
-  "project_identity": {
-    "name": "Lumen 台股分析平台",
-    "canonical_repo_path": "PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/",
-    "other_projects_modified": false
-  },
+  "run_at": "2026-08-23T08:00:00+08:00",
+  "project_identity": {"name":"Lumen 台股分析平台","canonical_repo_path":"PAQ6809/PAQ6809.github.io/taiex-trend-dashboard/","other_projects_modified":false},
   "market_context": {
-    "latest_expected_completed_taiwan_cash_market_session": "2026-08-21",
-    "latest_independently_observed_taiwan_cash_market_session": "2026-08-21",
-    "current_session": "2026-08-22 Saturday; Taiwan cash market closed",
-    "twse_index_fact_carried_from_same_day_verified_maintenance": {
-      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX",
-      "source_data_date": "2026-08-21",
-      "taiex_close": 45224.29,
-      "change_points": 290.55,
-      "change_percent": 0.65,
-      "status": "official fact independently verified in the 2026-08-22 same-day maintenance stream; no newer Saturday session exists"
-    },
-    "weekend_policy": "No synthetic Saturday market session and no third-party price substitution."
+    "latest_expected_completed_taiwan_cash_market_session":"2026-08-21",
+    "latest_independently_observed_taiwan_cash_market_session":"2026-08-21",
+    "current_session":"2026-08-23 Sunday; Taiwan cash market closed",
+    "twse_index_fact":{"source_url":"https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX","source_data_date":"2026-08-21","fetched_at":"2026-08-23T08:00:00+08:00","taiex_close":45224.29,"change_points":290.55,"change_percent":0.65,"status":"official direct verified"},
+    "twse_listed_quote_fact":{"source_url":"https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL","source_data_date":"2026-08-21","fetched_at":"2026-08-23T08:00:00+08:00","0050_close":104.65,"0050_change":0.85,"status":"official direct verified sample; complete dataset not persisted as snapshot"},
+    "weekend_policy":"No synthetic Sunday session and no third-party price substitution."
   },
   "transport": {
-    "read_order": ["official_direct","allowlisted_relay","verified_snapshot_catalog_only","explicit_missing"],
-    "lumen_official_relay": {"status":"ACTIVE_from_current_code_contract","auth":"publishable apikey header","role":"allowlisted_transport_only","cors":"server runtime not independently re-probed this run","allowlist":"LUMEN_RELAY_STATIC plus validated TWSE T86/TWSE history/TPEx history date-code routes","source_mismatch_guard":true,"arbitrary_url_proxy":false},
-    "lumen_context_relay": {"status":"ACTIVE_from_current_code_contract","auth":"publishable apikey header","role":"allowlisted_transport_only","cors":"server runtime not independently re-probed this run","allowlist":"fixed LUMEN_CONTEXT_SOURCE ids","source_mismatch_guard":true,"arbitrary_url_proxy":false}
+    "read_order":["official_direct","allowlisted_relay","verified_snapshot_catalog_only","explicit_missing"],
+    "direct":{"twse_indices":"success","twse_listed_quotes":"success","tpex_quotes":"runtime transport/internal error","taifex_put_call":"runtime transport/internal error"},
+    "relay_contract":"allowlisted transport only; auth/CORS/allowlist boundaries retained from current code contract; server runtime not independently authenticated-probed this run",
+    "arbitrary_url_proxy":false
   },
-  "snapshot": {
-    "path": "taiex-trend-dashboard/official-snapshot-latest.json",
-    "catalog_dataset_count": 44,
-    "catalog_checks_attempted": 44,
-    "verified_dataset_count": 0,
-    "verified_fallback_dataset_count": 0,
-    "nonverified_rows_are_empty": true,
-    "file_updated_this_run": true,
-    "latest_file_marker": "2026-08-21",
-    "commit": "15b2e7bde71e8b449f80043018364cf7bfab0aef",
-    "reason": "Saturday has no new Taiwan cash session. Snapshot metadata was advanced to the latest independently observed official 2026-08-21 session while preserving empty rows for every dataset not fully materialized, parsed and independently validated."
-  },
-  "coverage": {
-    "market_industry":"contract checked",
-    "listed_otc_quotes":"contract checked; no partial rows promoted",
-    "etf":"TWSE t187ap47_L primary; verified identity registry secondary only",
-    "ohlc_technical":"official OHLC required before MA/RSI/MACD derivation",
-    "revenue_financials_company":"TWSE/TPEx/MOPS canonical only",
-    "valuation_yield_peers":"official canonical only",
-    "institutional_margin":"TWSE/TPEx canonical only",
-    "taifex":"TAIFEX canonical only",
-    "material_events":"TWSE/TPEx/MOPS canonical only",
-    "governance_ownership_insider_regulatory":"context catalog contract checked",
-    "business_scope":"GCIS registration scope only; not revenue mix",
-    "esg":"TWSE official ESG context APIs",
-    "official_news":"TWSE official news source",
-    "taiwan_macro":"DGBAS/stat.gov.tw, MOEA export orders, Customs only",
-    "us_macro":"BLS, BEA, Federal Reserve only"
-  },
-  "etf_profile_registry": {
-    "path": "taiex-trend-dashboard/etf-profile-verified.json",
-    "registry_file_updated": false,
-    "0050": {
-      "status": "verified_identity_unchanged",
-      "issuer": "元大證券投資信託股份有限公司",
-      "benchmark": "富時臺灣證券交易所臺灣50指數",
-      "source_url": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
-      "registry_verified_at": "2026-08-21T08:02:48+08:00"
-    },
-    "dynamic_value_policy": "identity-only; price/NAV/AUM/performance/premium-discount/volume/trade value excluded"
-  },
-  "official_current_events": {
-    "us": {
-      "bls": {"classification":"official_schedule_fact","event":"State Employment and Unemployment, July 2026","release_date":"2026-08-21","release_time":"10:00 ET","status":"release time passed; values not persisted without direct current release-payload verification","source_url":"https://www.bls.gov/schedule/2026/08_sched.htm"},
-      "bea_next": {"classification":"official_schedule_fact","event":"GDP (Second Estimate) and Corporate Profits, Q2 2026; Personal Income and Outlays, July 2026","release_date":"2026-08-26","release_time":"08:30 ET","source_url":"https://www.bea.gov/news/schedule"},
-      "fed": {"classification":"official_schedule_fact","event":"FOMC Minutes for July 28-29 meeting","release_date":"2026-08-19","release_time":"14:00 ET","status":"release time passed; no policy-content inference persisted without direct minutes payload verification","source_url":"https://www.federalreserve.gov/newsevents/2026-august.htm"}
-    }
-  },
-  "analysis_boundaries": {
-    "raw_fact": "Only canonical official-source values, verified ETF identity and verified official schedule facts are raw facts.",
-    "lumen_calculation": "Derived indicators require verified official underlying rows.",
-    "rule_interpretation": "Event relevance and directional rules are separate from source facts.",
-    "risk_limit": "Missing values are explicit; no guess or third-party price substitution."
-  },
-  "github_ci": {
-    "policy": "Only explicit workflow conclusion=success is success.",
-    "workflow_contracts_checked": [".github/workflows/lumen-static-check.yml",".github/workflows/lumen-snapshot-check.yml",".github/workflows/lumen-context-check.yml",".github/workflows/lumen-etf-check.yml"],
-    "current_run": {"explicit_success_observed": false,"note":"Workflow definitions were re-read and remain consistent with source/snapshot/context/ETF safety contracts. No explicit conclusion=success for the new commits was available at write time, so success is not claimed."}
-  },
-  "deployment": {
-    "github_pages_source_updated": true,
-    "github_pages_public_propagation_verified": false,
-    "cloudflare_url": "https://lumen-script.pages.dev/",
-    "cloudflare_status": "unverified/not synchronized with canonical Taiwan-stock platform"
-  },
-  "risk_limitations": [
-    "Saturday 2026-08-22 has no Taiwan cash-market session; latest official session remains 2026-08-21.",
-    "No incomplete financial dataset is promoted into verified snapshot rows.",
-    "Relay ACTIVE/auth/allowlist/source-mismatch boundaries are confirmed from current client code; server-side CORS was not independently re-probed in this run.",
-    "0050 identity remains an official TWSE e添富 identity fallback only; dynamic values remain excluded.",
-    "GitHub source update and Pages public propagation remain separate; Cloudflare remains unverified/not synchronized.",
-    "No CI workflow is marked success without explicit conclusion=success."
-  ]
+  "snapshot": {"path":"taiex-trend-dashboard/official-snapshot-latest.json","catalog_dataset_count":44,"catalog_checks_attempted":44,"verified_dataset_count":0,"verified_fallback_dataset_count":0,"nonverified_rows_are_empty":true,"file_updated_this_run":false,"latest_file_marker":"2026-08-21","reason":"Sunday has no new cash-market session. Existing snapshot already records all 44 datasets with empty rows for non-verified datasets; no complete newly materialized canonical dataset justified a rewrite."},
+  "coverage": {"market_industry":"TWSE latest session directly reverified","listed_quotes":"TWSE latest session directly reverified; complete snapshot not promoted","otc_quotes":"transport limitation; not source failure","etf":"TWSE fund-master remains primary; e添富 identity fallback secondary","ohlc_technical":"requires verified official OHLC","revenue_financials_company":"canonical contract retained","valuation_yield_peers":"canonical contract retained","institutional_margin":"canonical contract retained","taifex":"transport limitation this runtime","material_events":"canonical contract retained","governance_ownership_insider_regulatory":"context contract retained","business_scope":"GCIS registration scope only","esg":"TWSE official APIs","taiwan_macro":"official DGBAS/MOEA/Customs only","us_macro":"BLS/BEA/Federal Reserve only"},
+  "etf_profile_registry": {"path":"taiex-trend-dashboard/etf-profile-verified.json","registry_file_updated":false,"0050":{"status":"reverified_identity_unchanged","issuer":"元大證券投資信託股份有限公司","benchmark":"富時臺灣證券交易所臺灣50指數","security_type":"台股ETF","theme":"大型權值","source_url":"https://www.twse.com.tw/zh/ETFortune/etfInfo/0050","checked_at":"2026-08-23T08:00:00+08:00","registry_verified_at":"2026-08-21T08:02:48+08:00"},"dynamic_value_policy":"identity-only; no price/NAV/AUM/performance/premium-discount/volume/trade-value persistence"},
+  "official_current_events": {"us":{"bea_next":{"classification":"official_schedule_fact","event":"GDP (Second Estimate) and Corporate Profits, Q2 2026; Personal Income and Outlays, July 2026","release_date":"2026-08-26","release_time":"08:30 ET","source_url":"https://www.bea.gov/news/schedule"},"fed_next_notable":{"classification":"official_schedule_fact","event":"Chairman Kevin Warsh keynote remarks at Jackson Hole Economic Policy Symposium","release_date":"2026-08-28","release_time":"10:00 ET","source_url":"https://www.federalreserve.gov/newsevents/2026-august.htm"}}},
+  "analysis_boundaries": {"raw_fact":"Only canonical official-source values, verified ETF identity and verified official schedule facts are raw facts.","lumen_calculation":"Derived indicators require verified official underlying rows.","rule_interpretation":"Event relevance and directional rules remain separate from source facts.","risk_limit":"Missing values explicit; no guesses or third-party financial-value substitution."},
+  "github_ci": {"policy":"Only explicit workflow conclusion=success is success.","workflow_contracts_checked":[".github/workflows/lumen-static-check.yml",".github/workflows/lumen-snapshot-check.yml",".github/workflows/lumen-context-check.yml",".github/workflows/lumen-etf-check.yml"],"current_run":{"explicit_success_observed":false,"note":"No explicit conclusion=success for this maintenance commit was available before recording; success is not claimed."}},
+  "deployment": {"github_pages_source_updated":true,"github_pages_public_propagation_verified":false,"cloudflare_url":"https://lumen-script.pages.dev/","cloudflare_status":"unverified/not synchronized with canonical Taiwan-stock platform"},
+  "risk_limitations": ["Sunday 2026-08-23 has no Taiwan cash-market session; latest official session remains 2026-08-21.","TPEx and TAIFEX direct probes failed in this runtime and are recorded as transport limitations, not exchange-source failures.","No incomplete dataset was promoted into verified snapshot rows.","0050 identity was reverified from TWSE e添富 and remains unchanged; dynamic values stay excluded from registry.","GitHub source update and public Pages propagation are separate; Cloudflare remains unverified/not synchronized.","CI is not marked success without explicit workflow conclusion=success."]
 }
