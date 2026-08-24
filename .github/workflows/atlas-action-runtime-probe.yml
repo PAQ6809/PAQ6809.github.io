@@ -1,0 +1,32 @@
+name: Atlas action runtime probe
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/atlas-action-runtime-probe.yml'
+      - '.github/workflows/atlas-reader-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node24-actions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout with Node 24 action
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Create compatibility probe
+        run: |
+          printf 'atlas-action-runtime-node24-ok\n' > /tmp/atlas-action-runtime-probe.txt
+          test -f scripts/atlas-reader-check.mjs
+      - name: Upload with Node 24 action
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: atlas-action-runtime-probe
+          path: /tmp/atlas-action-runtime-probe.txt
+          if-no-files-found: error
+          retention-days: 1
