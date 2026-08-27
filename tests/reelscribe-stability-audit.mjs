@@ -43,7 +43,7 @@ for (const [name, source] of [
 
 assert.doesNotMatch(serviceWorker, /skipWaiting\s*\(/);
 assert.doesNotMatch(serviceWorker, /clients\.claim\s*\(/);
-assert.match(serviceWorker, /reelscribe-shell-v13/);
+assert.match(serviceWorker, /reelscribe-shell-v15/);
 assert.match(screenOcr, /isRunning:\s*\(\) => running/);
 
 assert.doesNotMatch(compatibility, /document\.cookie|new Function\s*\(|\beval\s*\(/);
