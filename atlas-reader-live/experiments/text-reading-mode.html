@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Atlas Reader · Text Reading Mode Prototype</title>
+  <style>
+    :root{--bg:#f4ecd9;--ink:#342e25;--bar:#0f131bee;--barInk:#fff;--line:#ffffff33;--button:#202938;--max:760px;--size:20px;--lh:1.9}
+    @media(prefers-color-scheme:dark){:root{--bg:#17191d;--ink:#e8e0d4;--bar:#0b0d12f2;--button:#242a35}}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Georgia,"Noto Serif TC",serif}
+    body{transition:background .18s,color .18s}.bar{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:max(10px,env(safe-area-inset-top)) 12px 10px;background:var(--bar);color:var(--barInk);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}.bar .group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bar button{border:1px solid var(--line);background:var(--button);color:#fff;border-radius:999px;padding:8px 11px;font:inherit;cursor:pointer}.bar button:focus-visible{outline:3px solid #8ab4ff;outline-offset:2px}.bar output{font-variant-numeric:tabular-nums;font-size:13px;color:#d0d5dd}
+    article{max-width:var(--max);margin:auto;padding:54px 24px 120px}h1{font-size:clamp(34px,7vw,58px);line-height:1.08;margin:0 0 28px}p{font-size:var(--size);line-height:var(--lh);white-space:pre-wrap;margin:0}.meta{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;font-size:13px;opacity:.7;margin-bottom:14px}
+    body[data-theme="light"]{--bg:#f4ecd9;--ink:#342e25}body[data-theme="dark"]{--bg:#17191d;--ink:#e8e0d4}
+    @media(max-width:520px){article{padding:40px 18px 100px}.bar{align-items:flex-start}.bar .title{width:100%;order:-1}}
+    @media(prefers-reduced-motion:reduce){body{transition:none}}
+  </style>
+</head>
+<body>
+  <header class="bar" aria-label="閱讀控制">
+    <strong class="title">Atlas Reader · 閱讀模式原型</strong>
+    <div class="group">
+      <button type="button" id="themeBtn" aria-label="切換閱讀配色">配色：自動</button>
+      <button type="button" id="smaller" aria-label="縮小字體">A−</button>
+      <button type="button" id="larger" aria-label="放大字體">A＋</button>
+      <button type="button" id="speak" aria-label="開始或暫停朗讀">朗讀</button>
+      <button type="button" id="stop" aria-label="停止朗讀">停止</button>
+      <output id="status" aria-live="polite">20px</output>
+    </div>
+  </header>
+  <article>
+    <div class="meta">零外部依賴 · 不上傳文字 · 使用瀏覽器原生能力</div>
+    <h1>Atlas Reader 文字閱讀模式</h1>
+    <p id="content">這是用來驗證 Atlas Reader 閱讀體驗的低風險原型。
+
+目標只有三個：自動跟隨系統深色模式、提供可存取的字級調整，以及在瀏覽器支援時使用原生 SpeechSynthesis 朗讀。整個原型不連線到第三方服務，也不新增套件或 API 金鑰。
+
+如果原型驗證通過，再把同樣的能力以最小 diff 併回既有 text-reader，而不是直接重構正式閱讀器。</p>
+  </article>
+  <script>
+    (function(){
+      'use strict';
+      var root=document.documentElement;
+      var body=document.body;
+      var status=document.getElementById('status');
+      var content=document.getElementById('content');
+      var themeBtn=document.getElementById('themeBtn');
+      var size=20;
+      var themes=['auto','light','dark'];
+      var themeIndex=0;
+      var utterance=null;
+      function renderSize(){root.style.setProperty('--size',size+'px');status.value=size+'px';}
+      function setTheme(){var t=themes[themeIndex];if(t==='auto')body.removeAttribute('data-theme');else body.setAttribute('data-theme',t);themeBtn.textContent='配色：'+({auto:'自動',light:'淺色',dark:'深色'}[t]);}
+      document.getElementById('smaller').addEventListener('click',function(){size=Math.max(16,size-1);renderSize();});
+      document.getElementById('larger').addEventListener('click',function(){size=Math.min(30,size+1);renderSize();});
+      themeBtn.addEventListener('click',function(){themeIndex=(themeIndex+1)%themes.length;setTheme();});
+      document.getElementById('speak').addEventListener('click',function(){
+        if(!('speechSynthesis' in window)){status.value='此瀏覽器不支援朗讀';return;}
+        if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();status.value='朗讀已暫停';return;}
+        if(speechSynthesis.paused){speechSynthesis.resume();status.value='繼續朗讀';return;}
+        utterance=new SpeechSynthesisUtterance(content.textContent||'');utterance.lang='zh-TW';
+        utterance.onend=function(){status.value=size+'px';utterance=null;};
+        utterance.onerror=function(){status.value='朗讀失敗';utterance=null;};
+        speechSynthesis.speak(utterance);status.value='朗讀中';
+      });
+      document.getElementById('stop').addEventListener('click',function(){if('speechSynthesis' in window)speechSynthesis.cancel();utterance=null;status.value=size+'px';});
+      window.addEventListener('pagehide',function(){if('speechSynthesis' in window)speechSynthesis.cancel();});
+      renderSize();setTheme();
+    })();
+  </script>
+</body>
+</html>
