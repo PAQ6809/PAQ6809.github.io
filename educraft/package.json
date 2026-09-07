@@ -16,7 +16,7 @@
     "verify:backend": "npm run verify:supabase && npm run verify:mcp"
   },
   "devDependencies": {
-    "@playwright/test": "1.61.1"
+    "@playwright/test": "1.62.1"
   },
   "engines": {
     "node": ">=22"
