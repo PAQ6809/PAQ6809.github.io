@@ -28,13 +28,16 @@ concurrency:
   group: atlas-reader-check-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PLAYWRIGHT_VERSION: 1.55.0
+
 jobs:
   static-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           persist-credentials: false
       - name: Run static regression checks
@@ -45,7 +48,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           persist-credentials: false
       - name: Run Edge Function request matrix
@@ -56,7 +59,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           persist-credentials: false
       - name: Start local Atlas Reader
@@ -69,7 +72,7 @@ jobs:
           cp scripts/atlas-reader-smoke.spec.mjs /tmp/atlas-e2e/
           cd /tmp/atlas-e2e
           npm init -y >/dev/null 2>&1
-          npm install --ignore-scripts --no-audit --no-fund @playwright/test@1.55.0
+          npm install --ignore-scripts --no-audit --no-fund @playwright/test@${PLAYWRIGHT_VERSION}
           npx playwright install --with-deps chromium
       - name: Run mobile browser smoke test
         run: |
@@ -77,7 +80,7 @@ jobs:
           ATLAS_TARGET=http://127.0.0.1:4173 npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
       - name: Upload diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: atlas-reader-smoke-diagnostics
           path: |
@@ -87,7 +90,6 @@ jobs:
           retention-days: 7
 
   production-smoke:
-    if: github.event_name == 'push'
     needs:
       - static-regression
       - edge-regression
@@ -96,10 +98,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           persist-credentials: false
       - name: Wait for GitHub Pages propagation
+        if: github.event_name == 'push'
         run: |
           for attempt in $(seq 1 60); do
             if node scripts/atlas-production-probe.mjs; then
@@ -115,15 +118,15 @@ jobs:
           cp scripts/atlas-reader-smoke.spec.mjs /tmp/atlas-e2e/
           cd /tmp/atlas-e2e
           npm init -y >/dev/null 2>&1
-          npm install --ignore-scripts --no-audit --no-fund @playwright/test@1.55.0
+          npm install --ignore-scripts --no-audit --no-fund @playwright/test@${PLAYWRIGHT_VERSION}
           npx playwright install --with-deps chromium
       - name: Run production mobile smoke test
         run: |
           cd /tmp/atlas-e2e
-          ATLAS_TARGET=https://atlas-reader.vercel.app ATLAS_EXPECT_API=true npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
+          ATLAS_TARGET=https://atlas-reader.vercel.app ATLAS_EXPECT_API=true ATLAS_REAL_IMPORT=true npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
       - name: Upload production diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: atlas-reader-production-smoke-diagnostics
           path: /tmp/atlas-e2e/test-results
