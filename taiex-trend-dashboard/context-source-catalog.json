@@ -2,7 +2,7 @@
   "schema_version": 2,
   "name": "Lumen official company, ETF and event context catalog",
   "timezone": "Asia/Taipei",
-  "scheduled_runs": ["08:00", "13:40"],
+  "scheduled_runs": ["08:30", "21:30"],
   "policy": {
     "primary_sources_first": true,
     "company_business_scope_is_registration_scope_not_revenue_mix": true,
