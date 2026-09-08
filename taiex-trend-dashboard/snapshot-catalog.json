@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "Lumen official data update catalog",
   "timezone": "Asia/Taipei",
-  "scheduled_runs": ["08:00", "13:40"],
+  "scheduled_runs": ["08:30", "21:30"],
   "policy": {
     "source_first": true,
     "primary_sources_only_for_financial_values": true,
@@ -33,7 +33,6 @@
     {"id":"tpex_institutional_trust","priority":"high","category":"chips","source_name":"TPEx investment trust trading","source_url":"https://www.tpex.org.tw/openapi/v1/tpex_3insti_trading","frontend_fallback":true},
     {"id":"tpex_institutional_foreign","priority":"high","category":"chips","source_name":"TPEx foreign institutional trading","source_url":"https://www.tpex.org.tw/openapi/v1/tpex_3insti_qfii_trading","frontend_fallback":true},
     {"id":"twse_t86_latest","priority":"high","category":"chips","source_name":"TWSE T86 institutional stock detail","source_url":"https://www.twse.com.tw/rwd/zh/fund/T86","query_strategy":"latest_trading_day","frontend_fallback":false},
-
     {"id":"twse_income_ci","priority":"high","category":"financial_statement","source_name":"TWSE/MOPS income statement general","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci","frontend_fallback":true},
     {"id":"twse_income_basi","priority":"high","category":"financial_statement","source_name":"TWSE/MOPS income statement banking","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap06_L_basi","frontend_fallback":true},
     {"id":"twse_income_bd","priority":"high","category":"financial_statement","source_name":"TWSE/MOPS income statement securities futures","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap06_L_bd","frontend_fallback":true},
@@ -46,7 +45,6 @@
     {"id":"tpex_income_fh","priority":"high","category":"financial_statement","source_name":"TPEx/MOPS income statement financial holding","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap06_O_fh","frontend_fallback":true},
     {"id":"tpex_income_ins","priority":"high","category":"financial_statement","source_name":"TPEx/MOPS income statement insurance","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap06_O_ins","frontend_fallback":true},
     {"id":"tpex_income_mim","priority":"high","category":"financial_statement","source_name":"TPEx/MOPS income statement mixed industry","source_url":"https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap06_O_mim","frontend_fallback":true},
-
     {"id":"twse_balance_ci","priority":"high","category":"financial_statement","source_name":"TWSE/MOPS balance sheet general","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap07_L_ci","frontend_fallback":true},
     {"id":"twse_balance_basi","priority":"high","category":"financial_statement","source_name":"TWSE/MOPS balance sheet banking","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap07_L_basi","frontend_fallback":true},
     {"id":"twse_balance_bd","priority":"high","category":"financial_statement","source_name":"TWSE/MOPS balance sheet securities futures","source_url":"https://openapi.twse.com.tw/v1/opendata/t187ap07_L_bd","frontend_fallback":true},
