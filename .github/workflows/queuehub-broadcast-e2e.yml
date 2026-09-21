@@ -23,7 +23,7 @@ jobs:
       EXPECT_BROADCAST: '1'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Listen for DB-triggered QueueHub broadcast
         run: |
