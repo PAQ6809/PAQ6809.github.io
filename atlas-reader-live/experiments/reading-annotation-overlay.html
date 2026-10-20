@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Atlas Reader Annotation Overlay Prototype</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f2ea;color:#222}.wrap{max-width:900px;margin:auto;padding:24px}.reader{position:relative;min-height:70vh;background:#fff;padding:36px;border-radius:18px;box-shadow:0 12px 32px #0001;overflow:hidden}.toolbar{position:sticky;top:8px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar button{padding:8px 12px;border:1px solid #8886;border-radius:10px;background:Canvas;color:CanvasText}.toolbar button[aria-pressed="true"]{outline:2px solid currentColor}canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;touch-action:none}.pass-through{pointer-events:none}.note{position:relative;z-index:1;font-size:20px;line-height:1.9}small{opacity:.7}@media(prefers-color-scheme:dark){body{background:#151515;color:#eee}.reader{background:#202020}}@media(max-width:600px){.wrap{padding:10px}.reader{padding:22px 18px}}
+</style>
+</head>
+<body><main class="wrap">
+<h1>閱讀標註 Overlay 原型</h1>
+<p><small>MarkerOn 概念的 Browser-only 驗證：只在本機 Canvas 繪圖，不上傳、不儲存、不載入第三方套件。</small></p>
+<div class="toolbar" role="toolbar" aria-label="標註工具">
+<button data-tool="pen" aria-pressed="true">畫筆</button><button data-tool="highlight" aria-pressed="false">螢光筆</button><button id="togglePass" aria-pressed="false">穿透閱讀</button><button id="clear">清除</button>
+</div>
+<section class="reader" id="reader">
+<div class="note"><h2>Atlas Reader 測試內容</h2><p>這是一段閱讀內容，用來驗證標註層是否能在不修改原始文件的情況下畫線、螢光標記，以及暫時切換成「穿透閱讀」模式。</p><p>目標是未來可套在文字、PDF 或研究筆記閱讀器外層，讓標註與原始內容解耦。</p></div>
+<canvas id="ink" aria-label="閱讀標註畫布"></canvas>
+</section>
+</main>
+<script>
+const canvas=document.getElementById('ink'),reader=document.getElementById('reader'),ctx=canvas.getContext('2d');let tool='pen',drawing=false,last=null;
+function resize(){const r=reader.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0)}
+new ResizeObserver(resize).observe(reader);resize();
+for(const b of document.querySelectorAll('[data-tool]'))b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))};
+function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+canvas.addEventListener('pointerdown',e=>{drawing=true;last=point(e);canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=tool==='highlight'?18:3;ctx.globalAlpha=tool==='highlight'?.28:.9;ctx.strokeStyle=tool==='highlight'?'#ffd43b':'#e03131';ctx.stroke();last=p});
+canvas.addEventListener('pointerup',()=>{drawing=false;last=null;ctx.globalAlpha=1});canvas.addEventListener('pointercancel',()=>{drawing=false;last=null;ctx.globalAlpha=1});
+document.getElementById('clear').onclick=()=>ctx.clearRect(0,0,canvas.width,canvas.height);
+document.getElementById('togglePass').onclick=e=>{const on=canvas.classList.toggle('pass-through');e.currentTarget.setAttribute('aria-pressed',String(on));e.currentTarget.textContent=on?'返回標註':'穿透閱讀'};
+</script></body></html>
