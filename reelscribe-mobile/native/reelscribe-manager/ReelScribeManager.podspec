@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.homepage     = 'https://paq6809.github.io/reelscribe/'
   s.license      = { :type => 'Proprietary', :text => 'Private application component.' }
   s.author       = { 'PAQ' => 'pinranchen6809@gmail.com' }
-  s.platforms    = { :ios => '16.0' }
+  s.platforms    = { :ios => '15.1' }
   s.source       = { :path => '.' }
   s.source_files = 'ios/**/*.{h,m,mm,swift}'
   s.frameworks   = 'AVFoundation', 'Vision'

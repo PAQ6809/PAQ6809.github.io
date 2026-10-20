@@ -8,7 +8,7 @@ const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
 const releaseBuild = process.env.RELEASE_BUILD === '1';
 const errors = [];
 
-if (![1, 2].includes(catalog.schemaVersion)) errors.push('Unsupported model catalog schema.');
+if (catalog.schemaVersion !== 2) errors.push('Unsupported model catalog schema.');
 if (!Array.isArray(catalog.models) || catalog.models.length < 4) errors.push('Model catalog is incomplete.');
 
 const ids = new Set();
@@ -36,21 +36,20 @@ for (const model of catalog.models || []) {
   if (model.id === 'moonshine-v2-multilingual' && model.deployment !== 'excluded') {
     errors.push(`${model.id}: non-commercial multilingual Moonshine models are not approved for store distribution.`);
   }
-
   if (model.id === 'moonshine-english-family' && model.license !== 'MIT') {
     errors.push(`${model.id}: English Moonshine candidate must retain the MIT license gate.`);
   }
-
   if (model.id.startsWith('qwen3-asr') && !String(model.deployment).includes('server')) {
     errors.push(`${model.id}: Qwen3-ASR is server-only in the mobile product policy.`);
   }
-
   if (model.id === 'funasr-nano-2512' && model.status !== 'research-candidate') {
     errors.push(`${model.id}: Fun-ASR Nano remains a research candidate until native mobile benchmarks pass.`);
   }
-
   if (model.id === 'omnilingual-asr-300m-int8' && model.status !== 'research-candidate') {
     errors.push(`${model.id}: Omnilingual ASR remains an optional research language-pack candidate.`);
+  }
+  if (model.id === 'breeze-asr-25' && model.status !== 'research-candidate') {
+    errors.push(`${model.id}: Breeze ASR remains a research candidate until a reproducible mobile artifact passes device benchmarks.`);
   }
 }
 
@@ -59,6 +58,7 @@ for (const required of [
   'whisper-base',
   'whisper-small',
   'whisper-large-v3-turbo',
+  'breeze-asr-25',
   'funasr-nano-2512',
   'omnilingual-asr-300m-int8',
 ]) {

@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate JSON, model catalog and store preflight
+      - name: Validate release JSON
         run: |
           set -euo pipefail
           python -m json.tool reelscribe/models/mobile-model-catalog.json >/dev/null
@@ -56,9 +56,18 @@ jobs:
           python -m json.tool reelscribe-mobile/package.json >/dev/null
           python -m json.tool reelscribe-mobile/app.json >/dev/null
           python -m json.tool reelscribe-mobile/native/reelscribe-manager/package.json >/dev/null
+
+      - name: Audit normal and release model catalogs
+        run: |
+          set -euo pipefail
           node reelscribe-mobile/scripts/audit-model-catalog.mjs
-          node reelscribe-mobile/scripts/preflight-store.mjs
-          node --check reelscribe-mobile/scripts/resolve-model-integrity.mjs
+          RELEASE_BUILD=1 node reelscribe-mobile/scripts/audit-model-catalog.mjs
+
+      - name: Run store preflight
+        run: node reelscribe-mobile/scripts/preflight-store.mjs
+
+      - name: Validate integrity resolver syntax
+        run: node --check reelscribe-mobile/scripts/resolve-model-integrity.mjs
 
       - name: Install pinned JavaScript dependencies without lifecycle scripts
         working-directory: reelscribe-mobile
@@ -164,6 +173,7 @@ jobs:
           assert 'server' in by_id['qwen3-asr-0.6b']['deployment']
           assert by_id['whisper-tiny']['deployment'] == 'on-device'
           assert 'server' in by_id['nemotron-3.5-asr-streaming-0.6b']['deployment']
+          assert by_id['breeze-asr-25']['status'] == 'research-candidate'
           assert by_id['funasr-nano-2512']['status'] == 'research-candidate'
           assert by_id['omnilingual-asr-300m-int8']['status'] == 'research-candidate'
 

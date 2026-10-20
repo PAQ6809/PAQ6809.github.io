@@ -73,8 +73,9 @@
       "status": "production-default",
       "artifact": {
         "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
-        "sha256": null,
-        "integrityStatus": "must-lock-before-store-release"
+        "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+        "sizeMb": 77.7,
+        "integrityStatus": "locked-from-upstream-file-metadata"
       }
     },
     {
@@ -89,8 +90,9 @@
       "status": "production-optional",
       "artifact": {
         "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
-        "sha256": null,
-        "integrityStatus": "must-lock-before-store-release"
+        "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+        "sizeMb": 148,
+        "integrityStatus": "locked-from-upstream-file-metadata"
       }
     },
     {
@@ -105,8 +107,9 @@
       "status": "production-optional",
       "artifact": {
         "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
-        "sha256": null,
-        "integrityStatus": "must-lock-before-store-release"
+        "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+        "sizeMb": 488,
+        "integrityStatus": "locked-from-upstream-file-metadata"
       }
     },
     {
@@ -121,9 +124,27 @@
       "status": "release-candidate",
       "artifact": {
         "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
-        "sha256": null,
-        "integrityStatus": "must-lock-and-benchmark-before-store-release"
+        "sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+        "sizeMb": 1620,
+        "integrityStatus": "locked-from-upstream-file-metadata-awaiting-device-benchmark"
       }
+    },
+    {
+      "id": "breeze-asr-25",
+      "displayName": "Breeze ASR 25",
+      "engine": "whisper-cpp-evaluation",
+      "languages": ["zh-TW", "en"],
+      "license": "Apache-2.0",
+      "deployment": "on-device-research-candidate",
+      "deviceTier": "flagship",
+      "recommendedFor": ["taiwanese-mandarin", "traditional-chinese", "mandarin-english-code-switching", "caption-alignment"],
+      "status": "research-candidate",
+      "artifact": {
+        "url": null,
+        "sha256": null,
+        "integrityStatus": "official-base-model-reviewed-community-mobile-conversions-not-approved"
+      },
+      "notes": "Official MediaTek model is optimized for Taiwanese Mandarin, Mandarin-English code-switching and timestamp alignment. No community ONNX, Core ML or GGUF conversion is approved until reproducible conversion, exact size, SHA-256 and physical-device tests pass."
     },
     {
       "id": "whisperkit-large-v3-compressed-ios",
