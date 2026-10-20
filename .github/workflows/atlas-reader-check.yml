@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: Run static regression checks
@@ -45,7 +45,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: Run Edge Function request matrix
@@ -56,7 +56,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: Start local Atlas Reader
@@ -77,7 +77,7 @@ jobs:
           ATLAS_TARGET=http://127.0.0.1:4173 npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
       - name: Upload diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: atlas-reader-smoke-diagnostics
           path: |
@@ -96,7 +96,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: Wait for GitHub Pages propagation
@@ -123,7 +123,7 @@ jobs:
           ATLAS_TARGET=https://atlas-reader.vercel.app ATLAS_EXPECT_API=true npx playwright test atlas-reader-smoke.spec.mjs --workers=1 --reporter=line
       - name: Upload production diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: atlas-reader-production-smoke-diagnostics
           path: /tmp/atlas-e2e/test-results
