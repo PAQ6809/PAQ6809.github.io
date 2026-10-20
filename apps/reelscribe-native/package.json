@@ -1,0 +1,21 @@
+{
+  "name": "reelscribe-native",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native iOS and Android packaging workspace for ReelScribe.",
+  "scripts": {
+    "sync:web": "node scripts/sync-web.mjs",
+    "cap:sync": "npm run sync:web && npx cap sync",
+    "ios": "npm run cap:sync && npx cap open ios",
+    "android": "npm run cap:sync && npx cap open android",
+    "doctor": "npx cap doctor"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.1",
+    "@capacitor/core": "8.4.1",
+    "@capacitor/ios": "8.4.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.1"
+  }
+}
