@@ -87,7 +87,7 @@ jobs:
           retention-days: 7
 
   production-smoke:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     needs:
       - static-regression
       - edge-regression
@@ -100,6 +100,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Wait for GitHub Pages propagation
+        if: github.event_name == 'push'
         run: |
           for attempt in $(seq 1 60); do
             if node scripts/atlas-production-probe.mjs; then
